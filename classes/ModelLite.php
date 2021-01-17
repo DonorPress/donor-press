@@ -212,11 +212,12 @@ class ModelLite{
 		return $key;
 	}
 
-	public static function showResults($results){
+	public static function showResults($results){		
 		$fields=self::s()->getViewableFields();	
 		if (!$results || sizeof($results)==0){
-			print "<div><em>No Results Found.</em></div>"; return false;
+			return "<div><em>No Results Found.</em></div>"; 
 		}
+		ob_start(); 
 		?><table border=1><?
 			$i=0;
 			foreach($results as $r){
@@ -231,6 +232,7 @@ class ModelLite{
 				$i++;
 			}
 		?></table><?
+		return ob_get_clean(); 
 	}
 	
 	public function showfield($fieldName){
@@ -250,7 +252,7 @@ class ModelLite{
 			case "FromEmailAddress":
 			case "ToEmailAddress":
 			case "Email":
-				return '<a href="mailto:'.$v.'?Subject=">'.$v.'</a>';
+				return $this->displayEmail($fieldName); //'<a href="mailto:'.$v.'?Subject=">'.$v.'</a>';
 			break;
 			case "CategoryId":
 				$label="";
@@ -271,27 +273,30 @@ class ModelLite{
 				}
 				return '<a href="?page='.$_GET['page'].'&CategoryId='.$v.'">'.$v.'</a>'.$label;
 			break;
-			case "AddressStatus":
-			case "Status":
-			case "PaymentSource":    
-			case  "Type":	
-				$label=self::s()->tinyIntDescriptions[$fieldName][$v];								
-				if ($label){	
-					return $v." - ".$label;
-				}else{
-					if ($fieldName=="Type"){
-						return $v." - ".$this->TypeOther;						
-					}
-					return $v;
-				
-				}   
-			break;
 			default:
-				return $v;
+				if ($this->tinyIntDescriptions[$fieldName]){
+					$label=self::s()->tinyIntDescriptions[$fieldName][$v];								
+					if ($label){	
+						return $v." - ".$label;
+					}elseif ($fieldName=="Type" && $this->TypeOther){
+							return $v." - ".$this->TypeOther;						
+					}
+				}
+				return $v;				
 			break;
 		}
 	}
 
+	public function displayEmail($fieldName='Email'){
+		if ($this->$fieldName){
+			if ($this->EmailStatus<0 || !filter_var($this->$fieldName, FILTER_VALIDATE_EMAIL)){
+				return '<span style="text-decoration:line-through; color:red;">'.$this->$fieldName.'</span>';
+			}else{
+				return '<a href="mailto:'.$this->$fieldName.'">'.$this->$fieldName.'</a>';
+			}
+		}
+		
+	}
 	public function editForm(){
 		$primaryKey=$this->primaryKey;
 		?><form method="post" action="?page=<?=$_GET['page']?>&<?=$primaryKey?>=<?=$this->$primaryKey?>">
@@ -303,8 +308,24 @@ class ModelLite{
 			$type="text";
             if (strpos($field,"Date")>-1){
                 $type="date";
-            }
-			?><tr><td align=right><?=$field?></td><td><input type="<?=$type?>" name="<?=$field?>" value="<?=$this->$field?>"/></td></tr><?
+			}
+			if ($field=="Date") $this->Date=substr($this->$field,0,10); //$type="datetime-local";
+			?><tr><td align=right><?=$field?></td><td><?
+			if ($this->tinyIntDescriptions[$field]){
+				?><select name="<?=$field?>"><?
+					foreach($this->tinyIntDescriptions[$field] as $key=>$label){
+						?><option value="<?=$key?>"<?=$key==$this->$field?" selected":""?>><?=$key." - ".$label?></option><?
+					}
+					if (!$this->tinyIntDescriptions[$field][$this->$field]){
+						?><option value="<?=$this->$field?>" selected><?=$this->$field." - Not Set"?></option><?
+					}
+					?></select><?
+			}else{
+				?><input type="<?=$type?>" name="<?=$field?>" value="<?=$this->$field?>"/><?
+			}	
+		
+			
+			?></td></tr><?
 			}
 		?><tr><tr><td colspan=2><button type="submit" name="Function" value="Save">Save</button><button type="submit">Cancel</button></td></tr>
 		</table>

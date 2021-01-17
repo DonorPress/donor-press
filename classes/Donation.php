@@ -35,7 +35,7 @@ class Donation extends ModelLite
 
 	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';
- 
+    
     
     public function donationToDonor($override=array()){
         ### When uploading new dontations, this will find existings donors, or create new ones automatically.

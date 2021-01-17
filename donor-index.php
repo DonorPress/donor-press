@@ -1,3 +1,13 @@
+<style>
+@media print
+{    
+    #adminmenumain, #wpadminbar, .no-print, .no-print *
+    {
+        display: none !important;
+    }
+	#pluginwrap { background-color:white;}
+}
+</style>
 <?php
 
 	/*
@@ -12,14 +22,14 @@
 	wp_enqueue_style('empty-plugin-style', plugins_url( '/css/style.css', __FILE__ ) );
 	// loading the JS
 	wp_enqueue_script('empty-plugin-scripts', plugins_url( '/js/scripts.js', __FILE__ ) );
-
-	if (Donation::RequestHandler()) return; //important to do this first
-	if (Donor::RequestHandler()) return;
-	if (DonationCategory::RequestHandler()) return;
+	?>
+	<div id="pluginwrap">
+	<?php
+	if (Donation::RequestHandler()) { print "</div>"; return;} //important to do this first
+	if (Donor::RequestHandler())  { print "</div>"; return;}
+	if (DonationCategory::RequestHandler()) { print "</div>"; return;}
 	//load_initial_data();
-?>
-<div id="pluginwrap">
-
+	?>
 	<h2>Donor Tracker</h2>
 	<form method="get">
 		<input type="hidden" name="page" value="<?=$_GET['page']?>"/>
@@ -31,7 +41,7 @@
 		OR Email LIKE '%".$_GET['dsearch']."%'
 		OR Phone LIKE '%".$_GET['dsearch']."%')"));
 		//print "do lookup here...";
-		Donor::showResults($list);
+		print Donor::showResults($list);
 		
 	}?>
 

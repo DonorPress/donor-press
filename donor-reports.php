@@ -1,10 +1,23 @@
-<?
-//Donor::dump($_POST);
-if (Donation::RequestHandler()) return; //important to do this first
-if (Donor::RequestHandler()) return;
-if (DonationCategory::RequestHandler()) return;
-?>
+<style>
+@media print
+{    
+    #adminmenumain,#wpadminbar,.no-print, .no-print *
+    {
+        display: none !important;
+    }
+	body { background-color:white;}
+	#wpcontent, #wpfooter{ margin-left:0px;}
+	
+}
+</style>
 <div id="pluginwrap">
+	<?php
+	if (Donation::RequestHandler()) { print "</div>"; return;} //important to do this first
+	if (Donor::RequestHandler())  { print "</div>"; return;}
+	if (DonationCategory::RequestHandler()) { print "</div>"; return;}
+	//load_initial_data();
+	?>
+	
 	<h1>Report Page</h1>
 	<?
 	if ($_GET['view']=='detail'){
@@ -17,6 +30,13 @@ if (DonationCategory::RequestHandler()) return;
 		print "</div>";
 		return;
 	}
+	?><div><?
+	for($y=date("Y");$y>=date("Y")-4;$y--){
+		?><a href="?page=<?=$_GET['page']?>&f=YearSummaryList&Year=<?=$y?>"><?=$y?></a> | <?
+	}
+	
+	?></div><?
+
 	reportTop();
 	reportCurrentMonthly();
 	reportMonthly();
@@ -48,8 +68,8 @@ function reportTop($top=20){
 	$where=[];
 	if ($_GET['topDf']) $where[]="Date>='".$_GET['topDf']."'";
 	if ($_GET['topDt']) $where[]="Date<='".$_GET['topDt']."'";
-	$results = $wpdb->get_results("SELECT DD.`DonorId`,D.`Name`, SUM(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation 
-	FROM ".Donation::getTableName()." DD INNER JOIN ".Donor::getTableName()." D ON D.DonorId=DD.DonorId WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")." Group BY  DD.`DonorId`,D.`Name` Order BY SUM(`Gross`) DESC, COUNT(*) DESC LIMIT ".$top);
+	$results = $wpdb->get_results("SELECT D.`DonorId`,D.`Name`, SUM(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation 
+	FROM ".Donation::getTableName()." DD INNER JOIN ".Donor::getTableName()." D ON D.DonorId=DD.DonorId WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")." Group BY  D.`DonorId`,D.`Name` Order BY SUM(`Gross`) DESC, COUNT(*) DESC LIMIT ".$top);
 	if (sizeof($results)>0){
 		?><form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" />
 			<h3>Top <input type="number" name="topL" value="<?=($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/> Donor Report From <input type="date" name="topDf" value="<?=$_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?=$_GET['topDt']?>"/> <button type="submit">Go</button></h3>
@@ -74,7 +94,7 @@ function reportMonthly(){
 			$where[]="`Type`='".addslashes($_GET['type'])."'";
 		}
 		$results=Donation::get($where);
-		Donation::showResults($results);		
+		print Donation::showResults($results);		
 		return;
 		
 	}
