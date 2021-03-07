@@ -1,11 +1,35 @@
 <?php
 ### Manages the Category of a Donation
+/* Expand to manage all Drop down field options....
+DonorCategory
+CategoryId
+Table
+Field
+Id
+Description
+ParentId
+CreatedAt
+UpdatedAt
+
+
+
+
+Fields Donation
+Category
+Status
+AddressStatus
+PaymentSource
+Type
+Currency
+
+
+*/
 require_once("Donation.php");
 class DonationCategory extends ModelLite
 {
     protected $table = 'DonationCategory';
 	protected $primaryKey = 'CategoryId';
-	### Fields that can be passed //,"Time","TimeZone"
+	### Fields that can be passed 
     protected $fillable = ["Category","Description","ParentId"];	 
   	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';    
@@ -15,7 +39,7 @@ class DonationCategory extends ModelLite
             if ($_POST['Function']=="Save" && $_POST['table']=="DonationCategory"){
                 $donationCategory=new self($_POST);
                 if ($donationCategory->save()){
-                   print "<div class=\"notice notice-success is-dismissible\">Donation Category#".$donationCategory->showField("CategoryId")." saved.</div>";
+                    self::DisplayNotice("Donation Category#".$donationCategory->showField("CategoryId")." saved.");
                 }
             }
             $donationCategory=self::getById($_REQUEST['CategoryId']);	
@@ -36,6 +60,21 @@ class DonationCategory extends ModelLite
         }
     }
 
+    public function consolidateCategories(){
+        global $wpdb;
+        $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM `wp_donationcategory`");
+        foreach ($results as $r){
+            if ($cache[$r->Category]){
+                $uSQL="UPDATE `wp_donation` SET `CategoryId`='".$cache[$r->Category]."' WHERE `CategoryId`='".$r->CategoryId."'";
+                print $uSQL.";<br>";
+                $dSQL="DELETE FROM `wp_donationcategory` WHERE `CategoryId`='".$r->CategoryId."'";
+                print $dSQL.";<br>";
+            }else{
+                $cache[$r->Category]=$r->CategoryId;
+            }   
+        }
+    }
+
     public function view(){ //single entry->View fields
 		//print "varview";
 		$this->varView();
@@ -43,12 +82,13 @@ class DonationCategory extends ModelLite
 	}
 
     static public function getCategoryId($text){
+        $text=trim($text);
         global $cache_DonationCategory_getCategoryId;
         if ($cache_DonationCategory_getCategoryId[$text]){
             return $cache_DonationCategory_getCategoryId[$text];
         }
-        $result=self::get(array("Category='".addslashes($text)."'"));
-        if ($return && sizeof($return)>0){
+        $result=self::get(array("Category LIKE '".addslashes($text)."'"));
+        if ($result && sizeof($result)>0){
             if ($result[0]->ParentId>0) {
                 $cache_DonationCategory_getCategoryId[$text]=$result[0]->ParentId;                
             }else{  
@@ -79,6 +119,5 @@ class DonationCategory extends ModelLite
                 KEY `Category` (`Category`)
                 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";          
         dbDelta( $sql );
-
     }
 }

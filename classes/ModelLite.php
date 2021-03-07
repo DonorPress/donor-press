@@ -190,7 +190,8 @@ class ModelLite{
 		foreach($all as $r){
 			$obj=new static($r,$settings);
 			if ($settings['key']){
-				$return[$obj->primaryKey]=$obj; //untested, but conceptial.
+				$primaryField=$obj->primaryKey;
+				$return[$r->$primaryField]=$obj; //untested, but conceptial.
 			}else{
 				$return[]=$obj;
 			}
@@ -246,6 +247,7 @@ class ModelLite{
 			case "DonationId":
 				return '<a href="?page='.$_GET['page'].'&DonationId='.$v.'">'.$v.'</a>';
 			break;
+			case "MergedId":
 			case "DonorId":
 				return '<a href="?page='.$_GET['page'].'&DonorId='.$v.'">'.$v.'</a>';
 			break;
@@ -287,16 +289,30 @@ class ModelLite{
 		}
 	}
 
-	public function displayEmail($fieldName='Email'){
-		if ($this->$fieldName){
-			if ($this->EmailStatus<0 || !filter_var($this->$fieldName, FILTER_VALIDATE_EMAIL)){
-				return '<span style="text-decoration:line-through; color:red;">'.$this->$fieldName.'</span>';
-			}else{
-				return '<a href="mailto:'.$this->$fieldName.'">'.$this->$fieldName.'</a>';
-			}
-		}
-		
+	public function displayKey(){
+		$primaryKey=$this->primaryKey;
+		return '<a href="?page='.$_GET['page'].'&'.$primaryKey.'='.$this->$primaryKey.'">'.$this->$primaryKey."</a> ";
 	}
+
+	public function displayEmail($fieldName='Email'){
+		if (trim($this->$fieldName)){
+			$emails=explode(";",$this->$fieldName);
+			$count=0;
+			foreach($emails as $email){
+				$email=trim($email);
+				if ($count>0) $return.="; ";
+				if ($this->EmailStatus<0 || !filter_var($email, FILTER_VALIDATE_EMAIL)){
+					$return.= '<span style="text-decoration:line-through; color:red;">'.$email.'</span>';
+				}else{
+					$return.= '<a href="mailto:'.$email.'">'.$email.'</a>';
+				}
+				$count++;
+			}	
+			return $return;		
+		}		
+	}
+
+	
 	public function editForm(){
 		$primaryKey=$this->primaryKey;
 		?><form method="post" action="?page=<?=$_GET['page']?>&<?=$primaryKey?>=<?=$this->$primaryKey?>">
@@ -330,6 +346,18 @@ class ModelLite{
 		?><tr><tr><td colspan=2><button type="submit" name="Function" value="Save">Save</button><button type="submit">Cancel</button></td></tr>
 		</table>
 		</form><?
+	}
+
+	static public function DisplayNotice($html){
+		print "<div class=\"notice notice-success is-dismissible\">".$html."</div>";
+	}
+
+	static public function DisplayWarning($html){
+		print "<div class=\"notice notice-warning is-dismissible\">".$html."</div>";
+	}
+
+	static public function DisplayError($html){
+		print "<div class=\"notice notice-error is-dismissible\">".$html."</div>";
 	}
 
 

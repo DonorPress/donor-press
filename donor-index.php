@@ -9,6 +9,7 @@
 }
 </style>
 <?php
+	//print Donor::DisplayNotice(DonationCategory::getCategoryId("Donation to Mas Mariposas Food Relief Project"));
 
 	/*
 	 * Be very careful were you place wp_enqueue_style and wp_enqueue_script. 
@@ -49,6 +50,7 @@
 	<h3>Add From Paypal (.csv method)</h3>
 	Import Paypal Exported File: (.csv)
   <input type="file" name="fileToUpload" id="fileToUpload" accept=".csv"> 
+  <label><input type="checkbox" name="uploadSummary" value="true" checked/> View Upload Summary</label>
   <label><input type="checkbox" name="nuke" value="true"/> Purge DB</label>
   <?php submit_button('Upload','primary','submit',false) ?>
   <?php submit_button('Upload NonPaypal','primary','submit',false) ?>

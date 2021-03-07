@@ -7,7 +7,7 @@ class Donor extends ModelLite {
     protected $table = 'Donor';
 	protected $primaryKey = 'DonorId';
 	### Fields that can be passed 
-    protected $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting"];	    
+    protected $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting","MergedId"];	    
 	### Default Values
 	protected $attributes = [        
         'Country' => 'US',
@@ -46,10 +46,68 @@ class Donor extends ModelLite {
           dbDelta( $sql );
     }
 
+    public function mergeToForm(){
+        ?><form method="post">
+        <input type="hidden" name="MergeFrom" value="<?=$this->DonorId?>"/> 
+        Merge To Id: <input type="number" name="MergedId" value="">
+        <button method="submit" name="Function" value="MergeConfirm">Merge</button>
+        Enter the ID of the Donor you want to merge to. You will have the option to review this merge. Once merged, all donations will be relinked to the new profile.</form><?
+    }
+
+    public function mergeFromCompare($oldDonor){
+        if ($this->DonorId==$oldDonor->DonorId){
+            self::DisplayError("Can't Merge entry to itself.");           
+            return;
+        }
+        global $wpdb;
+        $where= array("DonorId IN (".$this->DonorId.",".$oldDonor->DonorId.")");
+        $SQL="SELECT DonorId, Count(*) as C,SUM(`Gross`) as Total, MIN(Date) as DateEarliest, MAX(Date) as DateLatest FROM `wp_donation` WHERE ".implode(" AND ",$where)." Group BY DonorId";
+        $results = $wpdb->get_results($SQL);
+        foreach ($results as $r){
+            $stats[$r->DonorId]=$r;
+        }
+        //self::dump($stats);
+        foreach($oldDonor as $field=>$value){
+            if ($value!=$this->$field){
+                $changes[$field]=$value;
+            }
+        }
+        ?><form method='post'>
+        <input type='hidden' name='donorIds[]' value='<?=$this->DonorId?>'>
+        <input type='hidden' name='donorIds[]' value='<?=$oldDonor->DonorId?>'>
+        <h2>The following changes are suggested</h2>
+        <form method='post'>
+        <table border='1'><tr><th>Field</th><th>Donor A</th><th>Donor B</th></tr><?
+        foreach($changes as $field=>$value){
+            ?><tr><td><?=$field?></td>
+            <td><input type="radio" name="<?=$field?>" value="<?=$value?>"<?=!$this->$field?" checked":""?>><?=$value?></td>
+            <td><input type="radio" name="<?=$field?>" value="<?=$this->$field?>"<?=$this->$field?" checked":""?>><?=$this->$field?></td>
+            </tr><?                                    
+        }
+        ?><tr><td>Donation Details Will Merge</td><td><?
+        $thisStat=$stats[$oldDonor->DonorId];
+        print $thisStat->C." Donations $".number_format($thisStat->Total,2);
+        print " ".substr($thisStat->DateEarliest,0,10).($thisStat->DateEarliest!=$thisStat->DateLatest?" to ".substr($thisStat->DateLatest,0,10):"");
+        ?></td>
+        <td><?
+        $thisStat=$stats[$this->DonorId];
+        print $thisStat->C." Donations $".number_format($thisStat->Total,2);
+        print " ".substr($thisStat->DateEarliest,0,10).($thisStat->DateEarliest!=$thisStat->DateLatest?" to ".substr($thisStat->DateLatest,0,10):"");
+        ?>
+        </td></tr>
+        </table>
+        <button type='submit' name='Function' value='MergeDonor'>Merge Donors</button>
+        </form><?
+
+    }
+
     public function view(){     
         $this->varView();
         ?>
-        <div><a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=AddDonation">Add Donation</a></div>
+        <div><a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=AddDonation">Add Donation</a></div><?
+        $this->mergeToForm();
+
+        ?>
         <h2>Donation Summary</h2>
 
         <div>Year End Receipt: <a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=YearReceipt&Year=<?=date("Y")?>"><?=date("Y")?></a> | <a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=YearReceipt&Year=<?=date("Y")-1?>"><?=date("Y")-1?></a> | <a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=YearReceipt&Year=<?=date("Y")-2?>"><?=date("Y")-2?></a></div>
@@ -66,6 +124,7 @@ class Donor extends ModelLite {
             $totals['Total']+=$r->Total;
 
         }
+        
         if (sizeof($results)>1){?>
         <tfoot style="font-weight:bold;"><tr><td>Totals:</td><td><?=$totals['Count']?></td><td align=right><?=number_format($totals['Total'],2)?></td></tr></tfoot>
         <?} ?></table>
@@ -77,10 +136,41 @@ class Donor extends ModelLite {
     }
 
     static public function requestHandler(){
+        global $wpdb;
+        if ($_POST['Function']=='MergeDonor' && $_POST['DonorId']){
+            //self::dump($_POST);            
+            $data=array();
+            foreach(self::s()->fillable as $field){
+                if ($_POST[$field] && $field!='DonorId'){
+                    $data[$field]=$_POST[$field];
+                }
+            }
+           // self::dd($data);
+            if (sizeof($data)>0){
+                ### Update Master Entry with Fields from merged details
+                $wpdb->update(self::s()->getTable(),$data,array('DonorId'=>$_POST['DonorId']));
+            }
+            $mergeUpdate['MergedId']=$_POST['DonorId'];
+            foreach($_POST['donorIds'] as $oldId){
+                if ($oldId!=$_POST['DonorId']){
+                    ### Set MergedId on Old Donor entry
+                    $wpdb->update(self::s()->getTable(),$mergeUpdate,array('DonorId'=>$oldId));
+                    ### Update all donations on old donor to new donor
+                    $uSQL="UPDATE ".Donation::s()->getTable()." SET DonorId='".$_POST['DonorId']."' WHERE DonorId='".$oldId."'";  
+                    $wpdb->query($uSQL);
+                    self::DisplayNotice("Donor #<a href='?page=".$_GET['page']."&DonorId=".$oldId."'>".$oldId."</a> merged to #<a href='?page=".$_GET['page']."&DonorId=".$_POST['DonorId']."'>".$_POST['DonorId']."</a>");
+                }
+            }  
+            $_GET['DonorId']=$_POST['DonorId']; 
+
+        }
         if ($_GET['f']=="AddDonor"){           
             $donor=new Donor;            
             print "<h2>Add Donor</h2>";            
             $donor->editForm();           
+            return true;
+        }elseif($_GET['f']=="SummaryList" && $_GET['dt'] && $_GET['df']){            
+            self::SummaryList(array("Date BETWEEN '".$_GET['df']." 00:00:00' AND '".$_GET['dt']." 23:59:59'"));
             return true;
         }elseif($_GET['f']=="YearSummaryList" && $_GET['Year']){
             $year=$_GET['Year'];
@@ -112,7 +202,7 @@ class Donor extends ModelLite {
                     if ($pdf->Output($_SERVER['DOCUMENT_ROOT'].$path, 'F')){
                        
                     }
-                    print "<div class=\"notice notice-success is-dismissible\">Outputed Year End PDF: <a target=\"pdf\" href=\"".$path."\">Download</a></div>";
+                    self::DisplayNotice("Outputed Year End PDF: <a target=\"pdf\" href=\"".$path."\">Download</a>");
                     // return array('path'=>$path,'file'=>$file);
 
                 }
@@ -137,10 +227,22 @@ class Donor extends ModelLite {
                     }
                     //self::dump($donorList);
                 }
-                 print "<div class=\"notice notice-success is-dismissible\">E-mailed Year End Receipts to  $limit of  ".sizeof($_POST['emails'])."</div>";
+                DisplayNotice("E-mailed Year End Receipts to  $limit of  ".sizeof($_POST['emails']));
 
             }
             self::YearSummaryList($_GET['Year']);
+            return true;
+        }elseif($_POST['Function']=='MergeConfirm'){ 
+            $donorA=Donor::getById($_POST['MergeFrom']);
+            $donorB=Donor::getById($_POST['MergedId']);
+            if (!$donorB->DonorId){
+                 print self::DisplayError("Donor ".$_POST['MergedId']." not found.");
+                 return false;
+            }else{
+                $donorB->mergeFromCompare($donorA);
+            }
+            //self::dump($donorA);
+            //self::dump($donorB);
             return true;
         }elseif ($_GET['DonorId']){	
             if ($_POST['Function']=="YearReceiptPdf" && $_GET['Year']){
@@ -159,7 +261,7 @@ class Donor extends ModelLite {
             if ($_POST['Function']=="Save" && $_POST['table']=="Donor"){
                 $donor=new Donor($_POST);
                 if ($donor->save()){			
-                    print "<div class=\"notice notice-success is-dismissible\">Donor #".$donor->showField("DonorId")." saved.</div>";
+                    self::DisplayNotice("Donor #".$donor->showField("DonorId")." saved.");
                 }
                 
             }
@@ -172,14 +274,14 @@ class Donor extends ModelLite {
                     $donor->editForm();
                 }else{
                     ?><div><a href="?page=<?=$_GET['page']?>&DonorId=<?=$donor->DonorId?>&edit=t">Edit Donor</a></div><?
-                    $donor->view();
+                    $donor->view();                    
                 }
             ?></div><?            
             return true;
         }elseif ($_POST['Function']=="Save" && $_POST['table']=="Donor"){
             $donor=new Donor($_POST);
             if ($donor->save()){			
-                print "<div class=\"notice notice-success is-dismissible\">Donor #".$donor->showField("DonorId")." saved.</div>";
+                self::DisplayNotice("Donor #".$donor->showField("DonorId")." saved.");
                 $donor->view();
             }
             return true;
@@ -197,7 +299,7 @@ class Donor extends ModelLite {
                     $wpdb->update(self::getTableName(),$change,array("DonorId"=>$donorId));
 
                 }
-                print "<div class=\"notice notice-success is-dismissible\">".sizeof($changes)." Entries Updated: ".implode(" | ",$ulinks)."</div>";
+                self::DisplayNotice(sizeof($changes)." Entries Updated: ".implode(" | ",$ulinks));
             }
 
         }else{
@@ -232,6 +334,30 @@ class Donor extends ModelLite {
         if ($alert) return "<span style='background-color:yellow;'>".$name."</span>";
         else return $name;
 
+    }
+    
+    static function SummaryList($where=[]){
+        global $wpdb;
+        $where[]="Status>=0";
+        $where[]="Type>=1";
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as DonationCount, SUM(Gross) as Total FROM ".Donor::getTableName()." D INNER JOIN ".Donation::getTableName()." DT ON D.DonorId=DT.DonorId WHERE ".implode(" AND ",$where)." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
+    
+        $results = $wpdb->get_results($SQL);
+        ?><div><a href="?page=<?=$_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?=$year?>"/>
+        <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Count</th><th>Amount</th></tr><?
+        foreach ($results as $r){
+            $donor=new self($r);
+            ?>
+            <tr><td><a target="Donor" href="?page=<?=$_GET['page']?>&DonorId=<?=$r->DonorId?>"><?=$r->DonorId?></a></td><td><?=$donor->NameCheck()?></td>
+            <td><?=$donor->DisplayEmail()?></td>            
+            <td><?=$r->DonationCount?></td>
+            <td><?=$r->Total?></td>
+            </tr><?
+            $total+=$r->Total;
+        }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?=number_format($total,2)?></td></tr></table>
+                  
+        <?
+        return;
     }
 
     static function YearSummaryList($year){
@@ -268,7 +394,8 @@ class Donor extends ModelLite {
             //self::dump($receipts[$r->DonorId]);
             print DonationReceipt::displayReceipts($receipts[$r->DonorId]);
             ?></td></tr><?
-        }?></table>
+            $total+=$r->Total;
+        }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?=number_format($total,2)?></td><td></td><td></td><td></td></table>
         Limit: <Input type="number" name="limit" value="<?=$_REQUEST['limit']?>" style="width:50px;"/>
         <button type="submit" name="Function" value="SendYearEndEmail">Send Year End E-mails</button>
         <button type="submit" name="Function" value="SendYearEndPdf">Send Year End Pdf</button> <label><input type="checkbox" name="blankBack" value="t"> Print Blank Back</label>
@@ -284,7 +411,7 @@ class Donor extends ModelLite {
         if (!$page){ ### Make the template page if it doesn't exist.
             self::makeReceiptYearPageTemplate();
             $page = get_page_by_path('donor-receiptyear',OBJECT);  
-            print "<div class=\"notice notice-success is-dismissible\">Page /donor-receiptyear created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a></div>";
+            self::DisplayNotice("Page /donor-receiptyear created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
         }
         $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'"),'Date');
         if ($donations){

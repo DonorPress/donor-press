@@ -30,7 +30,11 @@
 		print "</div>";
 		return;
 	}
-	?><div><?
+
+	Donation::donationUploadGroups();
+	?>
+	
+	<div><strong>Year Summaries</strong><?
 	for($y=date("Y");$y>=date("Y")-4;$y--){
 		?><a href="?page=<?=$_GET['page']?>&f=YearSummaryList&Year=<?=$y?>"><?=$y?></a> | <?
 	}
@@ -46,7 +50,7 @@
 
 function reportCurrentMonthly(){
 	global $wpdb;
-	$SQL="SELECT `Name`,AVG(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation FROM ".Donation::getTableName()." WHERE  `Type` IN ('Subscription Payment') AND Date>='".date("Y-m-d",strtotime("-3 months"))."' Group BY `Name` ORder BY AVG(`Gross`) DESC";
+	$SQL="SELECT `Name`,AVG(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation FROM ".Donation::getTableName()." WHERE  `Type` IN (5) AND Date>='".date("Y-m-d",strtotime("-3 months"))."' Group BY `Name` ORder BY AVG(`Gross`) DESC";
 	$results = $wpdb->get_results($SQL);
 	print $SQL;
 	if (sizeof($results)>0){
@@ -65,14 +69,26 @@ function reportCurrentMonthly(){
 
 function reportTop($top=20){
 	global $wpdb,$wp;
+	?><form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" />
+			<h3>Top <input type="number" name="topL" value="<?=($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/> Donor Report From <input type="date" name="topDf" value="<?=$_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?=$_GET['topDt']?>"/> <button type="submit">Go</button></h3>
+			<div><?
+			for($y=date("Y");$y>=date("Y")-4;$y--){
+				?><a href="?page=<?=$_GET['page']?>&topDf=<?=$y?>-01-01&topDt=<?=$y?>-12-31"><?=$y?></a> | <?
+			}
+			?>
+
+			| <a href="?page=<?=$_GET['page']?>&f=SummaryList&df=<?=$_GET['topDf']?>&dt=<?=$_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
+			</div><?
+
+	Donation::stats($_GET['topDf'],$_GET['topDt']);
+
 	$where=[];
-	if ($_GET['topDf']) $where[]="Date>='".$_GET['topDf']."'";
-	if ($_GET['topDt']) $where[]="Date<='".$_GET['topDt']."'";
+	if ($_GET['topDf']) $where[]="Date>='".$_GET['topDf']." 00:00:00'";
+	if ($_GET['topDt']) $where[]="Date<='".$_GET['topDt']." 23:59:59'";
 	$results = $wpdb->get_results("SELECT D.`DonorId`,D.`Name`, SUM(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation 
 	FROM ".Donation::getTableName()." DD INNER JOIN ".Donor::getTableName()." D ON D.DonorId=DD.DonorId WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")." Group BY  D.`DonorId`,D.`Name` Order BY SUM(`Gross`) DESC, COUNT(*) DESC LIMIT ".$top);
-	if (sizeof($results)>0){
-		?><form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" />
-			<h3>Top <input type="number" name="topL" value="<?=($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/> Donor Report From <input type="date" name="topDf" value="<?=$_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?=$_GET['topDt']?>"/> <button type="submit">Go</button></h3>
+	if (sizeof($results)>0){?>
+		
 		<table border=1><tr><th>Name</th><th>Total</th><th>Count</th><th>First Donation</th><th>Last Donation</th>
 		<?
 		foreach ($results as $r){
