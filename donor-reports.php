@@ -60,7 +60,7 @@ function reportCurrentMonthly(){
 		<? $i=0;
 		foreach ($results as $r){ 
 			$i++;
-			?><tr><td><?=$i?></td><td><?=$r->Name?></td><td><?=$r->Total?></td><td><?=$r->Count?></td><td><?=date("d",strtotime($r->LastDonation))?></td></tr><?
+			?><tr><td><?=$i?></td><td><?=$r->Name?></td><td align=right><?=number_format($r->Total,2)?></td><td><?=$r->Count?></td><td><?=date("d",strtotime($r->LastDonation))?></td></tr><?
 		}
 		//print "<pre>"; print_r($results); print "</pre>";
 		?></table><?
@@ -78,6 +78,7 @@ function reportTop($top=20){
 			?>
 
 			| <a href="?page=<?=$_GET['page']?>&f=SummaryList&df=<?=$_GET['topDf']?>&dt=<?=$_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
+			| <a href="?page=<?=$_GET['page']?>&SummaryView=t&df=<?=$_GET['topDf']?>&dt=<?=$_GET['topDt']?>">Donation Report</a>
 			</div><?
 
 	Donation::stats($_GET['topDf'],$_GET['topDt']);
@@ -100,13 +101,13 @@ function reportTop($top=20){
 
 function reportMonthly(){
 	global $wpdb,$wp;
-	$where=["Gross>0","Currency='USD'","Status='Completed'"];
+	$where=["Gross>0","Currency='USD'","Status=9"];
 	//,"`Type` IN ('Subscription Payment','Donation Payment','Website Payment')"
 	if ($_GET['report']=="reportMonthly"&&$_GET['view']=='detail'){
 		if ($_GET['month']){
 			$where[]="EXTRACT(YEAR_MONTH FROM `Date`)='".addslashes($_GET['month'])."'";
 		}
-		if ($_GET['type']){
+		if (isset($_GET['type'])){
 			$where[]="`Type`='".addslashes($_GET['type'])."'";
 		}
 		$results=Donation::get($where);
@@ -125,10 +126,12 @@ function reportMonthly(){
 	//print $SQL;
 	$results = $wpdb->get_results($SQL);
 	if (sizeof($results)>0){
+		
 		foreach ($results as $r){
-			$graph['Total'][$r->Month][$r->Type]+=$r->Total;
-			$graph['Count'][$r->Month][$r->Type]+=$r->Count;
-			$graph['Type'][$r->Type]+=$r->Total;
+			$type=Donation::getTinyDescription('Type',$r->Type)??$r->Type;
+			$graph['Total'][$r->Month][$type]+=$r->Total;
+			$graph['Count'][$r->Month][$type]+=$r->Count;
+			$graph['Type'][$type]+=$r->Total;
 		}
 		krsort($graph['Type']);
 		?>
@@ -170,7 +173,7 @@ function reportMonthly(){
 			<table border=1><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
 		<?
 		foreach ($results as $r){
-			?><tr><td><?=$r->Month?></td><td><?=$r->Type?></td><td align=right><a href="?page=<?=$_GET['page']?>&report=reportMonthly&view=detail&month=<?=$r->Month?>&type=<?=urlencode($r->Type)?>"><?=number_format($r->Total,2)?></a></td><td align=right><?=$r->Count?></td></tr><?
+			?><tr><td><?=$r->Month?></td><td><?=Donation::getTinyDescription('Type',$r->Type)??$r->Type?></td><td align=right><a href="?page=<?=$_GET['page']?>&report=reportMonthly&view=detail&month=<?=$r->Month?>&type=<?=urlencode($r->Type)?>"><?=number_format($r->Total,2)?></a></td><td align=right><?=$r->Count?></td></tr><?
 		}
 		?></table></form>
 		

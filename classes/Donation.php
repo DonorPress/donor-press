@@ -77,7 +77,7 @@ class Donation extends ModelLite
                     break;
                     // 
                 }
-                $donor = $wpdb->get_row( $wpdb->prepare( "SELECT DonorId,MergedId FROM ".Donor::s()->getTable()." WHERE ".$where." Order By MergedId" ) );
+                $donor = $wpdb->get_row( $wpdb->prepare("SELECT DonorId,MergedId FROM ".Donor::s()->getTable()." WHERE ".$where." Order By MergedId"));
                 // if ($this->Name=="Denver Steiner"){
                 //     self::dump($this->Name." - ".$this->FromEmailAddress);
                 //     print "<div>SELECT DonorId,MergedId FROM ".Donor::s()->getTable()." WHERE ".$where." Order By MergedId ->". $donor->DonorId." on ".$this->Date."</div>";
@@ -225,21 +225,27 @@ class Donation extends ModelLite
          }?></table><?
     }
 
-    static public function viewDonationsByUploadDate($date,$settings=array()){ //$type[$r->Type][$r->DonorId]++;
+    static public function viewDonations($where=[],$settings=array()){ //$type[$r->Type][$r->DonorId]++;
+        print $_GET['UploadDate']."<br>";
+        print date("Y-m-d H:i:s",strtotime($_GET['UploadDate']));
+        if (sizeof($where)==0){
+           self::DisplayError("No Criteria Given");
+        }
         global $wpdb;
         $donorIdList=array();
-        $where[]="`CreatedAt`='".$date."'";
+        
         if ($settings['unsent']){
             $where[]="R.ReceiptId IS NULL";           
         }
         $SQL="Select D.*,R.Type as ReceiptType,R.Address,R.DateSent,R.ReceiptId
           FROM `wp_donation` D
-        LEFT JOIN `wp_donationreceipt` R ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE ".implode(" AND ", $where);
+        LEFT JOIN `wp_donationreceipt` R ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE ".implode(" AND ", $where)." Order BY D.Date DESC,  D.DonationId DESC;";
+        
         //print $SQL;
         $donations = $wpdb->get_results($SQL);
         foreach ($donations as $r){
             $donorIdList[$r->DonorId]++;
-            $type[$r->Type][$r->DonorId]=$r;
+            $type[$r->Type][$r->DonorId][]=$r;
         }
         //
         if (sizeof($donorIdList)>0){
@@ -255,27 +261,35 @@ class Donation extends ModelLite
         if (sizeof($donations)>0){   
             if ( $settings['summary']){
                 ksort($type);
-                foreach ($type as $t=>$donatiosnByType){
+                foreach ($type as $t=>$donationsByType){
                     $total=0;
                     ?><h2><?=self::s()->tinyIntDescriptions["Type"][$t]?></h2>
-                    <table border=1><tr><th>Date</th><th>Donor</th><th>Gross</th><th>CategoryId</th><th>Note</th></tr><?
-                    foreach($donatiosnByType as $r){
-                        $donation=new Donation($r);
-                        ?><tr><td><?=$donation->Date?></td><td <?=$donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?
+                    <table border=1><tr><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr><?
+                    foreach($donationsByType as $donations){
+                        $donation=new Donation($donations[0]);
+                        ?><tr><td  rowspan="<?=sizeof($donations)?>"><?
                         if ($donors[$donation->DonorId]){
-                            print $donors[$donation->DonorId]->displayKey()." ".$donors[$donation->DonorId]->NameCheck();
+                            //print $donors[$donation->DonorId]->displayKey()." ".
+                            print $donors[$donation->DonorId]->NameCheck();
                         }else print $donation->DonorId;
-                        print " (x".$donorCount[$donation->DonorId]
-                        .($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")
-                        .")";
-                        ?></td><td align=right><?=$donation->showfield('Gross')?> <?=$donation->Currency?></td><td><?
-                        if ($donation->CategoryId) print $donation->showfield("CategoryId");
-                        else print $donation->Subject;
-                        ?></td><td><?=$donation->showfield("Note")?></td>                  
-                        </tr><?
-                        $total+=$donation->Gross;
+                    
+                        ?></td>
+                        <td rowspan="<?=sizeof($donations)?>"><?=$donors[$donation->DonorId]->displayEmail('Email')?></td><?
+                        foreach($donations as $count=>$r){                          
+                            if ($count>0){
+                                $donation=new Donation($r);
+                                print "<tr>";
+                            } 
+                           ?><td><?=$donation->Date?></td><td align=right><?=$donation->showfield('Gross')?> <?=$donation->Currency?></td><td><?
+                            if ($donation->CategoryId) print $donation->showfield("CategoryId");
+                            else print $donation->Subject;
+                            ?></td><td><?=$donation->showfield("Note")?></td>  
+                            <td <?=$donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?  print "x".$donorCount[$donation->DonorId].($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")."";?> </td>               
+                            </tr><?
+                            $total+=$donation->Gross;
+                        }
                     }
-                    ?><tfoot><tr><td colspan=2>Totals:</td><td align=right><?=number_format($total,2)?></td><td></td><td></td></tr></tfoot></table><?
+                    ?><tfoot><tr><td colspan=3>Totals:</td><td align=right><?=number_format($total,2)?></td><td></td><td></td><td></td></tr></tfoot></table><?
                 }
 
             }else{?>
@@ -314,9 +328,10 @@ class Donation extends ModelLite
     }
 
     static public function csvUploadCheck(){
+        $timeNow=time();
         if(isset($_FILES['fileToUpload'])){
             if ($_POST['nuke']=="true"){
-                nuke(); 
+                //nuke(); 
             } 
             $originalFile=basename($_FILES["fileToUpload"]["name"]);
             $target_file = $tmpfname = tempnam(sys_get_temp_dir(), 'CSV'); //plugin_dir_path(__FILE__)."uploads/".$csvFile;	
@@ -333,11 +348,11 @@ class Donation extends ModelLite
                    
                 }else{
                    // print "Ran B".$_REQUEST['submit'];
-                    $result=self::csvReadFile($target_file,$firstLineColumns=true);
+                    $result=self::csvReadFile($target_file,$firstLineColumns=true,$timeNow);
                    
                 }
                 
-               // print "<pre>"; print_r($result); print "</pre>";
+                //print "<pre>"; print_r($result); print "</pre>";
                 //exit();
                  if ($stats=self::replaceIntoList($result)){//inserted'=>sizeof($iSQL),'skipped'
                      echo "<div>Inserted ".$stats['inserted']." records. Skipped ".$stats['skipped']." repeats.</div>";
@@ -345,7 +360,7 @@ class Donation extends ModelLite
                  }
                  global $suggestDonorChanges;
                  //self::dump($suggestDonorChanges);
-                 if (sizeof($suggestDonorChanges)>0){
+                 if ($suggestDonorChanges && sizeof($suggestDonorChanges)>0){
                      print "<h2>The following changes are suggested</h2><form method='post'>";
                      print "<table border='1'><tr><th>#</th><th>Name</th><th>Change</th></tr>";
                      foreach ($suggestDonorChanges as $donorId => $changes){
@@ -369,8 +384,11 @@ class Donation extends ModelLite
                      }
                      print "</table><button type='submit' name='Function' value='MakeDonorChanges'>Make Donor Changes</button></form>";
                      //self::dump($suggestDonorChanges);
-
+                     //To do: timezone off. by -5
+                     print "<hr>";
+                     print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View Summary</a></div>";
                  }
+
 
                  if ($_POST['uploadSummary']=="true"){
 
@@ -396,7 +414,7 @@ class Donation extends ModelLite
                     $csvLine=[];
                     $donorFill=[];
                     $donationFill=[];
-                    for ($c=0; $c < sizeof($data); $c++) {
+                    for ($c=0; $c < sizeof($data); $c++) {                        
                         $fieldName=preg_replace("/[^a-zA-Z0-9]+/", "", $headerRow[$c]);//str_replace(" ","",$headerRow[$c]);                        
                         //$csvLine[$fieldName]=$data[$c];
                         $v=$data[$c];
@@ -457,8 +475,8 @@ class Donation extends ModelLite
 
     }
 
-    static public function csvReadFile($csvFile,$firstLineColumns=true){//2019-2020-05-23.CSV
-        
+    static public function csvReadFile($csvFile,$firstLineColumns=true,$timeNow=""){//2019-2020-05-23.CSV
+        if (!$timeNow) $timeNow=time();
         //self::createTable();
         $dbHeaders=self::s()->fillable; 
         $dbHeaders[]="ItemTitle";
@@ -530,14 +548,20 @@ class Donation extends ModelLite
                             $entry[$fieldName]=$v;
                         }									
                     }
+                    $entry[self::CREATED_AT]=$timeNow;
+                    
                     ## Skip these types of entries.
                     if ($entry['Status']==-2 || $entry['Type']==-2 || 
                     in_array($entry['TypeOther'],array('Hold on Balance for Dispute Investigation','General Currency Conversion','Payment Review Hold','Payment Review Release'))){ //Denied
                        // status = denied or type is currency conversion or type other equals..
                         continue; // skip denied entries.
                     }
+
+                    if ($entry['TransactionID']=='81M276915N4017057'){
+                       //self::dump($entry);
+                    }
                     
-                    if (in_array($entry['Type'],array("Payment Refund","Payment Reversal"))){
+                    if ($entry['TypeOther'] && in_array($entry['TypeOther'],array("Payment Refund","Payment Reversal"))){
                         $entry['Name']=''; //Paypal
                         $from= $entry['ToEmailAddress'];//=> donations@masmariposas.org
                         $entry['ToEmailAddress']=$entry['FromEmailAddress'];
@@ -547,8 +571,8 @@ class Donation extends ModelLite
                        // $email swap...
                         //test
                     }
-                    if ($entry['TransactionID']=='035750284D106734G'){
-                       // self::dump($entry);
+                    if ($entry['TransactionID']=='41E81941P48084436'){
+                       //self::dump($entry);
                     }
 
                     // self::dump($entry);
@@ -568,6 +592,7 @@ class Donation extends ModelLite
     static public function requestHandler(){
         if(isset($_FILES['fileToUpload'])){
             self::csvUploadCheck();
+
             return true;
         }elseif ($_GET['f']=="AddDonation"){           
             $donation=new Donation;
@@ -578,6 +603,8 @@ class Donation extends ModelLite
             print "<h2>Add donation".$donorText."</h2>";
             $donation->DonorId=$donor->DonorId;
             $donation->Name=$donor->Name;
+            $donation->FromEmailAddress=$donor->Email;
+            $donation->ContactPhoneNumber=$donor->Phone;
             $donation->PaymentSource=1;
             $donation->Type=1; 
             $donation->Status=9;
@@ -611,7 +638,7 @@ class Donation extends ModelLite
                 self::DisplayNotice("Donation #".$donation->showField("DonationId")." saved.");
             }
             return true;
-        }elseif($_GET['UploadDate']){           
+        }elseif($_GET['UploadDate'] || $_GET['SummaryView']){           
             if ($_POST['Function']=="EmailDonationReceipts" && sizeof($_POST['EmailDonationId'])>0){
                 foreach($_POST['EmailDonationId'] as $donationId){
                     $donation=Donation::getById($donationId);
@@ -627,13 +654,24 @@ class Donation extends ModelLite
             ?>
              <div id="pluginwrap">
                     <div><a href="?page=<?=$_GET['page']?>">Return</a></div><?
-                    self::viewDonationsByUploadDate($_GET['UploadDate'],
+                    $where=[];
+                    if ($_GET['UploadDate']){
+                        $where[]="`CreatedAt`='".$_GET['UploadDate']."'";
+                    }
+                    if ($_GET['df']){
+                        $where[]="`Date`>='".$_GET['df']."'";
+                    }
+                    if ($_GET['dt']){
+                        $where[]="`Date`<='".$_GET['dt']."'";
+                    }                    
+                    self::viewDonations($where,
                         array(
                             'unsent'=>$_GET['unsent']=="t"?true:false,
                             'summary'=>$_GET['SummaryView']?true:false
                             )
                         );                    
              ?></div><?
+             exit();
             return true;
         }else{
             return false;
@@ -736,10 +774,26 @@ class Donation extends ModelLite
         }
         if (wp_mail($email, $this->emailBuilder->subject, $this->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){ 
             $notice="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$email."</div>";
-            $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$_POST['Email'],"DateSent"=>date("Y-m-d H:i:s")));
+            $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s")));
             $dr->save();
         }
         return $notice;
+    }
+
+    public function pdfReceipt(){   
+        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf->SetFont('helvetica', '', 12);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false); 
+        $path=plugin_dir_path()."receipts/DonationReceipt-".$this->DonorId."-".$this->DonationId.".pdf"; //not acceptable on live server...
+        $pdf->AddPage();
+        $this->DonationReceiptEmail();
+        $pdf->writeHTML("<h2>".$this->emailBuilder->body, true, false, true, false, '');
+        
+                         
+        if ($pdf->Output($path, 'F')){
+            return true;
+        }else return false;
     }
 
 
@@ -749,6 +803,9 @@ class Donation extends ModelLite
         if ($_POST['Function']=="SendDonationReceipt" && $_POST['Email']){
             $form.=$this->emailDonationReceipt($_POST['Email']);
             //$form.=$sendResult['notice'];
+        }
+        if ($_POST['Function']=="DonationReceiptPdf"){
+            $this->pdfReceipt();
         }
 
         $file=$this->receiptFileInfo();
@@ -770,7 +827,7 @@ class Donation extends ModelLite
 
     function receiptFileInfo(){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-DT'.$this->DonationId.'.pdf';
-        $link="/wp-content/plugins/WPDonorPaypal/receipts/".$file;
+        $link=plugin_dir_url( __FILE__ )."receipts/".$file;
         return array('path'=>$_SERVER['DOCUMENT_ROOT'].$link,'file'=>$file,'link'=>$link);
     }
 

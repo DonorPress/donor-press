@@ -79,7 +79,7 @@ class ModelLite{
 		if ($this->$keyField>0){
 			$wpdb->update($this->getTable(),$data,array($keyField=>$this->$keyField));
 		}else{
-			if (defined (static::CREATED_AT)){
+			if (defined (static::CREATED_AT) && !$data[static::CREATED_AT]){
 				$data[static::CREATED_AT]= time();
 			}			 	
 			$wpdb->insert($this->getTable(),$data);	
@@ -120,7 +120,16 @@ class ModelLite{
 	static public function getKey($row){
 		$key=[];
 		foreach(self::s()->duplicateCheck as $field){
-			$key[]=$row->$field;
+			$value=$row->$field;
+			switch($field){
+				case "Gross":
+					$value*=1;
+				break;
+				default:
+					$value=strtoupper($value);
+				break;
+			}
+			$key[]=$value;
 		}
 		return implode("|",$key);
 	}
@@ -134,7 +143,7 @@ class ModelLite{
         foreach ($result as $row){
 			$existingEntries[self::getKey($row)]=$row->C;
 		}
-		//self::dd($existingEntries);
+		//self::dump($existingEntries);
 
         if (sizeof($q)>0){		
 			$iSQL=[];
@@ -152,7 +161,7 @@ class ModelLite{
             }
 			if (sizeof($iSQL)>0){
 				$SQL="INSERT INTO ".self::s()->getTable()." (`".implode("`,`",$row->fillable)."`) VALUES ".implode(", ",$iSQL);
-				//print $SQL."<hr>";
+				//print self::getKey($row)."::".$SQL."<hr>";
 				$result= $wpdb->query($SQL);
 			}
 			return array('inserted'=>sizeof($iSQL),'skipped'=>$skipped,'insertResult'=>$result);
@@ -287,6 +296,10 @@ class ModelLite{
 				return $v;				
 			break;
 		}
+	}
+
+	static public function getTinyDescription($fieldName,$v){
+		return self::s()->tinyIntDescriptions[$fieldName][$v];
 	}
 
 	public function displayKey(){

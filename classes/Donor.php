@@ -184,12 +184,11 @@ class Donor extends ModelLite {
                 }
                 if (sizeof($donorIds)>0){
                     $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
-
                     $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
                     $pdf->SetFont('helvetica', '', 12);
                     $pdf->setPrintHeader(false);
                     $pdf->setPrintFooter(false); 
-                    $path="/wp-content/plugins/WPDonorPaypal/receipts/YearEndReceipt".$year.".pdf";
+                    $path=plugin_dir_url( __FILE__ )."receipts/YearEndReceipt".$year.".pdf"; //not acceptable on live server...
                     foreach ($donorList as $donor){
                         $donor->YearReceiptEmail($year);
                         $pdf->AddPage();
@@ -197,7 +196,6 @@ class Donor extends ModelLite {
                         if ($_REQUEST['blankBack'] && $pdf->PageNo()%2==1){ //add page number check
                             $pdf->AddPage();
                         }
-
                     }                    
                     if ($pdf->Output($_SERVER['DOCUMENT_ROOT'].$path, 'F')){
                        
@@ -491,7 +489,7 @@ class Donor extends ModelLite {
     }
     function receiptFileInfo($year){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-'.$year.'.pdf';
-        $link="/wp-content/plugins/WPDonorPaypal/receipts/".$file;
+        $link=plugin_dir_url( __FILE__ )."receipts/".$file; //Not acceptable on live server... May need to scramble code name on file so it isn't guessale.
         return array('path'=>$_SERVER['DOCUMENT_ROOT'].$link,'file'=>$file,'link'=>$link);
     }
 

@@ -50,12 +50,21 @@
 	<h3>Add From Paypal (.csv method)</h3>
 	Import Paypal Exported File: (.csv)
   <input type="file" name="fileToUpload" id="fileToUpload" accept=".csv"> 
-  <label><input type="checkbox" name="uploadSummary" value="true" checked/> View Upload Summary</label>
-  <label><input type="checkbox" name="nuke" value="true"/> Purge DB</label>
+  <input type="hidden" name="uploadSummary" value="true" checked/>
+
   <?php submit_button('Upload','primary','submit',false) ?>
-  <?php submit_button('Upload NonPaypal','primary','submit',false) ?>
   <a target="help" href="https://www.paypal.com/us/smarthelp/article/how-do-i-download-my-transaction-history-faq1007">Read how to download .csv transaction history from Paypal</a>
  
+  
+</form>
+
+<form action="" method="post" enctype="multipart/form-data">
+	<h3>Upload From Template (Non Paypal)</h3>
+  <input type="file" name="fileToUpload" id="fileToUpload" accept=".csv"> 
+  <input type="hidden" name="uploadSummary" value="true" checked/>
+  <!--<label><input type="checkbox" name="nuke" value="true"/> Purge DB</label>-->
+  <?php submit_button('Upload NonPaypal','primary','submit',false) ?>
+ <a href="<?=plugin_dir_url( __FILE__ )?>uploads/SampleNonPaypalFileUpload.csv">Download Non Paypal Template</a> - Must keep this structure intact!
   
 </form>
 

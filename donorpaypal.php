@@ -1,6 +1,6 @@
 <?php
 /*
-    Plugin Name: Donor Tracker With Paypal
+    Plugin Name: Donor Tracker With Paypal Integration
     Plugin URI: https://denversteiner.com
     Description: A plugin for non-profits used to track donations. This integrates with Paypal as well as allows for manual entry.
     Author: Denver Steiner
