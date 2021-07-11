@@ -45,12 +45,12 @@ class DonationCategory extends ModelLite
             $donationCategory=self::getById($_REQUEST['CategoryId']);	
             ?>
             <div id="pluginwrap">
-                <div><a href="?page=<?=$_GET['page']?>">Return</a></div>
-                <h1>Category #<?=$donationCategory->CategoryId?></h1><?	
+                <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
+                <h1>Category #<?php print $donationCategory->CategoryId?></h1><?	
                 if ($_REQUEST['edit']){
                     $donationCategory->editForm();
                 }else{
-                    ?><div><a href="?page=<?=$_GET['page']?>&CategoryId=<?=$donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?
+                    ?><div><a href="?page=<?php print $_GET['page']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?
                     $donationCategory->view();
                 }
             ?></div><?
@@ -60,7 +60,7 @@ class DonationCategory extends ModelLite
         }
     }
 
-    public function consolidateCategories(){
+    static public function consolidateCategories(){
         global $wpdb;
         $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM `wp_donationcategory`");
         foreach ($results as $r){

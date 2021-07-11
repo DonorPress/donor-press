@@ -48,7 +48,7 @@ class Donor extends ModelLite {
 
     public function mergeToForm(){
         ?><form method="post">
-        <input type="hidden" name="MergeFrom" value="<?=$this->DonorId?>"/> 
+        <input type="hidden" name="MergeFrom" value="<?php print $this->DonorId?>"/> 
         Merge To Id: <input type="number" name="MergedId" value="">
         <button method="submit" name="Function" value="MergeConfirm">Merge</button>
         Enter the ID of the Donor you want to merge to. You will have the option to review this merge. Once merged, all donations will be relinked to the new profile.</form><?
@@ -73,15 +73,15 @@ class Donor extends ModelLite {
             }
         }
         ?><form method='post'>
-        <input type='hidden' name='donorIds[]' value='<?=$this->DonorId?>'>
-        <input type='hidden' name='donorIds[]' value='<?=$oldDonor->DonorId?>'>
+        <input type='hidden' name='donorIds[]' value='<?php print $this->DonorId?>'>
+        <input type='hidden' name='donorIds[]' value='<?php print $oldDonor->DonorId?>'>
         <h2>The following changes are suggested</h2>
         <form method='post'>
         <table border='1'><tr><th>Field</th><th>Donor A</th><th>Donor B</th></tr><?
         foreach($changes as $field=>$value){
-            ?><tr><td><?=$field?></td>
-            <td><input type="radio" name="<?=$field?>" value="<?=$value?>"<?=!$this->$field?" checked":""?>><?=$value?></td>
-            <td><input type="radio" name="<?=$field?>" value="<?=$this->$field?>"<?=$this->$field?" checked":""?>><?=$this->$field?></td>
+            ?><tr><td><?php print $field?></td>
+            <td><input type="radio" name="<?php print $field?>" value="<?php print $value?>"<?php print !$this->$field?" checked":""?>><?php print $value?></td>
+            <td><input type="radio" name="<?php print $field?>" value="<?php print $this->$field?>"<?php print $this->$field?" checked":""?>><?php print $this->$field?></td>
             </tr><?                                    
         }
         ?><tr><td>Donation Details Will Merge</td><td><?
@@ -104,13 +104,13 @@ class Donor extends ModelLite {
     public function view(){     
         $this->varView();
         ?>
-        <div><a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=AddDonation">Add Donation</a></div><?
+        <div><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=AddDonation">Add Donation</a></div><?
         $this->mergeToForm();
 
         ?>
         <h2>Donation Summary</h2>
 
-        <div>Year End Receipt: <a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=YearReceipt&Year=<?=date("Y")?>"><?=date("Y")?></a> | <a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=YearReceipt&Year=<?=date("Y")-1?>"><?=date("Y")-1?></a> | <a href="?page=<?=$_GET['page']?>&DonorId=<?=$this->DonorId?>&f=YearReceipt&Year=<?=date("Y")-2?>"><?=date("Y")-2?></a></div>
+        <div>Year End Receipt: <a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")?>"><?php print date("Y")?></a> | <a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")-1?>"><?php print date("Y")-1?></a> | <a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")-2?>"><?php print date("Y")-2?></a></div>
         <?
 
         global $wpdb;
@@ -119,14 +119,14 @@ class Donor extends ModelLite {
         $results = $wpdb->get_results($SQL);
         ?><table border=1><tr><th>Type</th><th>Count</th><th>Amount</th></tr><?
         foreach ($results as $r){?>
-            <tr><td><?=$r->Type?></td><td><?=$r->Count?></td><td align=right><?=number_format($r->Total,2)?></td></tr><?
+            <tr><td><?php print $r->Type?></td><td><?php print $r->Count?></td><td align=right><?php print number_format($r->Total,2)?></td></tr><?
             $totals['Count']+=$r->Count;
             $totals['Total']+=$r->Total;
 
         }
         
         if (sizeof($results)>1){?>
-        <tfoot style="font-weight:bold;"><tr><td>Totals:</td><td><?=$totals['Count']?></td><td align=right><?=number_format($totals['Total'],2)?></td></tr></tfoot>
+        <tfoot style="font-weight:bold;"><tr><td>Totals:</td><td><?php print $totals['Count']?></td><td align=right><?php print number_format($totals['Total'],2)?></td></tr></tfoot>
         <?} ?></table>
         <h2>Donation List</h2>
 		<?
@@ -266,12 +266,12 @@ class Donor extends ModelLite {
             $donor=Donor::getById($_REQUEST['DonorId']);	
             ?>
             <div id="pluginwrap">
-                <div><a href="?page=<?=$_GET['page']?>">Return</a></div>
-                <h1>Donor Profile #<?=$_REQUEST['DonorId']?> <?=$donor->Name?></h1><?	
+                <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
+                <h1>Donor Profile #<?php print $_REQUEST['DonorId']?> <?php print $donor->Name?></h1><?	
                 if ($_REQUEST['edit']){
                     $donor->editForm();
                 }else{
-                    ?><div><a href="?page=<?=$_GET['page']?>&DonorId=<?=$donor->DonorId?>&edit=t">Edit Donor</a></div><?
+                    ?><div><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $donor->DonorId?>&edit=t">Edit Donor</a></div><?
                     $donor->view();                    
                 }
             ?></div><?            
@@ -341,18 +341,18 @@ class Donor extends ModelLite {
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as DonationCount, SUM(Gross) as Total FROM ".Donor::getTableName()." D INNER JOIN ".Donation::getTableName()." DT ON D.DonorId=DT.DonorId WHERE ".implode(" AND ",$where)." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
     
         $results = $wpdb->get_results($SQL);
-        ?><div><a href="?page=<?=$_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?=$year?>"/>
+        ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
         <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Count</th><th>Amount</th></tr><?
         foreach ($results as $r){
             $donor=new self($r);
             ?>
-            <tr><td><a target="Donor" href="?page=<?=$_GET['page']?>&DonorId=<?=$r->DonorId?>"><?=$r->DonorId?></a></td><td><?=$donor->NameCheck()?></td>
-            <td><?=$donor->DisplayEmail()?></td>            
-            <td><?=$r->DonationCount?></td>
-            <td><?=$r->Total?></td>
+            <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->NameCheck()?></td>
+            <td><?php print $donor->DisplayEmail()?></td>            
+            <td><?php print $r->DonationCount?></td>
+            <td><?php print $r->Total?></td>
             </tr><?
             $total+=$r->Total;
-        }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?=number_format($total,2)?></td></tr></table>
+        }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td></tr></table>
                   
         <?
         return;
@@ -370,31 +370,31 @@ class Donor extends ModelLite {
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as DonationCount, SUM(Gross) as Total FROM ".Donor::getTableName()." D INNER JOIN ".Donation::getTableName()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
         //print $SQL;
         $results = $wpdb->get_results($SQL);
-        ?><div><a href="?page=<?=$_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?=$year?>"/>
+        ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
         <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox"/> E-mail</th><th>PDF</th><th>Sent</th></tr><?
         foreach ($results as $r){
             $donor=new self($r);
             ?>
-            <tr><td><a target="Donor" href="?page=<?=$_GET['page']?>&DonorId=<?=$r->DonorId?>"><?=$r->DonorId?></a></td><td><?=$donor->NameCheck()?></td>
-            <td><?=$donor->DisplayEmail()?></td>            
-            <td><?=$r->DonationCount?></td>
-            <td align=right><?=number_format($r->Total,2)?></td><td><a target="Donor" href="?page=<?=$_GET['page']?>&DonorId=<?=$r->DonorId?>&f=YearReceipt&Year=<?=$year?>">Receipt</a></td>
+            <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->NameCheck()?></td>
+            <td><?php print $donor->DisplayEmail()?></td>            
+            <td><?php print $r->DonationCount?></td>
+            <td align=right><?php print number_format($r->Total,2)?></td><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
             <td><?
              if (filter_var($r->Email, FILTER_VALIDATE_EMAIL) && $r->EmailStatus>=0) {
-                ?><input name="emails[]" type="checkbox" value="<?=$r->DonorId?>" <?=($receipts[$r->DonorId] ?"":" checked")?>/><?
+                ?><input name="emails[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId] ?"":" checked")?>/><?
              }
             ?></td>
             <td><?
              if ($r->Address1 && $r->City) {
-                ?><input name="pdf[]" type="checkbox" value="<?=$r->DonorId?>" <?=($receipts[$r->DonorId]|| $r->DonationCount<2?"":" checked")?>/><?
+                ?><input name="pdf[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId]|| $r->DonationCount<2?"":" checked")?>/><?
              }
             ?></td><td><?
             //self::dump($receipts[$r->DonorId]);
             print DonationReceipt::displayReceipts($receipts[$r->DonorId]);
             ?></td></tr><?
             $total+=$r->Total;
-        }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?=number_format($total,2)?></td><td></td><td></td><td></td></table>
-        Limit: <Input type="number" name="limit" value="<?=$_REQUEST['limit']?>" style="width:50px;"/>
+        }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td><td></td></table>
+        Limit: <Input type="number" name="limit" value="<?php print $_REQUEST['limit']?>" style="width:50px;"/>
         <button type="submit" name="Function" value="SendYearEndEmail">Send Year End E-mails</button>
         <button type="submit" name="Function" value="SendYearEndPdf">Send Year End Pdf</button> <label><input type="checkbox" name="blankBack" value="t"> Print Blank Back</label>
         </form>
@@ -493,7 +493,7 @@ class Donor extends ModelLite {
         return array('path'=>$_SERVER['DOCUMENT_ROOT'].$link,'file'=>$file,'link'=>$link);
     }
 
-    function makeReceiptYearPageTemplate(){
+    static function makeReceiptYearPageTemplate(){
         $page = get_page_by_path( 'donor-receiptyear',OBJECT );  
         if (!$page){
             $postarr['ID']=0;

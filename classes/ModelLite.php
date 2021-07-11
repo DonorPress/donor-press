@@ -54,7 +54,7 @@ class ModelLite{
         global $wpdb;
         return $wpdb->prefix.($this->table ?? class_basename($this));
 	}
-	public function getFillable(){
+	static public function getFillable(){
 		return self::s()->fillable;
 	}
 	
@@ -110,7 +110,7 @@ class ModelLite{
 		$fields=$this->getViewableFields();
 		foreach($fields as $f){			
 			if ($this->$f){
-				?><tr><td><?=$f?></td><td><?=$this->showfield($f)?></td></tr><?
+				?><tr><td><?php print $f?></td><td><?php print $this->showfield($f)?></td></tr><?
 			}
 		}
 		?></table>
@@ -233,11 +233,11 @@ class ModelLite{
 			foreach($results as $r){
 				if ($i==0){
 					?><tr><?
-					foreach ($fields as $field){?><th><?=$field?></th><? }
+					foreach ($fields as $field){?><th><?php print $field?></th><? }
 					?></tr><?
 				}
 				?><tr><?
-				foreach ($fields as $field){?><td><?=$r->showfield($field)?></td><? }
+				foreach ($fields as $field){?><td><?php print $r->showfield($field)?></td><? }
 				?></tr><?
 				$i++;
 			}
@@ -328,9 +328,9 @@ class ModelLite{
 	
 	public function editForm(){
 		$primaryKey=$this->primaryKey;
-		?><form method="post" action="?page=<?=$_GET['page']?>&<?=$primaryKey?>=<?=$this->$primaryKey?>">
-		<input type="hidden" name="table" value="<?=$this->table?>"/>
-		<input type="hidden" name="<?=$primaryKey?>" value="<?=$this->$primaryKey?>"/>
+		?><form method="post" action="?page=<?php print $_GET['page']?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>">
+		<input type="hidden" name="table" value="<?php print $this->table?>"/>
+		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
 	
 		<table><?
 		foreach($this->fillable as $field){
@@ -339,18 +339,18 @@ class ModelLite{
                 $type="date";
 			}
 			if ($field=="Date") $this->Date=substr($this->$field,0,10); //$type="datetime-local";
-			?><tr><td align=right><?=$field?></td><td><?
+			?><tr><td align=right><?php print $field?></td><td><?
 			if ($this->tinyIntDescriptions[$field]){
-				?><select name="<?=$field?>"><?
+				?><select name="<?php print $field?>"><?
 					foreach($this->tinyIntDescriptions[$field] as $key=>$label){
-						?><option value="<?=$key?>"<?=$key==$this->$field?" selected":""?>><?=$key." - ".$label?></option><?
+						?><option value="<?php print $key?>"<?php print $key==$this->$field?" selected":""?>><?php print $key." - ".$label?></option><?
 					}
 					if (!$this->tinyIntDescriptions[$field][$this->$field]){
-						?><option value="<?=$this->$field?>" selected><?=$this->$field." - Not Set"?></option><?
+						?><option value="<?php print $this->$field?>" selected><?php print $this->$field." - Not Set"?></option><?
 					}
 					?></select><?
 			}else{
-				?><input type="<?=$type?>" name="<?=$field?>" value="<?=$this->$field?>"/><?
+				?><input type="<?php print $type?>" name="<?php print $field?>" value="<?php print $this->$field?>"/><?
 			}	
 		
 			

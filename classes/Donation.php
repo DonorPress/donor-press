@@ -135,9 +135,9 @@ class Donation extends ModelLite
         $results = $wpdb->get_results($SQL);
         ?><table border=1><tr><th colspan=2>Period Stats</th><th>Avg</th></tr><?
         foreach ($results as $r){
-            ?><tr><td>Total Donors</td><td align=right><?=$r->TotalDonors?></td><td align=right>$<?=number_format($r->TotalRaised/$r->TotalDonors,2)?> avg per Donor</td></tr>
-            <tr><td>Donation Count</td><td align=right><?=$r->TotalDonations?></td><td align=right><?=number_format($r->TotalDonations/$r->TotalDonors,2)?> avg # per Donor</td></tr>
-            <tr><td>Donation Total</td><td align=right><?=number_format($r->TotalRaised,2)?></td><td align=right>$<?=number_format($r->TotalRaised/$r->TotalDonations,2)?> average Donation</td></tr>
+            ?><tr><td>Total Donors</td><td align=right><?php print $r->TotalDonors?></td><td align=right>$<?php print number_format($r->TotalRaised/$r->TotalDonors,2)?> avg per Donor</td></tr>
+            <tr><td>Donation Count</td><td align=right><?php print $r->TotalDonations?></td><td align=right><?php print number_format($r->TotalDonations/$r->TotalDonors,2)?> avg # per Donor</td></tr>
+            <tr><td>Donation Total</td><td align=right><?php print number_format($r->TotalRaised,2)?></td><td align=right>$<?php print number_format($r->TotalRaised/$r->TotalDonations,2)?> average Donation</td></tr>
             
             <?
         }
@@ -155,12 +155,12 @@ class Donation extends ModelLite
 
             $SQL="SELECT $gf as $gfa, COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM `wp_donation` WHERE ".implode(" AND ",$where)." Group BY $gf";
             $results = $wpdb->get_results($SQL);
-            ?><table border=1><tr><th><?=$gfa?></th><th>Total</th><th>Donations</th><th>Donors</th></tr><?
+            ?><table border=1><tr><th><?php print $gfa?></th><th>Total</th><th>Donations</th><th>Donors</th></tr><?
             foreach ($results as $r){
-                ?><tr><td><?=$r->$gfa.($tinyInt[$gf][$r->$gfa]?" - ". $tinyInt[$gf][$r->$gfa]:"")?></td>
-                <td align=right>$<?=number_format($r->TotalRaised,2)?></td>
-                <td align=right><?=number_format($r->TotalDonations)?></td>
-                <td align=right><?=number_format($r->TotalDonors)?></td>
+                ?><tr><td><?php print $r->$gfa.($tinyInt[$gf][$r->$gfa]?" - ". $tinyInt[$gf][$r->$gfa]:"")?></td>
+                <td align=right>$<?php print number_format($r->TotalRaised,2)?></td>
+                <td align=right><?php print number_format($r->TotalDonations)?></td>
+                <td align=right><?php print number_format($r->TotalDonors)?></td>
                 </tr><?
 
             }?></table><?
@@ -220,12 +220,16 @@ class Donation extends ModelLite
          $results = $wpdb->get_results($SQL);
          ?><h2>Upload Groups</h2><table border=1><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?
          foreach ($results as $r){?>
-             <tr><td><?=$r->CreatedAt?></td><td align=right><?=$r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?=$r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?=$_GET['page']?>&UploadDate=<?=$r->CreatedAt?>">View All</a> <?=($r->ReceiptSentCount<$r->C?" | <a href='?page=".$_GET['page']."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?=$_GET['page']?>&SummaryView=t&UploadDate=<?=$r->CreatedAt?>">View Summary</a></td></tr><?
+             <tr><td><?php print $r->CreatedAt?></td><td align=right><?php print $r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?php print $r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?php print $_GET['page']?>&UploadDate=<?php print $r->CreatedAt?>">View All</a> <?php print ($r->ReceiptSentCount<$r->C?" | <a href='?page=".$_GET['page']."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&UploadDate=<?php print $r->CreatedAt?>">View Summary</a></td></tr><?
             
          }?></table><?
     }
 
     static public function viewDonations($where=[],$settings=array()){ //$type[$r->Type][$r->DonorId]++;
+        print strtotime(date("Y-m-d H:i:s"),time())."<br>";
+        print date("Y-m-d H:i:s");
+        print "time";
+
         print $_GET['UploadDate']."<br>";
         print date("Y-m-d H:i:s",strtotime($_GET['UploadDate']));
         if (sizeof($where)==0){
@@ -263,33 +267,33 @@ class Donation extends ModelLite
                 ksort($type);
                 foreach ($type as $t=>$donationsByType){
                     $total=0;
-                    ?><h2><?=self::s()->tinyIntDescriptions["Type"][$t]?></h2>
+                    ?><h2><?php print self::s()->tinyIntDescriptions["Type"][$t]?></h2>
                     <table border=1><tr><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr><?
                     foreach($donationsByType as $donations){
                         $donation=new Donation($donations[0]);
-                        ?><tr><td  rowspan="<?=sizeof($donations)?>"><?
+                        ?><tr><td  rowspan="<?php print sizeof($donations)?>"><?
                         if ($donors[$donation->DonorId]){
                             //print $donors[$donation->DonorId]->displayKey()." ".
                             print $donors[$donation->DonorId]->NameCheck();
                         }else print $donation->DonorId;
                     
                         ?></td>
-                        <td rowspan="<?=sizeof($donations)?>"><?=$donors[$donation->DonorId]->displayEmail('Email')?></td><?
+                        <td rowspan="<?php print sizeof($donations)?>"><?php print $donors[$donation->DonorId]->displayEmail('Email')?></td><?
                         foreach($donations as $count=>$r){                          
                             if ($count>0){
                                 $donation=new Donation($r);
                                 print "<tr>";
                             } 
-                           ?><td><?=$donation->Date?></td><td align=right><?=$donation->showfield('Gross')?> <?=$donation->Currency?></td><td><?
+                           ?><td><?php print $donation->Date?></td><td align=right><?php print $donation->showfield('Gross')?> <?php print $donation->Currency?></td><td><?
                             if ($donation->CategoryId) print $donation->showfield("CategoryId");
                             else print $donation->Subject;
-                            ?></td><td><?=$donation->showfield("Note")?></td>  
-                            <td <?=$donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?  print "x".$donorCount[$donation->DonorId].($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")."";?> </td>               
+                            ?></td><td><?php print $donation->showfield("Note")?></td>  
+                            <td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?  print "x".$donorCount[$donation->DonorId].($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")."";?> </td>               
                             </tr><?
                             $total+=$donation->Gross;
                         }
                     }
-                    ?><tfoot><tr><td colspan=3>Totals:</td><td align=right><?=number_format($total,2)?></td><td></td><td></td><td></td></tr></tfoot></table><?
+                    ?><tfoot><tr><td colspan=3>Totals:</td><td align=right><?php print number_format($total,2)?></td><td></td><td></td><td></td></tr></tfoot></table><?
                 }
 
             }else{?>
@@ -301,18 +305,18 @@ class Donation extends ModelLite
                     if ($r->ReceiptType){
                         print "Sent: ".$r->ReceiptType." ".$r->Address;
                     }else{
-                        ?> <input type="checkbox" name="EmailDonationId[]" value="<?=$donation->DonationId?>" checked/> <a href="">Custom Response</a><?
-                    }?></td><td><?=$donation->displayKey()?></td><td><?=$donation->Date?></td><td <?=$donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?
+                        ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print $donation->DonationId?>" checked/> <a href="">Custom Response</a><?
+                    }?></td><td><?php print $donation->displayKey()?></td><td><?php print $donation->Date?></td><td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?
                     if ($donors[$donation->DonorId]){
                         print $donors[$donation->DonorId]->displayKey()." ".$donors[$donation->DonorId]->NameCheck();
                     }else print $donation->DonorId;
                     print " (x".$donorCount[$donation->DonorId]
                     .($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")
                     .")";
-                    ?></td><td><?=$donation->showfield('Gross')?> <?=$donation->Currency?></td><td><?
+                    ?></td><td><?php print $donation->showfield('Gross')?> <?php print $donation->Currency?></td><td><?
                     if ($donation->CategoryId) print $donation->showfield("CategoryId");
                     else print $donation->Subject;
-                    ?></td><td><?=$donation->showfield("Note")?></td><td><?=$donation->showfield("Type")?></td>
+                    ?></td><td><?php print $donation->showfield("Note")?></td><td><?php print $donation->showfield("Type")?></td>
                 
                     </tr><?
                 }
@@ -621,12 +625,12 @@ class Donation extends ModelLite
             $donation=Donation::getById($_REQUEST['DonationId']);	
             ?>
             <div id="pluginwrap">
-                <div><a href="?page=<?=$_GET['page']?>">Return</a></div>
-                <h1>Donation #<?=$donation->DonationId?></h1><?	
+                <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
+                <h1>Donation #<?php print $donation->DonationId?></h1><?	
                 if ($_REQUEST['edit']){
                     $donation->editForm();
                 }else{
-                    ?><div><a href="?page=<?=$_GET['page']?>&DonationId=<?=$donation->DonationId?>&edit=t">Edit Donation</a></div><?
+                    ?><div><a href="?page=<?php print $_GET['page']?>&DonationId=<?php print $donation->DonationId?>&edit=t">Edit Donation</a></div><?
                     $donation->view();
                     print $donation->receiptForm();
                 }
@@ -653,7 +657,7 @@ class Donation extends ModelLite
             }
             ?>
              <div id="pluginwrap">
-                    <div><a href="?page=<?=$_GET['page']?>">Return</a></div><?
+                    <div><a href="?page=<?php print $_GET['page']?>">Return</a></div><?
                     $where=[];
                     if ($_GET['UploadDate']){
                         $where[]="`CreatedAt`='".$_GET['UploadDate']."'";
@@ -679,12 +683,12 @@ class Donation extends ModelLite
     }
 
     public function selectDropDown($field,$showKey=true,$allowBlank=false){
-        ?><select name="<?=$field?>"><?
+        ?><select name="<?php print $field?>"><?
         if ($allowBlank){
             ?><option></option<?
         }
         foreach($this->tinyIntDescriptions[$field] as $key=>$label){
-            ?><option value="<?=$key?>"<?=$key==$this->$field?" selected":""?>><?=($showKey?$key." - ":"").$label?></option><?
+            ?><option value="<?php print $key?>"<?php print $key==$this->$field?" selected":""?>><?php print ($showKey?$key." - ":"").$label?></option><?
         }
         ?></select><?
     }
@@ -694,24 +698,24 @@ class Donation extends ModelLite
         <form method="post" action="?page=donor-reports&amp;DonationId=">
         <input type="hidden" name="table" value="Donation">
         <? foreach ($hiddenFields as $field){?>
-		    <input type="hidden" name="<?=$field?>" value="<?=$this->$field?>"/>
+		    <input type="hidden" name="<?php print $field?>" value="<?php print $this->$field?>"/>
         <? } ?>
         <table><tbody>
-        <tr><td align="right">Total Amount</td><td><input required type="number" step=".01" name="Gross" value="<?=$this->Gross?>"><? $this->selectDropDown('Currency',false);?></td></tr> 
+        <tr><td align="right">Total Amount</td><td><input required type="number" step=".01" name="Gross" value="<?php print $this->Gross?>"><? $this->selectDropDown('Currency',false);?></td></tr> 
         <tr><td align="right">Check #/Transaction ID</td><td><input type="txt" name="TransactionID" value=""></td></tr>
-        <tr><td align="right">Check/Sent Date</td><td><input type="date" name="Date" value="<?=($this->Date?$this->Date:date("Y-m-d"))?>"></td></tr>
-        <tr><td align="right">Date Deposited</td><td><input type="date" name="DateDeposited" value="<?=($this->DateDeposited?$this->DateDeposited:date("Y-m-d"))?>"></td></tr>
+        <tr><td align="right">Check/Sent Date</td><td><input type="date" name="Date" value="<?php print ($this->Date?$this->Date:date("Y-m-d"))?>"></td></tr>
+        <tr><td align="right">Date Deposited</td><td><input type="date" name="DateDeposited" value="<?php print ($this->DateDeposited?$this->DateDeposited:date("Y-m-d"))?>"></td></tr>
         
         <tr><td align="right">DonorId</td><td><?
         if ($this->DonorId){
-            ?><input type="hidden" name="DonorId" value="<?=$this->DonorId?>"> #<?=$this->DonorId?><?
+            ?><input type="hidden" name="DonorId" value="<?php print $this->DonorId?>"> #<?php print $this->DonorId?><?
         }else{
-            ?><input type="text" name="DonorId" value="<?=$this->DonorId?>"> Todo: Make a chooser or allow blank, and/or create after this step. <?
+            ?><input type="text" name="DonorId" value="<?php print $this->DonorId?>"> Todo: Make a chooser or allow blank, and/or create after this step. <?
         }
         ?></td></tr>
-        <tr><td align="right">Name</td><td><input type="text" name="Name" value="<?=$this->Name?>"></td></tr>
-        <tr><td align="right">Email Address</td><td><input type="email" name="FromEmailAddress" value="<?=$this->FromEmailAddress?>"></td></tr>
-        <tr><td align="right">Phone Number</td><td><input type="tel" name="ContactPhoneNumber" value="<?=$this->ContactPhoneNumber?>"></td></tr>
+        <tr><td align="right">Name</td><td><input type="text" name="Name" value="<?php print $this->Name?>"></td></tr>
+        <tr><td align="right">Email Address</td><td><input type="email" name="FromEmailAddress" value="<?php print $this->FromEmailAddress?>"></td></tr>
+        <tr><td align="right">Phone Number</td><td><input type="tel" name="ContactPhoneNumber" value="<?php print $this->ContactPhoneNumber?>"></td></tr>
 
         <tr><td align="right">Payment Source</td><td> <? $this->selectDropDown('PaymentSource');?></td></tr>
         <tr><td align="right">Type</td><td> <? $this->selectDropDown('Type');?></td></tr>        
@@ -721,11 +725,11 @@ class Donation extends ModelLite
        <tr><td align="right">Category</td><td><select name="CategoryId"><?
             $donationCategory=DonationCategory::get(array('(ParentId=0 OR ParentId IS NULL)'),'Category');
             foreach($donationCategory as $cat){
-                ?><option value="<?=$cat->CategoryId?>"<?=$cat->CategoryId==$this->CategoryId?" selected":""?>><?=$cat->Category?></option><?
+                ?><option value="<?php print $cat->CategoryId?>"<?php print $cat->CategoryId==$this->CategoryId?" selected":""?>><?php print $cat->Category?></option><?
             }
        ?></select></td></tr>
-       <tr><td align="right">Subject</td><td><input type="text" name="Subject" value="<?=$this->Subject?>"></td></tr>
-        <tr><td align="right">Note</td><td><textarea name="Note"><?=$this->Note?></textarea></td></tr>
+       <tr><td align="right">Subject</td><td><input type="text" name="Subject" value="<?php print $this->Subject?>"></td></tr>
+        <tr><td align="right">Note</td><td><textarea name="Note"><?php print $this->Note?></textarea></td></tr>
         <tr></tr><tr><td colspan="2"><button type="submit" name="Function" value="Save">Save</button><button type="submit">Cancel</button></td></tr>
 		</tbody></table>
 		</form>
@@ -785,11 +789,11 @@ class Donation extends ModelLite
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false); 
-        $path=plugin_dir_path()."receipts/DonationReceipt-".$this->DonorId."-".$this->DonationId.".pdf"; //not acceptable on live server...
+        $file=$this->receiptFileInfo();
+        $path=$file['path'];//dn_plugin_base_dir()."receipts/DonationReceipt-".$this->DonorId."-".$this->DonationId.".pdf"; //not acceptable on live server...
         $pdf->AddPage();
         $this->DonationReceiptEmail();
-        $pdf->writeHTML("<h2>".$this->emailBuilder->body, true, false, true, false, '');
-        
+        $pdf->writeHTML($this->emailBuilder->body, true, false, true, false, '');        
                          
         if ($pdf->Output($path, 'F')){
             return true;
@@ -810,7 +814,10 @@ class Donation extends ModelLite
 
         $file=$this->receiptFileInfo();
         ### Form View
-        $form.='<div class="no-print"><hr><form method="post">Send Receipt to: <input type="email" name="Email" value="'.($_POST['Email']?$_POST['Email']:$this->Email).'"/><button type="submit" name="Function" value="SendDonationReceipt">Send E-mail</button>
+        $emailToUse=($_POST['Email']?$_POST['Email']:$this->FromEmailAddress);
+        if (!$emailToUse) $emailToUse=$this->Donor->Email;
+        //self::dd($this);
+        $form.='<div class="no-print"><hr><form method="post">Send Receipt to: <input type="email" name="Email" value="'.$emailToUse.'"/><button type="submit" name="Function" value="SendDonationReceipt">Send E-mail</button>
         <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>';
         if (file_exists($file['path'])){
             $form.=' View <a target="pdf" href="'.$file['link'].'">'.$file['file'].'</a>';
@@ -818,7 +825,9 @@ class Donation extends ModelLite
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","KeyType='DonationId'","KeyId='".$this->DonationId."'"));
         $form.=DonationReceipt::showResults($receipts);
         $form.='</form>';
-        $form.="<div><a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>Edit Template</div></div>";
+        $form.="<div><a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>Edit Template</a></div></div>";
+
+        $form.="<form method=\"post\"><h2>Custom Receipt</h2><textarea name='message'>".($_POST['message']?$_POST['message']:$this->emailBuilder->body)."</textarea>";
         
         $homeLinks="<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
         return $homeLinks."<h2>".$this->emailBuilder->subject."</h2>".$this->emailBuilder->body.$form;
@@ -827,8 +836,9 @@ class Donation extends ModelLite
 
     function receiptFileInfo(){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-DT'.$this->DonationId.'.pdf';
-        $link=plugin_dir_url( __FILE__ )."receipts/".$file;
-        return array('path'=>$_SERVER['DOCUMENT_ROOT'].$link,'file'=>$file,'link'=>$link);
+        $path=dn_plugin_base_dir()."/receipts/".$file;
+        $link=site_url().str_replace($_SERVER['DOCUMENT_ROOT'],"/",$path);
+        return array('path'=>$path,'file'=>$file,'link'=>$link);
     }
 
     static public function createTable(){

@@ -43,6 +43,10 @@ function donor_show_reports() {
 	include('donor-reports.php');
 }
 
+function dn_plugin_base_dir(){
+	return str_replace("\\","/",dirname(__FILE__));
+}
+
 
 function load_initial_data(){
 	global $wpdb;
