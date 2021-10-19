@@ -9,6 +9,9 @@ class Donation extends ModelLite
     protected $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource"];	 
 
     protected $paypal = ["Date","Time","TimeZone","Name","Type","Status","Currency","Gross","Fee","Net","From Email Address","To Email Address","Transaction ID","Address Status","Item Title","Item ID","Option 1 Name","Option 1 Value","Option 2 Name","Option 2 Value","Reference Txn ID","Invoice Number","Custom Number","Quantity","Receipt ID","Balance","Contact Phone Number","Subject","Note","Payment Source"];
+
+    protected $paypalPPGF = ["Payout Date","Donation Date","Donor First Name","Donor Last Name","Donor Email","Program Name","Reference Information","Currency Code","Gross Amount","Total Fees","Net Amount","Transaction ID"];
+
     protected $csvHeaders = ["DepositDate","CheckDate","CheckNumber","Name1","Name2","Gross","Account","ReceiptNeeded","Note","Email","Phone","Address1","Address2","City","Region","PostalCode","Country"];
 
     protected $duplicateCheck=["Date","Gross","FromEmailAddress","TransactionID"]; //check these fields before reinserting a matching entry.
@@ -19,6 +22,12 @@ class Donation extends ModelLite
         "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"PayPal"],
         "Type"=>[0=>"Other",1=>"Donation Payment",2=>"Website Payment",5=>"Subscription Payment",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
         "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"]
+    ];
+
+    protected $dateFields=[
+        "CreatedAt"=>"Upload",
+        "DateDeposited"=>"Deposit",
+        "Date"=>"Donated"
     ];
 
     ### Default Values
@@ -198,7 +207,7 @@ class Donation extends ModelLite
                     if ($field=="Name" && $newEntry[$field]==$newEntry['Email']){
                         continue; // skip change suggestion if Name was made the e-mail address 
                     }
-                    if ($donor[0]->$field!=$newEntry[$field] && $newEntry[$field]){
+                    if (strtoupper($donor[0]->$field)!=strtoupper($newEntry[$field]) && $newEntry[$field]){
                         $suggestDonorChanges[$this->DonorId]['Name']['c']=$donor[0]->Name;//Cache this to save a lookup later
                         if($matchOn) $suggestDonorChanges[$this->DonorId]['MatchOn'][]=$matchOn;
                         $suggestDonorChanges[$this->DonorId][$field]['c']=$donor[0]->$field;
@@ -218,7 +227,15 @@ class Donation extends ModelLite
         ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE 1
         Group BY `CreatedAt` Order BY `CreatedAt` DESC LIMIT 20";
          $results = $wpdb->get_results($SQL);
-         ?><h2>Upload Groups</h2><table border=1><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?
+         ?><h2>Upload Groups</h2>
+         <form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" />
+			Summary From <input type="date" name="df" value="<?=$_GET['df']?>"/> to <input type="date" name="dt" value="<?=$_GET['dt']?>"/> Date Field: <select name="dateField">
+            <? foreach (self::s()->dateFields as $field=>$label){?>
+                <option value="<?=$field?>"<?=$_GET['dateField']==$field?" selected":""?>><?=$label?> Date</option>
+            <? } ?>
+            </select>
+             <button type="submit" name="SummaryView" value="t">View Summary</button></form>
+         <table border=1><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?
          foreach ($results as $r){?>
              <tr><td><?php print $r->CreatedAt?></td><td align=right><?php print $r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?php print $r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?php print $_GET['page']?>&UploadDate=<?php print $r->CreatedAt?>">View All</a> <?php print ($r->ReceiptSentCount<$r->C?" | <a href='?page=".$_GET['page']."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&UploadDate=<?php print $r->CreatedAt?>">View Summary</a></td></tr><?
             
@@ -226,12 +243,6 @@ class Donation extends ModelLite
     }
 
     static public function viewDonations($where=[],$settings=array()){ //$type[$r->Type][$r->DonorId]++;
-        print strtotime(date("Y-m-d H:i:s"),time())."<br>";
-        print date("Y-m-d H:i:s");
-        print "time";
-
-        print $_GET['UploadDate']."<br>";
-        print date("Y-m-d H:i:s",strtotime($_GET['UploadDate']));
         if (sizeof($where)==0){
            self::DisplayError("No Criteria Given");
         }
@@ -241,6 +252,7 @@ class Donation extends ModelLite
         if ($settings['unsent']){
             $where[]="R.ReceiptId IS NULL";           
         }
+        print "Criteria: ".implode(", ",$where);
         $SQL="Select D.*,R.Type as ReceiptType,R.Address,R.DateSent,R.ReceiptId
           FROM `wp_donation` D
         LEFT JOIN `wp_donationreceipt` R ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE ".implode(" AND ", $where)." Order BY D.Date DESC,  D.DonationId DESC;";
@@ -249,7 +261,7 @@ class Donation extends ModelLite
         $donations = $wpdb->get_results($SQL);
         foreach ($donations as $r){
             $donorIdList[$r->DonorId]++;
-            $type[$r->Type][$r->DonorId][]=$r;
+            $type[$r->Type][$r->DonorId][$r->DonationId]=$r;
         }
         //
         if (sizeof($donorIdList)>0){
@@ -270,7 +282,7 @@ class Donation extends ModelLite
                     ?><h2><?php print self::s()->tinyIntDescriptions["Type"][$t]?></h2>
                     <table border=1><tr><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr><?
                     foreach($donationsByType as $donations){
-                        $donation=new Donation($donations[0]);
+                        $donation=new Donation($donations[key($donations)]);
                         ?><tr><td  rowspan="<?php print sizeof($donations)?>"><?
                         if ($donors[$donation->DonorId]){
                             //print $donors[$donation->DonorId]->displayKey()." ".
@@ -279,7 +291,8 @@ class Donation extends ModelLite
                     
                         ?></td>
                         <td rowspan="<?php print sizeof($donations)?>"><?php print $donors[$donation->DonorId]->displayEmail('Email')?></td><?
-                        foreach($donations as $count=>$r){                          
+                        $count=0;
+                        foreach($donations as $r){                          
                             if ($count>0){
                                 $donation=new Donation($r);
                                 print "<tr>";
@@ -291,6 +304,7 @@ class Donation extends ModelLite
                             <td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?  print "x".$donorCount[$donation->DonorId].($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")."";?> </td>               
                             </tr><?
                             $total+=$donation->Gross;
+                            $count++;
                         }
                     }
                     ?><tfoot><tr><td colspan=3>Totals:</td><td align=right><?php print number_format($total,2)?></td><td></td><td></td><td></td></tr></tfoot></table><?
@@ -325,9 +339,10 @@ class Donation extends ModelLite
 
         }
     
-
-        $all=self::get($where);
-        print self::showResults($all);
+        if (!$settings['summary']){
+            $all=self::get($where);
+            print self::showResults($all);
+        }
         
     }
 
@@ -483,22 +498,20 @@ class Donation extends ModelLite
         if (!$timeNow) $timeNow=time();
         //self::createTable();
         $dbHeaders=self::s()->fillable; 
-        $dbHeaders[]="ItemTitle";
+        $dbHeaders[]="ItemTitle";        
         //if ($type=="paypal"){
             $headerRow=self::s()->paypal; 
+            //$headerRow=self::s()->$paypalPPGF
         // }else{
         //     $headerRow=self::s()->csvHeaders;
         // }
-        
-        
-
         $tinyInt=self::s()->tinyIntDescriptions; 
         $row=0;
         if (($handle = fopen($csvFile, "r")) !== FALSE) {
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
                 //print "data:"; self::dump($data);
                 if ($firstLineColumns && $row==0){
-                    $headerRow= preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $data);		
+                    $headerRow= preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $data);	
                 }else{
                     $entry=[];
                     $paypal=[];
@@ -512,15 +525,39 @@ class Donation extends ModelLite
                         $paypal['ItemTitle']=$paypal['ItemID'];
                         $paypal['ItemID']='';
                     }
+                    ###  helps handle a file from PPGF -> Paypal Giving file try to handle. Soure: https://www.paypal.com/givingfund/activity
+                    $fieldShift=["CurrencyCode"=>"Currency","DonorEmail"=>'FromEmailAddress',"ReferenceInformation"=>"Note","DonationDate"=>"Date","GrossAmount"=>"Gross","TotalFees"=>"Fee","NetAmount"=>"Net"];                  
+            
+                    if (($paypal['DonorFirstName'] || $paypal['DonorLastName']) && !$paypal['Name']){
+                        $paypal['Name']=trim($paypal['DonorFirstName']." ".$paypal['DonorLastName']); 
 
+                        $entry['DateDeposited']=date("Y-m-d",strtotime($v." ".$paypal['PayoutDate']));  
+                        
+                        $entry['CategoryId']=DonationCategory::getCategoryId($paypal['ProgramName']);
+                    }  
+                    //self::dd($paypal);             
                     foreach($paypal as $fieldName=>$v){
+                        if ($fieldShift[$fieldName]){
+                            $fieldName=$fieldShift[$fieldName];                           
+                        } 
+                       
                         if (in_array($fieldName,$dbHeaders)){
                             switch($fieldName){
+                                case "ItemTitle":
+                                    if ($paypal['Subject']==$paypal['ItemTitle']){
+                                        $paypal['Subject']=""; //remove redundancy. Wouldn't have to do this if we end up using Subject for something.
+                                    }                                   
+                                    $entry['CategoryId']=DonationCategory::getCategoryId($paypal['ItemTitle']);
+                                    
+                                break;
+                                case "DonationDate":
+                                    $entry['Date']=date("Y-m-d H:i:s",strtotime($v));
+                                    break;
                                 case "Date":
                                     $v=date("Y-m-d H:i:s",strtotime($v." ".$paypal['Time']." ".$paypal['TimeZone']));
                                    // print "<pre>".$v; print_r($paypal); print "</pre>"; exit();
-                                    $entry['DateDeposited']=$v;
-                                break;
+                                    if (!$entry['DateDeposited']) $entry['DateDeposited']=$v;
+                                break;               
                                 case "Gross":
                                 case "Fee":
                                 case "Net":
@@ -540,14 +577,7 @@ class Donation extends ModelLite
                                         }
                                         $v=0;
                                     }         
-                                break;
-                                case "ItemTitle":
-                                    if ($paypal['Subject']==$paypal['ItemTitle']){
-                                        $paypal['Subject']=""; //remove redundancy. Wouldn't have to do this if we end up using Subject for something.
-                                    }
-                                    $entry['CategoryId']=DonationCategory::getCategoryId($paypal['ItemTitle']);
-                                    
-                                break;
+                                break;                                
                             }                            
                             $entry[$fieldName]=$v;
                         }									
@@ -575,10 +605,6 @@ class Donation extends ModelLite
                        // $email swap...
                         //test
                     }
-                    if ($entry['TransactionID']=='41E81941P48084436'){
-                       //self::dump($entry);
-                    }
-
                     // self::dump($entry);
                     $obj=new self($entry);
                     // self::dump($obj);
@@ -662,11 +688,12 @@ class Donation extends ModelLite
                     if ($_GET['UploadDate']){
                         $where[]="`CreatedAt`='".$_GET['UploadDate']."'";
                     }
+                    $dateField=(self::s()->dateFields[$_GET['dateField']]?$_GET['dateField']:key(self::s()->dateFields));
                     if ($_GET['df']){
-                        $where[]="`Date`>='".$_GET['df']."'";
+                        $where[]="`$dateField`>='".$_GET['df']."'";
                     }
                     if ($_GET['dt']){
-                        $where[]="`Date`<='".$_GET['dt']."'";
+                        $where[]="`$dateField`<='".$_GET['dt']."'";
                     }                    
                     self::viewDonations($where,
                         array(
@@ -827,7 +854,8 @@ class Donation extends ModelLite
         $form.='</form>';
         $form.="<div><a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>Edit Template</a></div></div>";
 
-        $form.="<form method=\"post\"><h2>Custom Receipt</h2><textarea name='message'>".($_POST['message']?$_POST['message']:$this->emailBuilder->body)."</textarea>";
+        $form.="<form method=\"post\"><h2>Custom Receipt</h2><textarea name='message'>".($_POST['message']?$_POST['message']:$this->emailBuilder->body)."</textarea><div id=\"donation-sbe-block-editor\" class=\"donation-sbe-block-editor\">Loading Editor... </div>";
+
         
         $homeLinks="<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
         return $homeLinks."<h2>".$this->emailBuilder->subject."</h2>".$this->emailBuilder->body.$form;

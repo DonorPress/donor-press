@@ -70,7 +70,7 @@ function reportCurrentMonthly(){
 function reportTop($top=20){
 	global $wpdb,$wp;
 	?><form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" />
-			<h3>Top <input type="number" name="topL" value="<?=($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/> Donor Report From <input type="date" name="topDf" value="<?=$_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?=$_GET['topDt']?>"/> <button type="submit">Go</button></h3>
+			<h3>Top <input type="number" name="topL" value="<?=($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/>Donor Report From <input type="date" name="topDf" value="<?=$_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?=$_GET['topDt']?>"/> <button type="submit">Go</button></h3>
 			<div><?
 			for($y=date("Y");$y>=date("Y")-4;$y--){
 				?><a href="?page=<?=$_GET['page']?>&topDf=<?=$y?>-01-01&topDt=<?=$y?>-12-31"><?=$y?></a> | <?
