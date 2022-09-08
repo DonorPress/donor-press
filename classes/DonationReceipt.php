@@ -6,7 +6,7 @@ class DonationReceipt extends ModelLite {
     protected $table = 'DonationReceipt';
 	protected $primaryKey = 'ReceiptId';
 	### Fields that can be passed 
-    protected $fillable = ["DonorId","KeyType","KeyId","Type","Address","DateSent"];	    
+    protected $fillable = ["DonorId","KeyType","KeyId","Type","Address","DateSent","Content"];	    
 	### Default Values
 	protected $attributes = [        
         'KeyType' => 'Donation',
@@ -31,8 +31,7 @@ class DonationReceipt extends ModelLite {
             `Address` text NOT NULL COMMENT 'email or postal address',
             `DateSent` datetime NOT NULL,
             PRIMARY KEY (`ReceiptId`)
-            ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-            COMMIT;";
+            )"; 
           dbDelta( $sql );
     }
 

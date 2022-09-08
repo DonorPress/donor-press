@@ -1,6 +1,6 @@
 <?php
 /*****
-Model Lite Class. Loosely based naming of Laravels  Model. Borrowed some naming convention, but uses Wordpresses DB connectivity
+Model Lite Class to make saves/inserts/updates/forms a tad easier to develop
 
 Requires the following constants as seen in this example:	
 	protected $table = 'Donor';
@@ -52,16 +52,15 @@ class ModelLite{
 
 	public function getTable(){
         global $wpdb;
-        return $wpdb->prefix.($this->table ?? class_basename($this));
+        return $wpdb->prefix.strtolower(($this->table ?? class_basename($this)));
 	}
+	
+	static public function getTableName(){	
+        return self::s()->getTable();
+    }
 	static public function getFillable(){
 		return self::s()->fillable;
 	}
-	
-	static public function getTableName(){
-		global $wpdb;		
-        return $wpdb->prefix.self::s()->table;
-    }
 
 	public function save(){ //both insert and update routine. Creates new if no ReworkId passed in.
 		global $wpdb;
@@ -81,8 +80,9 @@ class ModelLite{
 		}else{
 			if (defined (static::CREATED_AT) && !$data[static::CREATED_AT]){
 				$data[static::CREATED_AT]= time();
-			}			 	
-			$wpdb->insert($this->getTable(),$data);	
+			}		 	
+			$result=$wpdb->insert($this->getTable(),$data);	
+			
 			$this->$keyField=$wpdb->insert_id;
 			// self::dump($this->getTable());
 			// self::dump($data);
@@ -96,7 +96,11 @@ class ModelLite{
 	public function delete(){
 		global $wpdb;
 		$keyField=$this->primaryKey;
-		$wpdb->delete($this->getTable(),array($keyField=>$this->$keyField));
+		if ($this->$keyField){
+			 $wpdb->delete($this->getTable(),array($keyField=>$this->$keyField));
+			 return true;
+		}
+		return false;
 	}
 
 	public function view(){ //single entry->View fields
@@ -222,10 +226,10 @@ class ModelLite{
 		return $key;
 	}
 
-	public static function showResults($results){		
+	public static function showResults($results,$noResultMessage="No Results Found."){		
 		$fields=self::s()->getViewableFields();	
 		if (!$results || sizeof($results)==0){
-			return "<div><em>No Results Found.</em></div>"; 
+			return "<div><em>".$noResultMessage."</em></div>"; 
 		}
 		ob_start(); 
 		?><table border=1><?
@@ -245,7 +249,7 @@ class ModelLite{
 		return ob_get_clean(); 
 	}
 	
-	public function showfield($fieldName){
+	public function showfield($fieldName,$idShow=true){
 		$v=$this->$fieldName;
 		switch($fieldName){
 			case "Gross":
@@ -257,8 +261,9 @@ class ModelLite{
 				return '<a href="?page='.$_GET['page'].'&DonationId='.$v.'">'.$v.'</a>';
 			break;
 			case "MergedId":
-			case "DonorId":
 				return '<a href="?page='.$_GET['page'].'&DonorId='.$v.'">'.$v.'</a>';
+			case "DonorId":
+				return '<a href="?page='.$_GET['page'].'&DonorId='.$v.'">'.$v.'</a> <a href="?page='.$_GET['page'].'&DonorId='.$v.'&f=AddDonation">+ Donation</a>';
 			break;
 			case "FromEmailAddress":
 			case "ToEmailAddress":
@@ -271,18 +276,18 @@ class ModelLite{
 				else{
 					global $cache_ModelLite_showfield;
 					if (isset($cache_ModelLite_showfield[$fieldName][$v])){
-						$label=" - ".$cache_ModelLite_showfield[$fieldName][$v];
+						$label=$cache_ModelLite_showfield[$fieldName][$v];
 					}elseif($v){
 						$dCat=DonationCategory::getById($v); //need to cache this..
 						if ($dCat){
 							$cache_ModelLite_showfield[$fieldName][$v]=$dCat->Category;
-							$label=" - ".$dCat->Category;
+							$label=$dCat->Category;
 						} 
 					}
 					
 										
 				}
-				return '<a href="?page='.$_GET['page'].'&CategoryId='.$v.'">'.$v.'</a>'.$label;
+				return ($idShow?'<a href="?page='.$_GET['page'].'&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
 			break;
 			default:
 				if ($this->tinyIntDescriptions[$fieldName]){
@@ -290,7 +295,7 @@ class ModelLite{
 					if ($label){	
 						return $v." - ".$label;
 					}elseif ($fieldName=="Type" && $this->TypeOther){
-							return $v." - ".$this->TypeOther;						
+							return ($idShow?$v." - ":"").$this->TypeOther;						
 					}
 				}
 				return $v;				
@@ -356,7 +361,15 @@ class ModelLite{
 			
 			?></td></tr><?
 			}
-		?><tr><tr><td colspan=2><button type="submit" name="Function" value="Save">Save</button><button type="submit">Cancel</button></td></tr>
+		?><tr><tr><td colspan=2>
+		<button type="submit" class="primary" name="Function" value="Save">Save</button>
+		<button type="submit" name="Function" class="secondary" value="Cancel" formnovalidate>Cancel</button>
+        <?php 
+        if ($this->$primaryKey){
+            ?> <button type="submit" name="Function" value="Delete">Delete</button><?
+        }
+        ?>
+		</td></tr>
 		</table>
 		</form><?
 	}

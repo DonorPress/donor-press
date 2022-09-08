@@ -59,10 +59,11 @@ class DonationCategory extends ModelLite
             return false;
         }
     }
+    
 
     static public function consolidateCategories(){
         global $wpdb;
-        $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM `wp_donationcategory`");
+        $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::getTableName());
         foreach ($results as $r){
             if ($cache[$r->Category]){
                 $uSQL="UPDATE `wp_donation` SET `CategoryId`='".$cache[$r->Category]."' WHERE `CategoryId`='".$r->CategoryId."'";
@@ -109,15 +110,15 @@ class DonationCategory extends ModelLite
         //$charset_collate = $wpdb->get_charset_collate();
 
         $sql = "CREATE TABLE IF NOT EXISTS  `".self::getTableName()."` (
-                `CategoryId` int(11) NOT NULL AUTO_INCREMENT,
-                `Category` varchar(50) NOT NULL,
-                `Description` varchar(250) DEFAULT NULL,
-                `ParentId` int(11) DEFAULT NULL,
-                `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (`CategoryId`),
-                KEY `Category` (`Category`)
-                ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";          
+            `CategoryId` int(11) NOT NULL AUTO_INCREMENT,
+            `Category` varchar(50) NOT NULL,
+            `Description` varchar(250) DEFAULT NULL,
+            `ParentId` int(11) DEFAULT NULL,
+            `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`CategoryId`),
+            KEY `Category` (`Category`)
+          )";          
         dbDelta( $sql );
     }
 }

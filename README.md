@@ -1,4 +1,5 @@
-Wordpress Donor Tracker plugin
+Wordpress Donor Tracker
 ===========
-This is an attempt at a donor tracking plugin for non-profits with integration with Paypal
+This plugin was designed as way for non-profits to track donations and send out donor receipts.
+Integration with Paypal is accomplished through upload of a .csv file. Future editions will hopefully have direct API access.
 

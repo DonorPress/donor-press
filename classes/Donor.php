@@ -1,4 +1,5 @@
 <?php
+
 require_once("ModelLite.php");
 require_once("Donation.php");
 require_once("DonationReceipt.php");
@@ -27,22 +28,22 @@ class Donor extends ModelLite {
           $sql="CREATE TABLE IF NOT EXISTS `".self::getTableName()."` (
             `DonorId` int(11) NOT NULL AUTO_INCREMENT,
             `Name` varchar(60) NOT NULL,
-            `Name2` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-            `Email` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+            `Name2` varchar(60)  NULL,
+            `Email` varchar(80)  NULL,
             `EmailStatus` tinyint(4) NOT NULL DEFAULT '1' COMMENT '-1=Bounced 1=Active',
-            `Phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-            `Address1` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-            `Address2` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-            `City` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-            `Region` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-            `PostalCode` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-            `Country` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+            `Phone` varchar(20)  NULL,
+            `Address1` varchar(80)  NULL,
+            `Address2` varchar(80)  NULL,
+            `City` varchar(50)  NULL,
+            `Region` varchar(20)  NULL,
+            `PostalCode` varchar(20)  NULL,
+            `Country` varchar(2)  NULL,
             `MergedId` int(11) NOT NULL DEFAULT '0',
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `TaxReporting` tinyint(4) DEFAULT '0' COMMENT '0 - Standard -1 Not Required -2 Opt Out',
             PRIMARY KEY (`DonorId`)
-          ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+            )";
           dbDelta( $sql );
     }
 
@@ -130,7 +131,7 @@ class Donor extends ModelLite {
         <?} ?></table>
         <h2>Donation List</h2>
 		<?
-		$results=Donation::get(array("DonorId='".$this->DonorId."'"));
+		$results=Donation::get(array("DonorId='".$this->DonorId."'"),"Date DESC");
 		print Donation::showResults($results);		
 		//$results = $wpdb->get_results($SQL);
     }
@@ -164,8 +165,11 @@ class Donor extends ModelLite {
             $_GET['DonorId']=$_POST['DonorId']; 
 
         }
-        if ($_GET['f']=="AddDonor"){           
-            $donor=new Donor;            
+        if ($_GET['f']=="AddDonor"){
+            $donor=new Donor;
+            if ($_REQUEST['dsearch'] && !$donor->DonorId && !$donor->Name){
+                $donor->Name=$_REQUEST['dsearch'];
+            }          
             print "<h2>Add Donor</h2>";            
             $donor->editForm();           
             return true;
@@ -211,21 +215,19 @@ class Donor extends ModelLite {
                 for($i=0;$i<$limit;$i++){
                     $donorIds[]=$_POST['emails'][$i];
                 }
+                
                 if (sizeof($donorIds)>0){
                     $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
-                    foreach ($donorList as $donor){
+                    foreach ($donorList as $donor){                        
                         $donor->YearReceiptEmail($year);
-                       // $donor->Email='denver@steiner7.com';
-                        //print "<h2>".$donor->emailBuilder->subject."</h2><h3>Send To: ".$donor->Email."</h3>".$donor->emailBuilder->body;
-                        if (wp_mail($donor->Email, $donor->emailBuilder->subject, $donor->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){ 
-                            $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$donor->Email,"DateSent"=>date("Y-m-d H:i:s")));
-                            $dr->save();
-                            
-                        }
+                        //self::dd("I am before here");
+                        if (wp_mail($donor->Email, $donor->emailBuilder->subject, $donor->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){                            
+                            $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$donor->Email,"DateSent"=>date("Y-m-d H:i:s")));                            
+                            $dr->save();                     
+                        }                      
                     }
-                    //self::dump($donorList);
                 }
-                DisplayNotice("E-mailed Year End Receipts to  $limit of  ".sizeof($_POST['emails']));
+                self::DisplayNotice("E-mailed Year End Receipts to  $limit of  ".sizeof($_POST['emails']));
 
             }
             self::YearSummaryList($_GET['Year']);
@@ -333,26 +335,38 @@ class Donor extends ModelLite {
         else return $name;
 
     }
+
+    public function address(){
+        return ($this->Address1?$this->Address1.", ":"").($this->Address2?$this->Address2.", ":"").$this->City." ".$this->Region." ".$this->PostalCode." ".$thiCountry;
+    }
+    
+    public function phone(){
+        return preg_replace('~.*(\d{3})[^\d]{0,7}(\d{3})[^\d]{0,7}(\d{4}).*~', '($1) $2-$3', $this->Phone);
+    }
     
     static function SummaryList($where=[]){
         global $wpdb;
         $where[]="Status>=0";
         $where[]="Type>=1";
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as DonationCount, SUM(Gross) as Total FROM ".Donor::getTableName()." D INNER JOIN ".Donation::getTableName()." DT ON D.DonorId=DT.DonorId WHERE ".implode(" AND ",$where)." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
-    
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, COUNT(*) as DonationCount, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest FROM ".Donor::getTableName()." D INNER JOIN ".Donation::getTableName()." DT ON D.DonorId=DT.DonorId WHERE ".implode(" AND ",$where)." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY  SUM(Gross) DESC,COUNT(*) DESC";
+        //print $SQL;
         $results = $wpdb->get_results($SQL);
         ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
-        <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Count</th><th>Amount</th></tr><?
+        <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr><?
         foreach ($results as $r){
             $donor=new self($r);
             ?>
             <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->NameCheck()?></td>
-            <td><?php print $donor->DisplayEmail()?></td>            
+            <td><?php print $donor->DisplayEmail()?></td>    
+            <td><?php print $donor->phone()?></td> 
+            <td><?php print $donor->address()?></td>          
             <td><?php print $r->DonationCount?></td>
             <td><?php print $r->Total?></td>
+            <td><?php print $r->DateEarliest?></td>
+            <td><?php print $r->DateLatest?></td>
             </tr><?
             $total+=$r->Total;
-        }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td></tr></table>
+        }?><tr><td></td><td></td><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td></tr></table>
                   
         <?
         return;
@@ -367,11 +381,19 @@ class Donor extends ModelLite {
             $receipts[$r->DonorId][]=new DonationReceipt($r);
         }
 
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as DonationCount, SUM(Gross) as Total FROM ".Donor::getTableName()." D INNER JOIN ".Donation::getTableName()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as DonationCount, SUM(Gross) as Total FROM ".Donor::getTableName()." D INNER JOIN ".Donation::getTableName()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxExcempt=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
         //print $SQL;
         $results = $wpdb->get_results($SQL);
         ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
-        <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox"/> E-mail</th><th>PDF</th><th>Sent</th></tr><?
+        <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>
+        <script>
+            function toggleChecked(source,name){                
+                checkboxes = document.getElementsByName(name);
+                for(var i=0, n=checkboxes.length;i<n;i++) {
+                    checkboxes[i].checked = source.checked;
+                }                    
+            }
+        </script> E-mail</th><th><input type="checkbox" checked onClick="toggleChecked(this,'pdf[]');")/> PDF</th><th>Sent</th></tr><?
         foreach ($results as $r){
             $donor=new self($r);
             ?>
@@ -411,26 +433,56 @@ class Donor extends ModelLite {
             $page = get_page_by_path('donor-receiptyear',OBJECT);  
             self::DisplayNotice("Page /donor-receiptyear created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
         }
-        $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'"),'Date');
+        $this->emailBuilder->pageID=$page->ID;
+        $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'","NotTaxExcempt=0"),'Date');
         if ($donations){
             $ReceiptTable='<table border="1" cellpadding="4"><tr><th width="115">Date</th><th width="330">Subject</th><th width="100">Amount</th></tr>';
             foreach($donations as $r){
-                $ReceiptTable.="<tr><td>".date("F j, Y",strtotime($r->Date))."</td><td>".($r->PaymentSource==1 &&$r->TransactionID ?(is_numeric($r->TransactionID)?"Check #":"").$r->TransactionID." ":"").$r->Subject."</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';
+                $ReceiptTable.="<tr><td>".date("F j, Y",strtotime($r->Date))."</td><td>";
+                switch($r->PaymentSource){
+                    case 1:
+                        $ReceiptTable.="Check".(is_numeric($r->TransactionID)?" #".$r->TransactionID:"");$ReceiptTable.=$r->Subject?" ".$r->Subject:"";
+                        break;
+                    case "5":
+                        $ReceiptTable.="Paypal".($r->Subject?": ".$r->Subject:"");
+                        break;
+                    case "6": 
+                        $ReceiptTable.="ACH/Wire".($r->Subject?": ".$r->Subject:($r->TransactionID?" #".$r->TransactionID:""));
+                        break;
+                    default:  $ReceiptTable.= $r->Subject;
+                    break;                  
+                } 
+                if (!$r->Subject && $r->CategoryId) $ReceiptTable.=" ".$r->showfield("CategoryId",false) ;
+                            
+                $ReceiptTable.="</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';
                 $total+=$r->Gross;
                 $lastCurrency=$r->Currency;
             }
             $ReceiptTable.="<tr><td colspan=\"2\"><strong>Total:</strong></td><td align=\"right\"><strong>".trim(number_format($total,2)." ".$lastCurrency)."</strong></td></tr></table>";
         }else{ $ReceiptTable.="<div><em>No Donations found in ".$year."</div>";}
-        $organization=get_bloginfo('name'); // If different than what is wanted, should overwrite template
-        $address=$this->MailingAddress();
+        
+        $organization=get_option( 'donation_Organization');
+        if (!$organization) $organization=get_bloginfo('name');
+
+       
+        
 
         $subject=$page->post_title;
         $body=$page->post_content;
+        
+        ### custom variables
+        $body=trim(str_replace("##Organization##",$organization,$body));
+        $body=trim(str_replace("##FederalId##", get_option( 'donation_FederalId' ),$body)); 
+        $body=trim(str_replace("##ContactName##", get_option( 'donation_ContactName' ),$body)); 
+        $body=trim(str_replace("##ContactTitle##", get_option( 'donation_ContactTitle' ),$body)); 
+        $body=trim(str_replace("##ContactEmail##", get_option( 'donation_ContactEmail' ),$body)); 
+        ### generated variables
         $body=str_replace("##Name##",$this->Name.($this->Name2?" & ".$this->Name2:""),$body);
         $body=str_replace("##Year##",$year,$body);
         $body=str_replace("##DonationTotal##","$".number_format($total,2),$body);
         $body=str_replace("<p>##ReceiptTable##</p>",$ReceiptTable,$body);
         $body=str_replace("##ReceiptTable##",$ReceiptTable,$body);
+        $address=$this->MailingAddress();
         if (!$address){ //remove P
             $body=str_replace("<p>##Address##</p>",$address,$body);
         }
@@ -443,7 +495,22 @@ class Donor extends ModelLite {
         $subject=trim(str_replace("##Year##",$year,$subject));
         $subject=trim(str_replace("##Organization##",$organization,$subject));
         $this->emailBuilder->subject=$subject;
-        $this->emailBuilder->body=$body;        
+        $this->emailBuilder->body=$body; 
+        
+
+        $pageHashes=explode("##",$body); 
+        $c=0;
+        foreach($pageHashes as $r){
+            if ($c%2==1){
+                if (strlen($r)<16){
+                    $variableNotFilledOut[$r]=1;
+                }
+            }
+            $c++;
+        }
+        if (sizeof($variableNotFilledOut)>0){
+            print self::DisplayError("The Following Variables need manually changed:<ul><li>##".implode("##</li><li>##",array_keys($variableNotFilledOut))."##</li></ul> Please <a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>correct template</a>.");
+        }
     }
 
     function YearReceiptForm($year){
@@ -467,7 +534,8 @@ class Donor extends ModelLite {
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","`KeyType`='YearEnd'","`KeyId`='".$year."'"));
         $form.=DonationReceipt::showResults($receipts);
         $form.='</form>';
-        $form.="<div><a target='pdf' href='post.php?post=".$page->ID."&action=edit'>Edit Template</div></div>";
+
+        $form.="<div><a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>Edit Template</a></div>";
       
         $homeLinks="<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
         return $homeLinks."<h2>".$this->emailBuilder->subject."</h2>".$this->emailBuilder->body.$form;
@@ -507,7 +575,7 @@ class Donor extends ModelLite {
 <p><strong>Dear ##Name##,</strong></p>
 <!-- /wp:paragraph -->
 <!-- wp:paragraph -->
-<p>Thank you for your recent donation/s to ##Organization##.</p>
+<p>Thank you for your recent donations to ##Organization##.</p>
 <!-- /wp:paragraph -->
 <!-- wp:paragraph -->
 <p>Here is a list of your ##Year## donations totalling <strong>##DonationTotal##</strong>:</p>
@@ -522,13 +590,15 @@ class Donor extends ModelLite {
 <p>##Organization## is registered as a 501(c)(3) chartiable organization. Our Federal tax identifiation is: ##FederalId##.</p>
 <!-- /wp:paragraph -->
 <!-- wp:paragraph -->
-<p>Compare the list of donations with your personal records. If there are any discrepancies of questions, please contact ##Contact##.</p>
+<p>Compare the list of donations with your personal records. If there are any discrepancies of questions, please contact <a href="mailto:##ContactEmail#">##ContactEmail##</a>.</p>
 <!-- /wp:paragraph -->
 <!-- wp:paragraph -->
 <p>Thanks again for your part in supporting the work ##Organization##!</p>
 <!-- /wp:paragraph -->
 <!-- wp:paragraph -->
-<p><strong>##Contact##</strong></p>
+<p><strong>##ContactName##</strong><br>
+##ContactTitle##<br>
+<a href="mailto:##ContactEmail#">##ContactEmail##</a></p>
 <!-- /wp:paragraph -->';
             $postarr['post_title']='##Organization## ##Year## Year End Receipts';
             $postarr['post_status']='private';

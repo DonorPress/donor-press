@@ -1,4 +1,8 @@
 <?php
+/*custom variables 
+INSERT INTO `wp_options` (`option_id`, `option_name`, `option_value`, `autoload`) VALUES (NULL, 'donation_Organization', 'Mas Mariposas', 'yes'), (NULL, 'donation_ContactName', 'Denver Steiner', 'yes'), (NULL, 'donation_ContactTitle', 'Treasurer', 'yes'), (NULL, 'donation_ContactEmail', 'donations@masmariposas.org', 'yes'), (NULL, 'donation_FederalId', '47-3336305', 'yes');
+*/
+$SQL="Select `option_name`, `option_value` FROM wp_options WHERE option_name LIKE 'donation_%'";
 require_once("Donor.php");
 require_once("DonationCategory.php");
 class Donation extends ModelLite
@@ -6,7 +10,7 @@ class Donation extends ModelLite
     protected $table = 'Donation';
 	protected $primaryKey = 'DonationId';
 	### Fields that can be passed //,"Time","TimeZone"
-    protected $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource"];	 
+    protected $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxExcempt"];	 
 
     protected $paypal = ["Date","Time","TimeZone","Name","Type","Status","Currency","Gross","Fee","Net","From Email Address","To Email Address","Transaction ID","Address Status","Item Title","Item ID","Option 1 Name","Option 1 Value","Option 2 Name","Option 2 Value","Reference Txn ID","Invoice Number","Custom Number","Quantity","Receipt ID","Balance","Contact Phone Number","Subject","Note","Payment Source"];
 
@@ -19,9 +23,10 @@ class Donation extends ModelLite
     protected $tinyIntDescriptions=[
         "Status"=>["9"=>"Completed","7"=>"Pending","0"=>"Unknown","-1"=>"Deleted","-2"=>"Denied"],
         "AddressStatus"=>[0=>"Not Set",-1=>"Non-Confirmed",1=>"Confirmed"],
-        "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"PayPal"],
+        "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer"],
         "Type"=>[0=>"Other",1=>"Donation Payment",2=>"Website Payment",5=>"Subscription Payment",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
-        "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"]
+        "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"],
+        "NotTaxExcempt"=>["0"=>"Tax Exempt","1"=>"Not Tax Excempt (Donor Advised fund, etc)"]
     ];
 
     protected $dateFields=[
@@ -124,23 +129,18 @@ class Donation extends ModelLite
        $newEntry=$this->newDonorEntryPopulateFromDonation($override);
         if (sizeof($newEntry)>0){
             $donor=new Donor($newEntry);
-            $donor->save();
-            if ($this->Name=="Denver Steiner"){
-                print "<h2>Made Id: ".$donor->DonorId."</h2>";
-            }
+            $donor->save();            
             $this->DonorId=$donor->DonorId;
             return $donor->DonorId;
         }
 
     }
 
-    public function stats($dateFrom="",$dateTo=""){
+    public function stats($where=array()){
         global $wpdb;
         DonationCategory::consolidateCategories();
-        $where=array("Type>0");
-        if ($dateFrom) $where[]="Date>='".$dateFrom." 00:00:00'";
-	    if ($dateTo) $where[]="Date<='".$dateTo."  23:59:59'";
-        $SQL="SELECT COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM `wp_donation` WHERE ".implode(" AND ",$where);
+
+        $SQL="SELECT COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM `wp_donation` DD WHERE ".implode(" AND ",$where);
         $results = $wpdb->get_results($SQL);
         ?><table border=1><tr><th colspan=2>Period Stats</th><th>Avg</th></tr><?
         foreach ($results as $r){
@@ -152,7 +152,7 @@ class Donation extends ModelLite
         }
          ?></table><?
 
-         $GroupFields=array('Type'=>'Type','Category'=>'CategoryId',"Source"=>'PaymentSource',"Month"=>"month(date)");
+        $GroupFields=array('Type'=>'Type','Category'=>'CategoryId',"Source"=>'PaymentSource',"Month"=>"month(date)");
         $tinyInt=self::s()->tinyIntDescriptions;
 
         //load all donation categories since this is DB and not hardcoded.
@@ -160,19 +160,20 @@ class Donation extends ModelLite
         foreach($result as $r){
             $tinyInt['CategoryId'][$r->CategoryId]=$r->Category;
         }
-        foreach($GroupFields as $gfa=>$gf){        
-
-            $SQL="SELECT $gf as $gfa, COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM `wp_donation` WHERE ".implode(" AND ",$where)." Group BY $gf";
+        foreach($GroupFields as $gfa=>$gf){   
+            $SQL="SELECT $gf as $gfa, COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM `wp_donation` DD WHERE ".implode(" AND ",$where)." Group BY $gf";
             $results = $wpdb->get_results($SQL);
-            ?><table border=1><tr><th><?php print $gfa?></th><th>Total</th><th>Donations</th><th>Donors</th></tr><?
-            foreach ($results as $r){
-                ?><tr><td><?php print $r->$gfa.($tinyInt[$gf][$r->$gfa]?" - ". $tinyInt[$gf][$r->$gfa]:"")?></td>
-                <td align=right>$<?php print number_format($r->TotalRaised,2)?></td>
-                <td align=right><?php print number_format($r->TotalDonations)?></td>
-                <td align=right><?php print number_format($r->TotalDonors)?></td>
-                </tr><?
+            if (sizeof($results)>0){
+                ?><table border=1><tr><th><?php print $gfa?></th><th>Total</th><th>Donations</th><th>Donors</th></tr><?
+                foreach ($results as $r){
+                    ?><tr><td><?php print $r->$gfa.($tinyInt[$gf][$r->$gfa]?" - ". $tinyInt[$gf][$r->$gfa]:"")?></td>
+                    <td align=right>$<?php print number_format($r->TotalRaised,2)?></td>
+                    <td align=right><?php print number_format($r->TotalDonations)?></td>
+                    <td align=right><?php print number_format($r->TotalDonors)?></td>
+                    </tr><?
 
-            }?></table><?
+                }?></table><?
+            }
         }
     }
          
@@ -328,7 +329,7 @@ class Donation extends ModelLite
                     .($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")
                     .")";
                     ?></td><td><?php print $donation->showfield('Gross')?> <?php print $donation->Currency?></td><td><?
-                    if ($donation->CategoryId) print $donation->showfield("CategoryId");
+                    if ($donation->CategoryId) print $donation->showfield("CategoryId",false);
                     else print $donation->Subject;
                     ?></td><td><?php print $donation->showfield("Note")?></td><td><?php print $donation->showfield("Type")?></td>
                 
@@ -340,8 +341,8 @@ class Donation extends ModelLite
         }
     
         if (!$settings['summary']){
-            $all=self::get($where);
-            print self::showResults($all);
+           // $all=self::get($where);
+           // print self::showResults($all);
         }
         
     }
@@ -625,7 +626,7 @@ class Donation extends ModelLite
 
             return true;
         }elseif ($_GET['f']=="AddDonation"){           
-            $donation=new Donation;
+            $donation=new Donation();
             if ($_GET['DonorId']){
                $donor=Donor::getById($_GET['DonorId']);
                $donorText=" for Donor #".$donor->DonorId." ".$donor->Name;
@@ -641,31 +642,40 @@ class Donation extends ModelLite
 
             $donation->editSimpleForm();           
             return true;
-        }elseif ($_GET['DonationId']){	
+        }elseif($_GET['f']=="ViewPaymentSourceYearSummary" && $_GET['Year']){
+            self::showSummaryByPaymentSource($_GET['PaymentSource'],$_GET['Year']);
+            print "coming soon";
+            return true;
+            
+        }elseif ($_POST['Function']=="Cancel" && $_POST['table']=="Donation"){
+            $donor=Donor::getById($_POST['DonorId']);
+            $donor->view();
+            return true;
+        }elseif ($_REQUEST['DonationId']){	
+            if ($_POST['Function']=="Delete" && $_POST['table']=="Donation"){
+                $donation=new Donation($_POST);
+                if ($donation->delete()){
+                    self::DisplayNotice("Donation #".$donation->showField("DonationId")." for $".$this->Gross." from ".$this->Name." on ".$this->Date." deleted");
+                    //$donation->fullView();
+                    return true;
+                }
+            }
             if ($_POST['Function']=="Save" && $_POST['table']=="Donation"){
                 $donation=new Donation($_POST);
                 if ($donation->save()){
                     self::DisplayNotice("Donation #".$donation->showField("DonationId")." saved.");
+                    $donation->fullView();
+                    return true;
                 }
             }
             $donation=Donation::getById($_REQUEST['DonationId']);	
-            ?>
-            <div id="pluginwrap">
-                <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
-                <h1>Donation #<?php print $donation->DonationId?></h1><?	
-                if ($_REQUEST['edit']){
-                    $donation->editForm();
-                }else{
-                    ?><div><a href="?page=<?php print $_GET['page']?>&DonationId=<?php print $donation->DonationId?>&edit=t">Edit Donation</a></div><?
-                    $donation->view();
-                    print $donation->receiptForm();
-                }
-            ?></div><?
+            $donation->fullView();
             return true;
         }elseif ($_POST['Function']=="Save" && $_POST['table']=="Donation"){
-            $donation=new Donation($_POST);
+            $donation=new Donation($_POST);            
             if ($donation->save()){
                 self::DisplayNotice("Donation #".$donation->showField("DonationId")." saved.");
+                $donation->fullView();
             }
             return true;
         }elseif($_GET['UploadDate'] || $_GET['SummaryView']){           
@@ -709,6 +719,21 @@ class Donation extends ModelLite
         }
     }
 
+    public function fullView(){
+        ?>
+            <div id="pluginwrap">
+                <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
+                <h1>Donation #<?php print $this->DonationId?></h1><?	
+                if ($_REQUEST['edit']){
+                    $this->editForm();
+                }else{
+                    ?><div><a href="?page=<?php print $_GET['page']?>&DonationId=<?php print $this->DonationId?>&edit=t">Edit Donation</a></div><?
+                    $this->view();
+                    $this->receiptForm();                   
+                }
+            ?></div><?
+    }
+
     public function selectDropDown($field,$showKey=true,$allowBlank=false){
         ?><select name="<?php print $field?>"><?
         if ($allowBlank){
@@ -722,7 +747,7 @@ class Donation extends ModelLite
     public function editSimpleForm(){  
         $hiddenFields=['DonationId','Fee','Net','ToEmailAddress','ReceiptID','AddressStatus']; //these fields more helpful when using paypal import, but are redudant/not necessary when manually entering a transaction
         ?>
-        <form method="post" action="?page=donor-reports&amp;DonationId=">
+        <form method="post" action="?page=donor-reports&DonationId=">
         <input type="hidden" name="table" value="Donation">
         <? foreach ($hiddenFields as $field){?>
 		    <input type="hidden" name="<?php print $field?>" value="<?php print $this->$field?>"/>
@@ -757,28 +782,53 @@ class Donation extends ModelLite
        ?></select></td></tr>
        <tr><td align="right">Subject</td><td><input type="text" name="Subject" value="<?php print $this->Subject?>"></td></tr>
         <tr><td align="right">Note</td><td><textarea name="Note"><?php print $this->Note?></textarea></td></tr>
-        <tr></tr><tr><td colspan="2"><button type="submit" name="Function" value="Save">Save</button><button type="submit">Cancel</button></td></tr>
+        <tr><td align="right">Tax Excempt</td><td><?=$this->selectDropDown('NotTaxExcempt')?><div><em>Set to "Not Tax Exempt" if they have already been giving credit for the donation by donating through a donor advised fund.</div></td></tr>
+        <tr></tr><tr><td colspan="2"><button type="submit" class="Primary" name="Function" value="Save">Save</button><button type="submit" name="Function" class="Secondary" value="Cancel" formnovalidate>Cancel</button>
+        <?php 
+        if ($this->DonationId){
+            ?> <button type="submit" name="Function" value="Delete">Delete</button><?
+        }
+        ?>
+    </td></tr>
 		</tbody></table>
 		</form>
         <?
     }
 
     function DonationReceiptEmail(){
+        if ($this->emailBuilder) return;
         $this->emailBuilder=new stdClass();
-        $page = get_page_by_path( 'receipt-thank-you',OBJECT);  
-        //$this->dump($page);
+        
+        if ($this->NotTaxExcempt==1){            
+            $page = get_page_by_path( 'no-tax-thank-you',OBJECT);  
+            if (!$page){ ### Make the template page if it doesn't exist.
+                self::makeReceiptNoTaxTemplate();
+                $page = get_page_by_path('no-tax-thank-you',OBJECT);  
+                self::DisplayNotice("Page /no-tax-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
+            }
+        }else{
+            $page = get_page_by_path( 'receipt-thank-you',OBJECT);  
+            if (!$page){ ### Make the template page if it doesn't exist.
+                self::makeReceiptThankYouTemplate();
+                $page = get_page_by_path('receipt-thank-you',OBJECT);  
+                self::DisplayNotice("Page /receipt-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
+            }
+        }
+         
         if (!$page){ ### Make the template page if it doesn't exist.
-            self::makeReceiptYearPageTemplate();
+            self::makeReceiptThankYouTemplate();
             $page = get_page_by_path('receipt-thank-you',OBJECT);  
             self::DisplayNotice("Page /receipt-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
-        $organization=get_bloginfo('name'); // If different than what is wanted, should overwrite template
+        $organization=get_option( 'donation_Organization');
+        if (!$organization) $organization=get_bloginfo('name');
         if (!$this->Donor)  $this->Donor=Donor::getById($this->DonorId);
         $address=$this->Donor->MailingAddress();
 
         $subject=$page->post_title;
         $body=$page->post_content;
+        $body=trim(str_replace("##Organization##",$organization,$body));
         $body=str_replace("##Name##",$this->Donor->Name.($this->Donor->Name2?" & ".$this->Donor->Name2:""),$body);
         $body=str_replace("##Year##",$year,$body);
         $body=str_replace("##Gross##","$".number_format($this->Gross,2),$body);
@@ -790,28 +840,118 @@ class Donation extends ModelLite
         $body=str_replace("##Address##",$address,$body);
 
         $body=str_replace("##Date##",date("F j, Y",strtotime($this->Date)),$body);
+        $body=trim(str_replace("##FederalId##", get_option( 'donation_FederalId' ),$body)); 
+        $body=trim(str_replace("##ContactName##", get_option( 'donation_ContactName' ),$body)); 
+        $body=trim(str_replace("##ContactTitle##", get_option( 'donation_ContactTitle' ),$body)); 
+        $body=trim(str_replace("##ContactEmail##", get_option( 'donation_ContactEmail' ),$body)); 
 
         $body=str_replace("<!-- wp:paragraph -->",'',$body);
         $body=str_replace("<!-- /wp:paragraph -->",'',$body);
+        
         $subject=trim(str_replace("##Organization##",$organization,$subject));
         $this->emailBuilder->subject=$subject;
         $this->emailBuilder->body=$body;        
     }
 
-    public function emailDonationReceipt($email=""){
+    static function makeReceiptNoTaxTemplate(){
+        $page = get_page_by_path( 'no-tax-thank-you',OBJECT );  
+        if (!$page){
+            $postarr['ID']=0;
+            $postarr['post_content']='            
+            <!-- wp:paragraph -->
+            <p><strong>Dear ##Name##,</strong></p>
+            <!-- /wp:paragraph -->
+            
+            <!-- wp:paragraph -->
+            Thank you for recommending that ##Organization## receive a generous gift of ##Gross## on ##Date##! We received the grant, and the funds will make a profound difference.
+            <!-- /wp:paragraph -->        
+    
+            <!-- wp:paragraph -->
+            <p>Thank you again.</p>
+            <!-- /wp:paragraph -->
+            
+            <!-- wp:paragraph -->
+            <p>Best regards,</p>
+            <!-- /wp:paragraph -->
+            
+            <!-- wp:paragraph -->
+            <strong>##ContactName##</strong><br>
+            ##ContactTitle##<br>
+            <a href="mailto:##ContactEmail#">##ContactEmail##</a>
+            <!-- /wp:paragraph -->
+
+            <!-- wp:paragraph -->
+            Please note, this is not a tax receipt. You may be eligible to claim a tax deduction for your contribution to fund this grant was sent from.
+            <!-- /wp:paragraph -->';
+            
+            $postarr['post_title']='Thank You For Your ##Organization## Gift';
+            $postarr['post_status']='private';
+            $postarr['post_type']='page';
+            $postarr['post_name']='no-tax-thank-you';
+            return wp_insert_post($postarr);            
+        }
+    }
+    static function makeReceiptThankYouTemplate(){
+        $page = get_page_by_path( 'receipt-thank-you',OBJECT );  
+        if (!$page){
+            $postarr['ID']=0;
+            $postarr['post_content']='            
+            <!-- wp:paragraph -->
+            <p><strong>Dear ##Name##,</strong></p>
+            <!-- /wp:paragraph -->
+            
+            <!-- wp:paragraph -->
+            <p>Thank you for your generous giving to ##Organization##.</p>
+            <!-- /wp:paragraph -->
+            
+            <!-- wp:paragraph -->
+            <p>Your contributions help make it possible for us continue making a difference.</p>
+            <!-- /wp:paragraph -->
+                        
+            <!-- wp:paragraph -->
+            <p>##Organization# is a 501(c)(3) non-profit organization, so your donation of <strong>##Gross##</strong> received on <strong>##Date## </strong>is tax-deductible [ID Here]. No goods or services were provided in exchange for your contribution. Please keep this receipt for your records.</p>
+            <!-- /wp:paragraph -->
+            
+            <!-- wp:paragraph -->
+            <p>Thank you again.</p>
+            <!-- /wp:paragraph -->
+            
+            <!-- wp:paragraph -->
+            <p>Best regards,</p>
+            <!-- /wp:paragraph -->
+            
+            <!-- wp:paragraph -->           
+            <p><strong>##ContactName##</strong><br>
+            ##ContactTitle##<br>
+            <a href="mailto:##ContactEmail#">##ContactEmail##</a></p>
+            <!-- /wp:paragraph -->';
+            $postarr['post_title']='Thank You For Your ##Organization## Donation';
+            $postarr['post_status']='private';
+            $postarr['post_type']='page';
+            $postarr['post_name']='receipt-thank-you';
+            return wp_insert_post($postarr);            
+        }    
+    }
+
+    public function emailDonationReceipt($email="",$customMessage=null,$subject=null){
+        //print "<pre>".$customMessage."</pre><h2>builder</h2><pre>".$this->emailBuilder->body."</pre>";
+        //exit();
         $this->DonationReceiptEmail();
         if (!$email){
             return false;         
         }
-        if (wp_mail($email, $this->emailBuilder->subject, $this->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){ 
+        if (wp_mail($email, $subject?$subject:$this->emailBuilder->subject, $customMessage?$customMessage:$this->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){ 
+            if ($customMessage && $customMessage==$this->emailBuilder->body){
+                $customMessage=null; //don't bother saving if template hasn't changed.
+            }
             $notice="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$email."</div>";
-            $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s")));
+            $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s"),"Content"=>$customMessage));
             $dr->save();
         }
         return $notice;
     }
 
-    public function pdfReceipt(){   
+    public function pdfReceipt($customMessage=null){   
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);
@@ -820,7 +960,7 @@ class Donation extends ModelLite
         $path=$file['path'];//dn_plugin_base_dir()."receipts/DonationReceipt-".$this->DonorId."-".$this->DonationId.".pdf"; //not acceptable on live server...
         $pdf->AddPage();
         $this->DonationReceiptEmail();
-        $pdf->writeHTML($this->emailBuilder->body, true, false, true, false, '');        
+        $pdf->writeHTML($customMessage?$customMessage:$this->emailBuilder->body, true, false, true, false, '');        
                          
         if ($pdf->Output($path, 'F')){
             return true;
@@ -828,38 +968,42 @@ class Donation extends ModelLite
     }
 
 
-    public function receiptForm(){
-           //require ( WP_PLUGIN_DIR.'/tcpdf-wrapper/lib/tcpdf/tcpdf.php' );        
+    public function receiptForm(){  
+            
         $this->DonationReceiptEmail();            
         if ($_POST['Function']=="SendDonationReceipt" && $_POST['Email']){
-            $form.=$this->emailDonationReceipt($_POST['Email']);
-            //$form.=$sendResult['notice'];
+            print $this->emailDonationReceipt($_POST['Email'],stripslashes_deep($_POST['customMessage']),stripslashes_deep($_POST['EmailSubject']));
+            
+        }elseif ($_POST['Function']=="DonationReceiptPdf"){
+            $this->pdfReceipt(stripslashes_deep($_POST['customMessage']));
         }
-        if ($_POST['Function']=="DonationReceiptPdf"){
-            $this->pdfReceipt();
-        }
+        print "<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
 
         $file=$this->receiptFileInfo();
-        ### Form View
+        $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","KeyType='DonationId'","KeyId='".$this->DonationId."'"));
+        $bodyContent=$receipts[0]->Content?$receipts[0]->Content:$this->emailBuilder->body; //retrieve last saved custom message
+        $bodyContent=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']):$bodyContent; //Post value overrides this though.
+       
+        //$receipts[0]->content
+   
+        print DonationReceipt::showResults($receipts,"You have not sent this donor a Receipt.");
+
         $emailToUse=($_POST['Email']?$_POST['Email']:$this->FromEmailAddress);
         if (!$emailToUse) $emailToUse=$this->Donor->Email;
-        //self::dd($this);
-        $form.='<div class="no-print"><hr><form method="post">Send Receipt to: <input type="email" name="Email" value="'.$emailToUse.'"/><button type="submit" name="Function" value="SendDonationReceipt">Send E-mail</button>
-        <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>';
-        if (file_exists($file['path'])){
-            $form.=' View <a target="pdf" href="'.$file['link'].'">'.$file['file'].'</a>';
-        }
-        $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","KeyType='DonationId'","KeyId='".$this->DonationId."'"));
-        $form.=DonationReceipt::showResults($receipts);
-        $form.='</form>';
-        $form.="<div><a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>Edit Template</a></div></div>";
-
-        $form.="<form method=\"post\"><h2>Custom Receipt</h2><textarea name='message'>".($_POST['message']?$_POST['message']:$this->emailBuilder->body)."</textarea><div id=\"donation-sbe-block-editor\" class=\"donation-sbe-block-editor\">Loading Editor... </div>";
-
-        
-        $homeLinks="<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
-        return $homeLinks."<h2>".$this->emailBuilder->subject."</h2>".$this->emailBuilder->body.$form;
-    
+        ?><form method="post">
+            <h2>Send Receipt</h2>
+            <input type="hidden" name="DonationId" value="<?=$this->DonationId?>">
+            <div>Send Receipt to: <input type="email" name="Email" value="<?=$emailToUse?>">
+                <button type="submit" name="Function" value="SendDonationReceipt">Send E-mail Receipt</button> <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>
+                <? if (file_exists($file['path'])){
+                    print  ' Download Pdf: <a target="pdf" href="'.$file['link'].'">'.$file['file'].'</a>';
+                }?>        
+            </div>
+            <div><a target='pdf' href='post.php?post=<?=$this->emailBuilder->pageID?>&action=edit'>Edit Template</a></div>
+            <div style="font-size:18px;"><strong>Email Subject:</strong> <input style="font-size:18px; width:500px;" name="EmailSubject" value="<?=$_POST['EmailSubject']?stripslashes_deep($_POST['EmailSubject']):$this->emailBuilder->subject?>"/>
+            <?php wp_editor($bodyContent, 'customMessage',array("media_buttons" => false,"wpautop"=>false)); ?>
+        </form>
+        <?php    
     }
 
     function receiptFileInfo(){
@@ -869,39 +1013,63 @@ class Donation extends ModelLite
         return array('path'=>$path,'file'=>$file,'link'=>$link);
     }
 
+    static function showSummaryByPaymentSource($paymentSource,$year){
+        global $wpdb;
+        $SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource       
+        FROM ".Donor::getTableName()." D INNER JOIN ".Donation::getTableName()." DT ON D.DonorId=DT.DonorId 
+        WHERE YEAR(Date)='".$year."' AND  Status>=0  AND PaymentSource='".$paymentSource."' Order BY DT.Date,DonationId";
+        //AND Type>=0
+        //print $SQL;
+        $results = $wpdb->get_results($SQL);
+        //return;
+        ?><table border=1><tr><th>DonationId</th><th>Name</th><th>Transaction Id</th><th>Amount</th><th>Date</th><th>Deposit Date</th></tr><?
+        foreach ($results as $r){?>
+            <tr>
+            <td><a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>"><?php print $r->DonationId?></a> | <a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>&edit=t">Edit</a></td>
+                <td><?php print $r->Name?></td>
+            <td><?php print $r->TransactionID?></td>
+            <td align=right><?php print number_format($r->Gross,2)?></td>
+            <td><?php print $r->Date?></td>
+            <td><?php print $r->DateDeposited?></td>
+            </tr><?
+        }
+        ?></table><?
+    }
+
     static public function createTable(){
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php'); 
     	global $wpdb;
         //$charset_collate = $wpdb->get_charset_collate();
 
         $sql = "CREATE TABLE IF NOT EXISTS `".self::getTableName()."` (
-                `DonationId` int(11) NOT NULL AUTO_INCREMENT,
-                `Date` datetime NOT NULL,               
-                `DateDeposited` date DEFAULT NULL,
-                `DonorId` int(11) DEFAULT NULL,
-                `Name` varchar(29) NOT NULL,
-                `Type` tinyint DEFAULT NULL,
-                `TypeOther` varchar(30) DEFAULT NULL,
-                `Status` TINYINT DEFAULT NULL,
-                `Currency` varchar(3) DEFAULT NULL,
-                `Gross` float(10,2) NOT NULL,
-                `Fee` decimal(6,2) DEFAULT NULL,
-                `Net` varchar(10) DEFAULT NULL,
-                `FromEmailAddress` varchar(70) NOT NULL,
-                `ToEmailAddress` varchar(26) DEFAULT NULL,
-                `TransactionID` varchar(17) DEFAULT NULL,
-                `AddressStatus` tinyint DEFAULT NULL,
-                `CategoryId` tinyint DEFAULT NULL,
-                `ReceiptID` varchar(16) DEFAULT NULL,
-                `ContactPhoneNumber` varchar(11) DEFAULT NULL,
-                `Subject` varchar(50) DEFAULT NULL,
-                `Note` varchar(256) DEFAULT NULL,
-                `PaymentSource` tinyint DEFAULT NULL,
-                `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (`DonationId`),
-                KEY `Date` (`Date`,`Name`,`FromEmailAddress`,`TransactionID`)
-                ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
+            `DonationId` int(11) NOT NULL AUTO_INCREMENT,
+            `Date` datetime NOT NULL,
+            `DateDeposited` date DEFAULT NULL,
+            `DonorId` int(11) DEFAULT NULL,
+            `Name` varchar(29) NOT NULL,
+            `Type` tinyint(4) DEFAULT NULL,
+            `TypeOther` varchar(30) DEFAULT NULL,
+            `Status` tinyint(4) DEFAULT NULL,
+            `Currency` varchar(3) DEFAULT NULL,
+            `Gross` float(10,2) NOT NULL,
+            `Fee` decimal(6,2) DEFAULT NULL,
+            `Net` varchar(10) DEFAULT NULL,
+            `FromEmailAddress` varchar(70) NOT NULL,
+            `ToEmailAddress` varchar(26) DEFAULT NULL,
+            `TransactionID` varchar(17) DEFAULT NULL,
+            `AddressStatus` tinyint(4) DEFAULT NULL,
+            `CategoryId` tinyint(4) DEFAULT NULL,
+            `ReceiptID` varchar(16) DEFAULT NULL,
+            `ContactPhoneNumber` varchar(20) DEFAULT NULL,
+            `Subject` varchar(50) DEFAULT NULL,
+            `Note` TEXT DEFAULT NULL,
+            `PaymentSource` tinyint(4) DEFAULT NULL,
+            `NotTaxExcempt` TINYINT NULL DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt'
+            `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,            
+            `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,            
+            PRIMARY KEY (`DonationId`),
+            KEY `Date` (`Date`,`Name`,`FromEmailAddress`,`TransactionID`)
+          )";
 
                 /*
                 Additional Fields as we expand this:

@@ -9,8 +9,6 @@
 }
 </style>
 <?php
-	//print Donor::DisplayNotice(DonationCategory::getCategoryId("Donation to Mas Mariposas Food Relief Project"));
-
 	/*
 	 * Be very careful were you place wp_enqueue_style and wp_enqueue_script. 
 	 * If you write those two functions in the beginning of an administration
@@ -23,6 +21,9 @@
 	wp_enqueue_style('empty-plugin-style', plugins_url( '/css/style.css', __FILE__ ) );
 	// loading the JS
 	wp_enqueue_script('empty-plugin-scripts', plugins_url( '/js/scripts.js', __FILE__ ) );
+	   // Pass ajax_url to script.js
+    wp_localize_script( 'script-js', 'plugin_ajax_object',
+	   array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
 	?>
 	<div id="pluginwrap">
 	<?php
@@ -34,13 +35,13 @@
 	<h2>Donor Tracker</h2>
 	<form method="get">
 		<input type="hidden" name="page" value="<?=$_GET['page']?>"/>
-		Donor Search: <input name="dsearch" value="<?=$_GET['dsearch']?>"/><button type="submit">Go</button> <a href="?page=<?=$_GET['page']?>&f=AddDonor"> Add New Donor</a>
+		Donor Search: <input id="donorSearch" name="dsearch" value="<?=$_GET['dsearch']?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
 	<? if (trim($_GET['dsearch'])<>''){
-		$list=Donor::get(array("(Name LIKE '%".$_GET['dsearch']."%' 
-		OR Name2  LIKE '%".$_GET['dsearch']."%'
-		OR Email LIKE '%".$_GET['dsearch']."%'
-		OR Phone LIKE '%".$_GET['dsearch']."%')"));
+		$list=Donor::get(array("(UPPER(Name) LIKE '%".strtoupper($_GET['dsearch'])."%' 
+		OR UPPER(Name2)  LIKE '%".strtoupper($_GET['dsearch'])."%'
+		OR UPPER(Email) LIKE '%".strtoupper($_GET['dsearch'])."%'
+		OR UPPER(Phone) LIKE '%".strtoupper($_GET['dsearch'])."%')","(MergedId =0 OR MergedId IS NULL)"));
 		//print "do lookup here...";
 		print Donor::showResults($list);
 		
