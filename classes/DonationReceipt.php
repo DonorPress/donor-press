@@ -1,6 +1,6 @@
 <?php
-require_once("ModelLite.php");
-require_once("Donation.php");
+require_once 'ModelLite.php';
+require_once 'Donation.php';
 
 class DonationReceipt extends ModelLite {
     protected $table = 'DonationReceipt';
@@ -18,8 +18,8 @@ class DonationReceipt extends ModelLite {
 
     protected $tinyIntDescriptions=[
         "Type"=>["e"=>"Email","p"=>"Postal Mail"],        
-    ];	
-   
+    ];
+  
     static public function createTable(){
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php');
           $sql="CREATE TABLE IF NOT EXISTS `".self::getTableName()."` (

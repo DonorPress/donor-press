@@ -24,22 +24,45 @@ Currency
 
 
 */
-require_once("Donation.php");
+require_once 'Donation.php';
 class DonationCategory extends ModelLite
 {
     protected $table = 'DonationCategory';
 	protected $primaryKey = 'CategoryId';
 	### Fields that can be passed 
-    protected $fillable = ["Category","Description","ParentId"];	 
+    protected $fillable = ["Category","Description","ParentId","TemplateId"];	 
   	const CREATED_AT = 'CreatedAt';
-	const UPDATED_AT = 'UpdatedAt';    
+	const UPDATED_AT = 'UpdatedAt';  
+    //NOte: TemplateId links to table posts -> ID, but uses post_type='donortemplate' 
 
     static public function requestHandler(){
-        if ($_GET['CategoryId']){	
+        global $wpdb;
+        if ($_POST['CategoryId'] && $_POST['Function']=="Delete" && $_POST['table']=="DonationCategory"){
+            $donationCategory=new self($_POST);
+            if ($donationCategory->delete()){
+                self::DisplayNotice("Donation Category '".$donationCategory->Category."' deleted."); 
+            }
+        }elseif ($_POST['CategoryId'] && $_POST['Function']=="DonationCategoryMergeTo" && $_POST['table']=="DonationCategory"){
+            $mergeTo=self::get($_POST['MergeTo']);
+            //self::dump($mergeTo);
+            if (!$mergeTo->CategoryId){
+                self::DisplayError("Could not find Merge to Donation Category: ".$_POST['MergeTo']);
+                return;
+            }
+            $old=new self($_POST);
+            $old->DonationCount();
+            
+            $wpdb->update(Donation::getTableName(),array("CategoryId"=>$_POST['MergeTo']),array('CategoryId'=> $old->CategoryId));
+            self::DisplayNotice($old->DonationCount." donation record counts changed from Category '". $old->Category."' to ".$mergeTo->showField("CategoryId")." - ".$mergeTo->Category); 
+
+            if ($donationCategory->delete()){                
+                self::DisplayNotice("Donation Category '".$donationCategory->Category."' deleted."); 
+            }        
+        }elseif ($_GET['CategoryId']){	
             if ($_POST['Function']=="Save" && $_POST['table']=="DonationCategory"){
                 $donationCategory=new self($_POST);
                 if ($donationCategory->save()){
-                    self::DisplayNotice("Donation Category#".$donationCategory->showField("CategoryId")." saved.");
+                    self::DisplayNotice("Donation Category#".$donationCategory->showField("CategoryId")." - ".$donationCategory->Cateogry." saved.");
                 }
             }
             $donationCategory=self::getById($_REQUEST['CategoryId']);	
@@ -51,13 +74,64 @@ class DonationCategory extends ModelLite
                     $donationCategory->editForm();
                 }else{
                     ?><div><a href="?page=<?php print $_GET['page']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?
-                    $donationCategory->view();
+                    $donationCategory->view(); 
                 }
             ?></div><?
             return true;
         }else{
             return false;
         }
+    }
+
+    function editForm(){
+        global $wpdb;       
+        $primaryKey=$this->primaryKey;
+		?><form method="post" action="?page=<?php print $_GET['page']?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>">
+		<input type="hidden" name="table" value="<?php print $this->table?>"/>
+		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
+        <table>
+            <tr><td align="right">Category Title</td><td><input style="width: 300px" type="text" name="Category" value="<?php print $this->Category?>"></td></tr>
+            <tr><td align="right">Description</td><td><textarea rows=3 cols=40 name="Description"><?php print $this->Description?></textarea></td></tr>
+            <tr><td align="right">Parent Category</td><td><select name="ParentId"><option value="0">[--None--]</option><?php
+             $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::getTableName()." WHERE (ParentId=0 OR ParentId IS NULL) AND CategoryId<>'".$this->CategoryId."' Order BY Category");
+             foreach($results as $r){
+                ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->CategoryId?" selected":"")?>><?php
+                print $r->Category." (".$r->CategoryId.")";?></option><?php
+             }?></select></td></tr>
+            <tr><td>Response Template</td><td><select name="TemplateId"><option value="">default</option><?php
+            $list=DonorTemplate::get(array("post_type='donortemplate'","post_parent=0"),"post_name,post_title");
+            foreach($list as $t){
+                print '<option value="'.$t->ID.'"'.($t->ID==$this->TemplateId?" selected":"").'>'.$t->post_name.'</option>';
+            }
+            ?></select></td></tr>
+            <tr><td colspan="2">
+                <button type="submit" class="primary" name="Function" value="Save">Save</button>
+                <button type="submit" name="Function" class="secondary" value="Cancel" formnovalidate="">Cancel</button>
+                <?php if ($this->$primaryKey && $this->DonationCount()==0){ ?>
+                <button type="submit" name="Function" value="Delete">Delete</button>
+                <?php }?>
+                </td></tr>
+		    </table>
+            <?php 
+            if ($this->DonationCount()>0){                
+                ?><div>Donations using this Category: <?php $this->DonationCount()?></div>
+                Merge To: <select name="MergeTo"><option value="0">[--None--]</option><?php
+             $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::getTableName()." WHERE (ParentId=0 OR ParentId IS NULL) AND CategoryId<>'".$this->CategoryId."' Order BY Category");
+             foreach($results as $r){
+                ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->CategoryId?" selected":"")?>><?php
+                print $r->Category." (".$r->CategoryId.")";?></option><?php
+             }?></select> <button type="submit" name="Function" value="DonationCategoryMergeTo">Merge</button>
+            <?php }?>           
+		</form><?
+
+    }
+    public function DonationCount(){
+        global $wpdb; 
+        if (!$this->DonationCount){ 
+            $results = $wpdb->get_results("Select COUNT(*) as C FROM ".Donation::getTableName()." Where CategoryId=".$this->CategoryId);
+            $this->DonationCount=$results[0]->C?$results[0]->C:0;
+        }
+        return $this->DonationCount;
     }
     
 
@@ -81,6 +155,40 @@ class DonationCategory extends ModelLite
 		$this->varView();
 		//do stats on entries with this category.. maybe even reports based on dates.
 	}
+
+    static public function list(){
+        global $wpdb;        
+        $SQL= "SELECT *,(Select COUNT(*) FROM ".Donation::getTableName()." Where CategoryId=C.CategoryId) as DonationCount FROM ".self::getTableName()." C Order BY Category";       
+        $results = $wpdb->get_results($SQL);
+        foreach ($results as $r){ 
+            $parent[$r->ParentId?$r->ParentId:0][]=$r;
+        }
+        ?>
+        <h2>Donation Categories</h2>
+        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>ParentId</th><th>Total</th></tr><?php
+         self::showChildren(0,$parent,0);
+         foreach ($results as $r){       
+           
+         }
+        ?></table>	
+        <?
+    }
+
+    static function showChildren($parentId,$parent,$level=0){
+        if (!$parent[$parentId]) return;
+        foreach ($parent[$parentId] as $r){
+            ?><tr>
+                <td style="padding-left:<?php print $level*20?>px"><a href="?page=<?php print $_GET['page']?>&CategoryId=<?php print $r->CategoryId?>&edit=t"><?php print $r->CategoryId?></a></td>
+                <td><?php print $r->Category?></td>
+                <td><?php print $r->Description?></td>
+                <td><?php print $r->ParentId?></td>
+                <td><?php print $r->DonationCount?></td>
+            </tr>
+            <?php
+            self::showChildren($r->CategoryId,$parent,$level+1);
+        }
+    }
+
 
     static public function getCategoryId($text){
         $text=trim($text);
@@ -114,6 +222,7 @@ class DonationCategory extends ModelLite
             `Category` varchar(50) NOT NULL,
             `Description` varchar(250) DEFAULT NULL,
             `ParentId` int(11) DEFAULT NULL,
+            `TemplateId` int(11) DEFAULT NULL,
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`CategoryId`),

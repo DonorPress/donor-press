@@ -1,19 +1,20 @@
 <?php
 /*
-    Plugin Name: Donor Tracker With Paypal Integration
-    Plugin URI: https://denversteiner.com
+    Plugin Name: Donor Press - A Donation Tracking System
+    Plugin URI: https://denversteiner.com/wp-plugins/donorpress
     Description: A plugin for non-profits used to track donations. This integrates with Paypal as well as allows for manual entry.
     Author: Denver Steiner
-    Author URI: https://denversteiner.com/wp-plugins/donorTracker
-    Version: 1.0.0
+    Author URI: https://denversteiner.com/wp-plugins/donorpress
+    Version: 0.1.0
 */
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-require_once('classes/Donation.php');
-require_once('classes/Donor.php');
-require_once('classes/DonationCategory.php');
-//Srequire_once('vendor/TCPDF/TCPDF.php');
+require_once 'classes/Donation.php';
+require_once 'classes/Donor.php';
+require_once 'classes/DonationCategory.php';
+require_once 'classes/DonorTemplate.php';
+require_once 'classes/CustomVariables.php'; 
 
 /* Resources: 
 https://www.sitepoint.com/working-with-databases-in-wordpress/

@@ -1,10 +1,7 @@
 <?php
-/*custom variables 
-INSERT INTO `wp_options` (`option_id`, `option_name`, `option_value`, `autoload`) VALUES (NULL, 'donation_Organization', 'Mas Mariposas', 'yes'), (NULL, 'donation_ContactName', 'Denver Steiner', 'yes'), (NULL, 'donation_ContactTitle', 'Treasurer', 'yes'), (NULL, 'donation_ContactEmail', 'donations@masmariposas.org', 'yes'), (NULL, 'donation_FederalId', '47-3336305', 'yes');
-*/
-$SQL="Select `option_name`, `option_value` FROM wp_options WHERE option_name LIKE 'donation_%'";
-require_once("Donor.php");
-require_once("DonationCategory.php");
+require_once 'Donor.php';
+require_once 'DonationCategory.php';
+require_once 'DonorTemplate.php';
 class Donation extends ModelLite
 {
     protected $table = 'Donation';
@@ -272,13 +269,12 @@ class Donation extends ModelLite
             foreach ($result as $r){
                 $donorCount[$r->DonorId]=$r->C;
             }
-
         }
-        //self::dd($donors);
+        
         if (sizeof($donations)>0){   
             if ( $settings['summary']){
                 ksort($type);
-                foreach ($type as $t=>$donationsByType){
+                foreach ($type as $t=>$donationsByType){                    
                     $total=0;
                     ?><h2><?php print self::s()->tinyIntDescriptions["Type"][$t]?></h2>
                     <table border=1><tr><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr><?
@@ -288,10 +284,14 @@ class Donation extends ModelLite
                         if ($donors[$donation->DonorId]){
                             //print $donors[$donation->DonorId]->displayKey()." ".
                             print $donors[$donation->DonorId]->NameCheck();
-                        }else print $donation->DonorId;
+                        }else{ 
+                            print $donation->DonorId;
+                            //self::dd($donations);
+                            //exit();
+                        }
                     
                         ?></td>
-                        <td rowspan="<?php print sizeof($donations)?>"><?php print $donors[$donation->DonorId]->displayEmail('Email')?></td><?
+                        <td rowspan="<?php print sizeof($donations)?>"><?php print $donors[$donation->DonorId]?$donors[$donation->DonorId]->displayEmail('Email'):""?></td><?
                         $count=0;
                         foreach($donations as $r){                          
                             if ($count>0){
@@ -799,25 +799,25 @@ class Donation extends ModelLite
         if ($this->emailBuilder) return;
         $this->emailBuilder=new stdClass();
         
-        if ($this->NotTaxExcempt==1){            
-            $page = get_page_by_path( 'no-tax-thank-you',OBJECT);  
+        if ($this->NotTaxExcempt==1){                   
+            $page = DonorTemplate::getByName('no-tax-thank-you');  
             if (!$page){ ### Make the template page if it doesn't exist.
                 self::makeReceiptNoTaxTemplate();
-                $page = get_page_by_path('no-tax-thank-you',OBJECT);  
+                $page = DonorTemplate::getByName('no-tax-thank-you');  
                 self::DisplayNotice("Page /no-tax-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
             }
         }else{
-            $page = get_page_by_path( 'receipt-thank-you',OBJECT);  
+            $page = DonorTemplate::getByName('receipt-thank-you');  
             if (!$page){ ### Make the template page if it doesn't exist.
                 self::makeReceiptThankYouTemplate();
-                $page = get_page_by_path('receipt-thank-you',OBJECT);  
+                $page = DonorTemplate::getByName('receipt-thank-you');  
                 self::DisplayNotice("Page /receipt-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
             }
         }
          
         if (!$page){ ### Make the template page if it doesn't exist.
             self::makeReceiptThankYouTemplate();
-            $page = get_page_by_path('receipt-thank-you',OBJECT);  
+            $page = DonorTemplate::getByName('receipt-thank-you');  
             self::DisplayNotice("Page /receipt-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
@@ -854,7 +854,7 @@ class Donation extends ModelLite
     }
 
     static function makeReceiptNoTaxTemplate(){
-        $page = get_page_by_path( 'no-tax-thank-you',OBJECT );  
+        $page = DonorTemplate::getByName('no-tax-thank-you');  
         if (!$page){
             $postarr['ID']=0;
             $postarr['post_content']='            
@@ -886,13 +886,13 @@ class Donation extends ModelLite
             
             $postarr['post_title']='Thank You For Your ##Organization## Gift';
             $postarr['post_status']='private';
-            $postarr['post_type']='page';
+            $postarr['post_type']='donortemplate';
             $postarr['post_name']='no-tax-thank-you';
             return wp_insert_post($postarr);            
         }
     }
     static function makeReceiptThankYouTemplate(){
-        $page = get_page_by_path( 'receipt-thank-you',OBJECT );  
+        $page = DonorTemplate::getByName('receipt-thank-you');  
         if (!$page){
             $postarr['ID']=0;
             $postarr['post_content']='            
@@ -927,7 +927,7 @@ class Donation extends ModelLite
             <!-- /wp:paragraph -->';
             $postarr['post_title']='Thank You For Your ##Organization## Donation';
             $postarr['post_status']='private';
-            $postarr['post_type']='page';
+            $postarr['post_type']='donortemplate';
             $postarr['post_name']='receipt-thank-you';
             return wp_insert_post($postarr);            
         }    

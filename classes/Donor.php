@@ -1,8 +1,8 @@
 <?php
 
-require_once("ModelLite.php");
-require_once("Donation.php");
-require_once("DonationReceipt.php");
+require_once 'ModelLite.php';
+require_once 'Donation.php';
+require_once 'DonationReceipt.php';
 
 class Donor extends ModelLite {
     protected $table = 'Donor';
@@ -426,11 +426,11 @@ class Donor extends ModelLite {
 
     function YearReceiptEmail($year){
         $this->emailBuilder=new stdClass();
-        $page = get_page_by_path( 'donor-receiptyear',OBJECT);  
+        $page = DonorTemplate::getByName('donor-receiptyear');  
         //$this->dump($page);
         if (!$page){ ### Make the template page if it doesn't exist.
             self::makeReceiptYearPageTemplate();
-            $page = get_page_by_path('donor-receiptyear',OBJECT);  
+            $page = DonorTemplate::getByName('donor-receiptyear');  
             self::DisplayNotice("Page /donor-receiptyear created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
@@ -562,7 +562,7 @@ class Donor extends ModelLite {
     }
 
     static function makeReceiptYearPageTemplate(){
-        $page = get_page_by_path( 'donor-receiptyear',OBJECT );  
+        $page = DonorTemplate::getByName('donor-receiptyear');  
         if (!$page){
             $postarr['ID']=0;
             $postarr['post_content']='<!-- wp:paragraph -->
@@ -602,7 +602,7 @@ class Donor extends ModelLite {
 <!-- /wp:paragraph -->';
             $postarr['post_title']='##Organization## ##Year## Year End Receipts';
             $postarr['post_status']='private';
-            $postarr['post_type']='page';
+            $postarr['post_type']='donortemplate';
             $postarr['post_name']='donor-receiptyear';
             return wp_insert_post($postarr);            
         }
