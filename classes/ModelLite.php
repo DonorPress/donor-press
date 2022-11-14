@@ -23,7 +23,7 @@ class ModelLite{
 	
 	public function fill(array $attributes){
 		//self::dump($attributes);
-		$fields=$this->getViewableFields();		
+		$fields=$this->get_viewable_fields();		
 		
 		if (is_array($attributes)){ ### flip array to object
 			$attributes=(object)$attributes;
@@ -37,7 +37,7 @@ class ModelLite{
 		}	
 	}
 
-	public function getViewableFields(){
+	public function get_viewable_fields(){
 		$fields=$this->fillable;
 		$primaryKey=$this->primaryKey;
 		
@@ -50,20 +50,26 @@ class ModelLite{
 		return $fields;
 	}
 
-	public function getTable(){
-        global $wpdb;
+	public function get_table(){
+		$wpdb=self::db();       
         return $wpdb->prefix.strtolower(($this->table ?? class_basename($this)));
 	}
 	
-	static public function getTableName(){	
-        return self::s()->getTable();
+	static public function get_table_name(){	
+        return self::s()->get_table();
     }
-	static public function getFillable(){
+	static public function get_fillable(){
 		return self::s()->fillable;
 	}
 
-	public function save(){ //both insert and update routine. Creates new if no ReworkId passed in.
+	static public function db(){ //concept for right now... if we want to avoid global $wpdb, run everything this...
+		//$wpdadb = WPDataAccess\Connection\WPDADB::get_db_connection( 'your-local-db-name' ); 
 		global $wpdb;
+		return $wpdb;
+	}
+
+	public function save(){ //both insert and update routine. Creates new if no ReworkId passed in.
+		$wpdb=self::db();  
 		$wpdb->show_errors();
 		$keyField=$this->primaryKey;
 		foreach ($this->fillable as $field){
@@ -76,15 +82,15 @@ class ModelLite{
 		}
 
 		if ($this->$keyField>0){
-			$wpdb->update($this->getTable(),$data,array($keyField=>$this->$keyField));
+			$wpdb->update($this->get_table(),$data,array($keyField=>$this->$keyField));
 		}else{
 			if (defined (static::CREATED_AT) && !$data[static::CREATED_AT]){
 				$data[static::CREATED_AT]= time();
 			}		 	
-			$result=$wpdb->insert($this->getTable(),$data);	
+			$result=$wpdb->insert($this->get_table(),$data);	
 			
 			$this->$keyField=$wpdb->insert_id;
-			// self::dump($this->getTable());
+			// self::dump($this->get_table());
 			// self::dump($data);
 			// self::dd(array($keyField=>$this->$keyField));
 			$insert=true;
@@ -94,10 +100,10 @@ class ModelLite{
 	}
 
 	public function delete(){
-		global $wpdb;
+		$wpdb=self::db();  
 		$keyField=$this->primaryKey;
 		if ($this->$keyField){
-			 $wpdb->delete($this->getTable(),array($keyField=>$this->$keyField));
+			 $wpdb->delete($this->get_table(),array($keyField=>$this->$keyField));
 			 return true;
 		}
 		return false;
@@ -105,23 +111,23 @@ class ModelLite{
 
 	public function view(){ //single entry->View fields
 		//print "varview";
-		$this->varView();
+		$this->var_view();
 		//print_r($this);
 	}
 
-	public function varView(){
+	public function var_view(){
 		?><table border=1><?
-		$fields=$this->getViewableFields();
+		$fields=$this->get_viewable_fields();
 		foreach($fields as $f){			
 			if ($this->$f){
-				?><tr><td><?php print $f?></td><td><?php print $this->showfield($f)?></td></tr><?
+				?><tr><td><?php print $f?></td><td><?php print $this->show_field($f)?></td></tr><?
 			}
 		}
 		?></table>
 		<?
 	}
 
-	static public function getKey($row){
+	static public function get_key($row){
 		$key=[];
 		foreach(self::s()->duplicateCheck as $field){
 			$value=$row->$field;
@@ -138,14 +144,14 @@ class ModelLite{
 		return implode("|",$key);
 	}
 
-	static public function replaceIntoList($q){
+	static public function replace_into_list($q){
 		### Adds a check to avoid duplicate rows basd on 
-		global $wpdb;
+		$wpdb=self::db();  
 		### Cache all existing entries. If DB gets to big, this might use to much memory, and may want to do individual queries.
 		$dupFieldsCheck=self::s()->duplicateCheck;		
-        $result= $wpdb->get_results("Select ".implode(", ",$dupFieldsCheck).", Count(*) as C FROM ".self::s()->getTable()." Group By  ".implode(", ",$dupFieldsCheck));
+        $result= $wpdb->get_results("Select ".implode(", ",$dupFieldsCheck).", Count(*) as C FROM ".self::s()->get_table()." Group By  ".implode(", ",$dupFieldsCheck));
         foreach ($result as $row){
-			$existingEntries[self::getKey($row)]=$row->C;
+			$existingEntries[self::get_key($row)]=$row->C;
 		}
 		//self::dump($existingEntries);
 
@@ -153,7 +159,7 @@ class ModelLite{
 			$iSQL=[];
 			$skipped=0;
             foreach ($q as $row){
-				if ($existingEntries[self::getKey($row)]){ //skip entry already exists
+				if ($existingEntries[self::get_key($row)]){ //skip entry already exists
 					$skipped++;
 				}else{
 					$items=[];
@@ -164,23 +170,23 @@ class ModelLite{
 				}
             }
 			if (sizeof($iSQL)>0){
-				$SQL="INSERT INTO ".self::s()->getTable()." (`".implode("`,`",$row->fillable)."`) VALUES ".implode(", ",$iSQL);
-				//print self::getKey($row)."::".$SQL."<hr>";
+				$SQL="INSERT INTO ".self::s()->get_table()." (`".implode("`,`",$row->fillable)."`) VALUES ".implode(", ",$iSQL);
+				//print self::get_key($row)."::".$SQL."<hr>";
 				$result= $wpdb->query($SQL);
 			}
 			return array('inserted'=>sizeof($iSQL),'skipped'=>$skipped,'insertResult'=>$result);
         }
     }
 
-	public static function s(){
+	static public function s(){
 		// A way to retreive protectic variables from a static call.
-		// example: self::s()->getTable()
+		// example: self::s()->get_table()
         $instance = new static;
         return $instance;
 	}
 	
 	static public function dump($obj){
-		print "<pre>"; print_r($obj); print "</pre>";
+		print "<pre>"; var_dump($obj); print "</pre>";
 	}
 
 	public static function dd($obj){
@@ -188,16 +194,16 @@ class ModelLite{
 		exit();
 	}
 
-	public static function getById($id,$settings=false){
-		global $wpdb;
+	public static function get_by_id($id,$settings=false){
+		$wpdb=self::db();  
 		$where[]=self::s()->primaryKey."='".$id."'";
-		$SQL="SELECT * FROM ".self::s()->getTable()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"");			
+		$SQL="SELECT * FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"");			
 		return  new static((array)$wpdb->get_row($SQL));
 	}
 	
 	public static function get($where=array(),$orderby="",$settings=false){
-		global $wpdb;
-		$SQL="SELECT * FROM ".self::s()->getTable()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"");
+		$wpdb=self::db();  
+		$SQL="SELECT * FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"");
 		//print $SQL;
 		$all=$wpdb->get_results($SQL);
 		foreach($all as $r){
@@ -213,7 +219,7 @@ class ModelLite{
 		return $return;
 	}
 
-	public function keyFlat(){
+	public function key_flat(){
 		//return key value. If key is mutiple fields, then it seperates by pipes "|". 
 		$keyField=$this->primaryKey;
 		//dump($keyField);
@@ -226,8 +232,8 @@ class ModelLite{
 		return $key;
 	}
 
-	public static function showResults($results,$noResultMessage="No Results Found."){		
-		$fields=self::s()->getViewableFields();	
+	public static function show_results($results,$noResultMessage="No Results Found."){		
+		$fields=self::s()->get_viewable_fields();	
 		if (!$results || sizeof($results)==0){
 			return "<div><em>".$noResultMessage."</em></div>"; 
 		}
@@ -237,11 +243,11 @@ class ModelLite{
 			foreach($results as $r){
 				if ($i==0){
 					?><tr><?
-					foreach ($fields as $field){?><th><?php print $field?></th><? }
+					foreach ($fields as $field){?><th><?php print $field?></th><?php }
 					?></tr><?
 				}
 				?><tr><?
-				foreach ($fields as $field){?><td><?php print $r->showfield($field)?></td><? }
+				foreach ($fields as $field){?><td><?php print $r->show_field($field)?></td><?php }
 				?></tr><?
 				$i++;
 			}
@@ -249,7 +255,7 @@ class ModelLite{
 		return ob_get_clean(); 
 	}
 	
-	public function showfield($fieldName,$idShow=true){
+	public function show_field($fieldName,$idShow=true){
 		$v=$this->$fieldName;
 		switch($fieldName){
 			case "Gross":
@@ -268,19 +274,19 @@ class ModelLite{
 			case "FromEmailAddress":
 			case "ToEmailAddress":
 			case "Email":
-				return $this->displayEmail($fieldName); //'<a href="mailto:'.$v.'?Subject=">'.$v.'</a>';
+				return $this->display_email($fieldName); //'<a href="mailto:'.$v.'?Subject=">'.$v.'</a>';
 			break;
 			case "CategoryId":
 				$label="";
 				if ($this->table=='DonationCategory') {}
 				else{
-					global $cache_ModelLite_showfield;
-					if (isset($cache_ModelLite_showfield[$fieldName][$v])){
-						$label=$cache_ModelLite_showfield[$fieldName][$v];
+					global $cache_ModelLite_show_field;
+					if (isset($cache_ModelLite_show_field[$fieldName][$v])){
+						$label=$cache_ModelLite_show_field[$fieldName][$v];
 					}elseif($v){
-						$dCat=DonationCategory::getById($v); //need to cache this..
+						$dCat=DonationCategory::get_by_id($v); //need to cache this..
 						if ($dCat){
-							$cache_ModelLite_showfield[$fieldName][$v]=$dCat->Category;
+							$cache_ModelLite_show_field[$fieldName][$v]=$dCat->Category;
 							$label=$dCat->Category;
 						} 
 					}
@@ -303,16 +309,17 @@ class ModelLite{
 		}
 	}
 
-	static public function getTinyDescription($fieldName,$v){
+	static public function get_tiny_description($fieldName,$v){
 		return self::s()->tinyIntDescriptions[$fieldName][$v];
 	}
 
-	public function displayKey(){
+	public function display_key(){
 		$primaryKey=$this->primaryKey;
 		return '<a href="?page='.$_GET['page'].'&'.$primaryKey.'='.$this->$primaryKey.'">'.$this->$primaryKey."</a> ";
 	}
 
-	public function displayEmail($fieldName='Email'){
+	public function display_email($fieldName='Email'){
+		$return="";
 		if (trim($this->$fieldName)){
 			$emails=explode(";",$this->$fieldName);
 			$count=0;
@@ -329,9 +336,8 @@ class ModelLite{
 			return $return;		
 		}		
 	}
-
 	
-	public function editForm(){
+	public function edit_form(){
 		$primaryKey=$this->primaryKey;
 		?><form method="post" action="?page=<?php print $_GET['page']?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>">
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
@@ -374,15 +380,15 @@ class ModelLite{
 		</form><?
 	}
 
-	static public function DisplayNotice($html){
+	static public function display_notice($html){
 		print "<div class=\"notice notice-success is-dismissible\">".$html."</div>";
 	}
 
-	static public function DisplayWarning($html){
+	static public function display_warning($html){
 		print "<div class=\"notice notice-warning is-dismissible\">".$html."</div>";
 	}
 
-	static public function DisplayError($html){
+	static public function display_error($html){
 		print "<div class=\"notice notice-error is-dismissible\">".$html."</div>";
 	}
 

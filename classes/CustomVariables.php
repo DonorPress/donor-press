@@ -1,15 +1,17 @@
 <?php
-/*custom variables 
-INSERT INTO `wp_options` (`option_id`, `option_name`, `option_value`, `autoload`) VALUES (NULL, 'donation_Organization', 'Mas Mariposas', 'yes'), (NULL, 'donation_ContactName', 'Denver Steiner', 'yes'), (NULL, 'donation_ContactTitle', 'Treasurer', 'yes'), (NULL, 'donation_ContactEmail', 'donations@masmariposas.org', 'yes'), (NULL, 'donation_FederalId', '47-3336305', 'yes');
+
+/* Utilizes Wordpresses Built in custom variables typically in the wp_options table.
+* Use wordpress funcitons to edit these
+* all custom variables shoudl ahve a "base" of donation, example donation_Organization
 */
 class CustomVariables extends ModelLite
 {  
-   const base = 'donation';
+    const base = 'donation';
     const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId"];	
     
     static public function form(){
-        global $wpdb;
-        $vals=self::getCustomVariables();      
+        $wpdb=self::db();  
+        $vals=self::get_custom_variables();      
         ?>
         <h2>Edit Donor Variables</h2>
         <form method="post">
@@ -31,9 +33,9 @@ class CustomVariables extends ModelLite
         <?php
     }
 
-    static function getCustomVariables(){
-        global $wpdb;
-        $results=$wpdb->get_results("SELECT `option_id`, `option_name`, `option_value`, `autoload` FROM `wp_options` WHERE `option_name` LIKE '".self::base."_%'");
+    static function get_custom_variables(){
+        $wpdb=self::db();  
+        $results=$wpdb->get_results("SELECT `option_id`, `option_name`, `option_value`, `autoload` FROM `".$wpdb->prefix."options` WHERE `option_name` LIKE '".self::base."_%'");
         $c=new self();
         foreach($results as $r){
             $field=$r->option_name;
@@ -42,8 +44,8 @@ class CustomVariables extends ModelLite
         return $c;
     }
 
-    static public function requestHandler(){        
-        global $wpdb;
+    static public function request_handler(){        
+        $wpdb=self::db();  
         if ($_POST['Function'] == 'Save' && $_POST['table']=="CustomVariables"){
             foreach(self::variables as $var){
                 if ($_POST[$var]!=$_POST[$var.'_was']){
@@ -56,14 +58,8 @@ class CustomVariables extends ModelLite
                         //insert
                         $wpdb->add_option( self::base."_".$var, $_POST[$var]);
                     }
-                }
-                
-            }  
-            
-            // $iSQL="Replace INTO `".$wpdb->prefix."_options` (`option_name`, `option_value`, `autoload`) VALUES ".implode(",",$insert);
-            // print $iSQL;
-            //self::DisplayNotice("Donor Site Options Set");
-            
+                }   
+            }
         }
     }
 

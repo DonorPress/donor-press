@@ -27,9 +27,9 @@
 	?>
 	<div id="pluginwrap">
 	<?php
-	if (Donation::RequestHandler()) { print "</div>"; return;} //important to do this first
-	if (Donor::RequestHandler())  { print "</div>"; return;}
-	if (DonationCategory::RequestHandler()) { print "</div>"; return;}
+	if (Donation::request_handler()) { print "</div>"; return;} //important to do this first
+	if (Donor::request_handler())  { print "</div>"; return;}
+	if (DonationCategory::request_handler()) { print "</div>"; return;}
 	//load_initial_data();
 	?>
 	<h2>Donor Tracker</h2>
@@ -43,7 +43,7 @@
 		OR UPPER(Email) LIKE '%".strtoupper($_GET['dsearch'])."%'
 		OR UPPER(Phone) LIKE '%".strtoupper($_GET['dsearch'])."%')","(MergedId =0 OR MergedId IS NULL)"));
 		//print "do lookup here...";
-		print Donor::showResults($list);
+		print Donor::show_results($list);
 		
 	}?>
 
@@ -65,7 +65,7 @@
   <input type="hidden" name="uploadSummary" value="true" checked/>
   <!--<label><input type="checkbox" name="nuke" value="true"/> Purge DB</label>-->
   <?php submit_button('Upload NonPaypal','primary','submit',false) ?>
- <a href="<?=plugin_dir_url( __FILE__ )?>uploads/SampleNonPaypalFileUpload.csv">Download Non Paypal Template</a> - Must keep this structure intact!
+ <a href="<?=plugin_dir_url( __FILE__ )?>resources/SampleNonPaypalFileUpload.csv">Download Non Paypal Template</a> - Must keep this structure intact!
   
 </form>
 

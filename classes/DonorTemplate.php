@@ -14,19 +14,10 @@ class DonorTemplate extends ModelLite {
         'ping_status'=>'closed'
     ];    
     
-	//public $incrementing = true;
 	const CREATED_AT = 'post_date';
 	const UPDATED_AT = 'post_modified'; 
 
-    // public function view(){ 
-    //     global $wpdb;
-    //     print "view it";
-
-               
-		
-    // }
-
-    static public function getByName($name){
+    static public function get_by_name($name){
         $temp=self::get(array("post_name='".$name."'","post_type='donortemplate'"));
         return $temp[0];
     }
@@ -66,21 +57,21 @@ class DonorTemplate extends ModelLite {
         <?php        
     }
 
-    static public function requestHandler(){        
-        global $wpdb;
+    static public function request_handler(){        
+        $wpdb=self::db();  
         if ($_POST['Function'] == 'Save' && $_POST['table']=="posts" && $_POST['post_type'] == 'donortemplate'){
             
             $template=new self($_POST);
             $template->post_modified=time();
             if ($template->save()){
-                self::DisplayNotice("Template #".$template->ID." ".$template->post_name." saved.");
-               // $template->fullView();
+                self::display_notice("Template #".$template->ID." ".$template->post_name." saved.");
+               // $template->full_view();
                 //return true;
             }
      
 
         }elseif ($_GET['DonorTemplateId']){
-            $t=self::getById($_GET['DonorTemplateId']);
+            $t=self::get_by_id($_GET['DonorTemplateId']);
             if ($_GET['edit']=="t"){  
                 //self::dump($t) ;                     
                 $t->edit();
@@ -89,7 +80,7 @@ class DonorTemplate extends ModelLite {
             }           
             return true;
         }elseif($_GET['CopyDonorTemplateId']){
-            $t=self::getById($_GET['CopyDonorTemplateId']);
+            $t=self::get_by_id($_GET['CopyDonorTemplateId']);
             $t->ID='';
             $t->post_name.='-copy'.$_GET['CopyDonorTemplateId'];
             $t->edit();           
@@ -98,8 +89,8 @@ class DonorTemplate extends ModelLite {
     }
   
     static function list(){       
-        global $wpdb;        
-        $SQL="SELECT * FROM ".self::getTableName()." WHERE post_type='donortemplate' AND post_parent=0 Order BY post_name,post_title";
+        $wpdb=self::db();          
+        $SQL="SELECT * FROM ".self::get_table_name()." WHERE post_type='donortemplate' AND post_parent=0 Order BY post_name,post_title";
         $results = $wpdb->get_results($SQL);        
         ?><h2>Template List</h2>
         <table border=1><tr><th>Template</th><th>Subject</th><th>Body</th><th></th></tr>

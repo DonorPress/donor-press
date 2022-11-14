@@ -3,7 +3,7 @@ require_once 'ModelLite.php';
 require_once 'Donation.php';
 
 class DonationReceipt extends ModelLite {
-    protected $table = 'DonationReceipt';
+    protected $table = 'donation_receipt';
 	protected $primaryKey = 'ReceiptId';
 	### Fields that can be passed 
     protected $fillable = ["DonorId","KeyType","KeyId","Type","Address","DateSent","Content"];	    
@@ -20,9 +20,9 @@ class DonationReceipt extends ModelLite {
         "Type"=>["e"=>"Email","p"=>"Postal Mail"],        
     ];
   
-    static public function createTable(){
+    static public function create_table(){
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php');
-          $sql="CREATE TABLE IF NOT EXISTS `".self::getTableName()."` (
+          $sql="CREATE TABLE IF NOT EXISTS `".self::get_table_name()."` (
             `ReceiptId` int(11) NOT NULL AUTO_INCREMENT,
             `DonorId` int(11) NOT NULL COMMENT 'Donation/YearEnd',
             `KeyType` varchar(20) NOT NULL,
@@ -35,7 +35,7 @@ class DonationReceipt extends ModelLite {
           dbDelta( $sql );
     }
 
-    function showType(){
+    function show_type(){
         if ($this->Type=="e") return "Email"; 
         elseif ($this->Type=="m") return "Mail";
         else return $this->Type;
@@ -45,7 +45,7 @@ class DonationReceipt extends ModelLite {
         if (!$array || sizeof($array)==0) return;
         $return="<table><tr><th>Type</th><th>Address</th><th>DateSent</th></tr>";
         foreach($array as $r){
-            $return.="<tr><td>".$r->showType()."</td><td>".$r->Address."</td><td>".$r->DateSent."</td></tr>";
+            $return.="<tr><td>".$r->show_type()."</td><td>".$r->Address."</td><td>".$r->DateSent."</td></tr>";
         }
         $return.="</table>";
         return $return;

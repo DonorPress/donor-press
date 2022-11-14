@@ -12,9 +12,9 @@
 </style>
 <div id="pluginwrap">
 	<?php
-	if (Donation::RequestHandler()) { print "</div>"; return;} //important to do this first
-	if (Donor::RequestHandler())  { print "</div>"; return;}
-	if (DonationCategory::RequestHandler()) { print "</div>"; return;}
+	if (Donation::request_handler()) { print "</div>"; return;} //important to do this first
+	if (Donor::request_handler())  { print "</div>"; return;}
+	if (DonationCategory::request_handler()) { print "</div>"; return;}
 	//load_initial_data();
 	?>
 	
@@ -31,7 +31,7 @@
 		return;
 	}
 
-	Donation::donationUploadGroups();
+	Donation::donation_upload_groups();
 	?>
 	
 	<div><strong>Year End Tax Summaries:</strong> <?
@@ -77,7 +77,7 @@ function reportCurrentMonthly(){
 		$where[]="CategoryId IN ('".implode("','",$selectedCatagories)."')";
 	}
 
-	$SQL="SELECT `Name`,AVG(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation FROM ".Donation::getTableName()." WHERE ".implode(" AND ",$where)." Group BY `Name` ORder BY AVG(`Gross`) DESC";
+	$SQL="SELECT `Name`,AVG(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation FROM ".Donation::get_table_name()." WHERE ".implode(" AND ",$where)." Group BY `Name` ORder BY AVG(`Gross`) DESC";
 	$results = $wpdb->get_results($SQL);
 	print $SQL;
 	if (sizeof($results)>0){
@@ -132,7 +132,7 @@ function reportTop($top=20){
 	Donation::stats($where);	
 
 	$results = $wpdb->get_results("SELECT D.`DonorId`,D.`Name`, SUM(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation, AVG(`Gross`) as Average
-	FROM ".Donation::getTableName()." DD INNER JOIN ".Donor::getTableName()." D ON D.DonorId=DD.DonorId WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")." Group BY  D.`DonorId`,D.`Name` Order BY SUM(`Gross`) DESC, COUNT(*) DESC LIMIT ".$top);
+	FROM ".Donation::get_table_name()." DD INNER JOIN ".Donor::get_table_name()." D ON D.DonorId=DD.DonorId WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")." Group BY  D.`DonorId`,D.`Name` Order BY SUM(`Gross`) DESC, COUNT(*) DESC LIMIT ".$top);
 	if (sizeof($results)>0){?>
 		
 		<table border=1><tr><th>Name</th><th>Total</th><th>Average</th><th>Count</th><th>First Donation</th><th>Last Donation</th>
@@ -176,13 +176,13 @@ function reportMonthly(){
 		$where[]="CategoryId IN ('".implode("','",$selectedCatagories)."')";
 	}
 
-	$SQL="SELECT EXTRACT(YEAR_MONTH FROM `Date`) as Month, `Type`,	SUM(`Gross`) as Total,Count(*) as Count FROM ".Donation::getTableName()." WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")."
+	$SQL="SELECT EXTRACT(YEAR_MONTH FROM `Date`) as Month, `Type`,	SUM(`Gross`) as Total,Count(*) as Count FROM ".Donation::get_table_name()." WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")."
 	Group BY  EXTRACT(YEAR_MONTH FROM `Date`), `Type`";
 
 	//print $SQL;
+	$graph=[];
 	$results = $wpdb->get_results($SQL);
-	if (sizeof($results)>0){
-		
+	if (sizeof($results)>0){		
 		foreach ($results as $r){
 			$type=Donation::getTinyDescription('Type',$r->Type)??$r->Type;
 			$graph['Total'][$r->Month][$type]+=$r->Total;
@@ -190,7 +190,6 @@ function reportMonthly(){
 			$graph['Type'][$type]+=$r->Total;
 		}
 		krsort($graph['Type']);
-		//print_r($graph);
 		?>
 		  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script type="text/javascript">

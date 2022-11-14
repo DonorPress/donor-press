@@ -32,8 +32,8 @@ function donor_plugin_create_menu_entry() {
 	// adding the main manu entry
 	add_menu_page('Donors', 'Donors', 'edit_posts', 'donor-index', 'donor_show_index', $icon);
 	// adding the sub menu entry
-	add_submenu_page( 'donor-index', 'Reports', 'Reports', 'edit_posts', 'donor-reports', 'donor_show_reports','' );
-	add_submenu_page( 'donor-index', 'Settings', 'Settings', 'edit_posts', 'donor-settings', 'donor_show_settings','');
+	add_submenu_page( 'donor-index', 'Reports', 'Reports', 'edit_posts', 'donor-reports', 'donor_show_reports',2 );
+	add_submenu_page( 'donor-index', 'Settings', 'Settings', 'edit_posts', 'donor-settings', 'donor_show_settings',3);
 }
 
 
@@ -71,8 +71,8 @@ function dn_plugin_base_dir(){
 
 function load_initial_data(){
 	global $wpdb;
-	//$wpdb->query("TRUNCATE ".Donation::getTableName());
-	// $result=Donation::csvReadFile("2015-2018.CSV",$firstLineColumns=true);
+	//$wpdb->query("TRUNCATE ".Donation::get_table_name());
+	// $result=Donation::cvs_read_file("2015-2018.CSV",$firstLineColumns=true);
 	// print "<pre>"; print_r($result); print "</pre>";
 	// print_r(Donation::replaceIntoList($result));
 	Donor::makeReceiptYearPageTemplate();
@@ -82,16 +82,16 @@ function nuke(){
 	global $wpdb;
 	$wpdb->show_errors();
 	### used in testing to wipe out everything and recreate blank
-	$wpdb->query("DROP TABLE IF EXISTS ".Donor::getTableName());
-	$wpdb->query("DROP TABLE IF EXISTS ".Donation::getTableName());
-	$wpdb->query("DROP TABLE IF EXISTS ".DonationReceipt::getTableName());
-	$wpdb->query("DROP TABLE IF EXISTS ".DonationCategory::getTableName());
+	$wpdb->query("DROP TABLE IF EXISTS ".Donor::get_table_name());
+	$wpdb->query("DROP TABLE IF EXISTS ".Donation::get_table_name());
+	$wpdb->query("DROP TABLE IF EXISTS ".DonationReceipt::get_table_name());
+	$wpdb->query("DROP TABLE IF EXISTS ".DonationCategory::get_table_name());
 	donor_plugin_create_tables();
 }
 
 function donor_plugin_create_tables() {	
-	Donor::createTable();
-	Donation::createTable();
-	DonationReceipt::createTable();
-	DonationCategory::createTable();
+	Donor::create_table();
+	Donation::create_table();
+	DonationReceipt::create_table();
+	DonationCategory::create_table();
 }

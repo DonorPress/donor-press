@@ -13,9 +13,9 @@
 <div id="pluginwrap">
 	<?php
     global $wpdb;	
-	if (DonationCategory::RequestHandler()) { print "</div>"; return;}	
-    if (DonorTemplate::RequestHandler()) { print "</div>"; return;}  
-    if (CustomVariables::requestHandler()) { print "</div>"; return;}    
+	if (DonationCategory::request_handler()) { print "</div>"; return;}	
+    if (DonorTemplate::request_handler()) { print "</div>"; return;}  
+    if (CustomVariables::request_handler()) { print "</div>"; return;}    
     ?>	
 	<h1>Settings</h1>
     <?php    
