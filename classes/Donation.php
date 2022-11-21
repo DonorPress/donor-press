@@ -7,7 +7,7 @@ class Donation extends ModelLite
     protected $table = 'Donation';
 	protected $primaryKey = 'DonationId';
 	### Fields that can be passed //,"Time","TimeZone"
-    protected $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxExcempt"];	 
+    protected $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxExcempt"];	 
 
     protected $paypal = ["Date","Time","TimeZone","Name","Type","Status","Currency","Gross","Fee","Net","From Email Address","To Email Address","Transaction ID","Address Status","Item Title","Item ID","Option 1 Name","Option 1 Value","Option 2 Name","Option 2 Value","Reference Txn ID","Invoice Number","Custom Number","Quantity","Receipt ID","Balance","Contact Phone Number","Subject","Note","Payment Source"];
 
@@ -20,7 +20,7 @@ class Donation extends ModelLite
     protected $tinyIntDescriptions=[
         "Status"=>["9"=>"Completed","7"=>"Pending","0"=>"Unknown","-1"=>"Deleted","-2"=>"Denied"],
         "AddressStatus"=>[0=>"Not Set",-1=>"Non-Confirmed",1=>"Confirmed"],
-        "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer"],
+        "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer","10"=>"Paypal"],
         "Type"=>[0=>"Other",1=>"Donation Payment",2=>"Website Payment",5=>"Subscription Payment",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
         "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"],
         "NotTaxExcempt"=>["0"=>"Tax Exempt","1"=>"Not Tax Excempt (Donor Advised fund, etc)"]
@@ -48,6 +48,49 @@ class Donation extends ModelLite
 	const UPDATED_AT = 'UpdatedAt';
     
     
+    public function from_paypal_api_detail($detail){               
+        $transaction=$detail->transaction_info;
+        $payer=$detail->payer_info;
+        $donation=new self();
+
+        $donation->Source='paypal';
+        $donation->SourceId=$transaction->paypal_account_id;
+        $donation->TransactionID=$transaction->transaction_id;
+        $donation->Date=date("Y-m-d H:i:s",strtotime($transaction->transaction_initiation_date));
+        $donation->DateDeposited=date("Y-m-d",strtotime($transaction->transaction_initiation_date));
+        $donation->Gross=$transaction->transaction_amount->value;
+        $donation->Currency=$transaction->transaction_amount->currency_code;
+        $donation->Fee=$transaction->fee_amount->value;
+        $donation->Net=$donation->Gross-$donation->Fee;              
+        $donation->Subject=$transaction->transaction_subject;
+        $donation->Note=$transaction->transaction_note;
+        $donation->Name=$payer->payer_name->alternate_full_name; 
+        $donation->FromEmailAddress=$payer->email_address;
+        $donation->PaymentSource=10;
+        $donation->Type=self::transaction_event_code_to_type($transaction->transaction_event_code);
+        //Fields we should drop:
+        $donation->AddressStatus=$payer->address_status=="Y"?1:-1;    
+        $donation->NotTaxExcempt =0;
+
+        return $donation;
+
+        ####
+        //$donation->Status=$transaction->transaction_status; //?
+        //calculated -> "Type",
+        ###
+        //"DonorId",,"Status","ToEmailAddress",""AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber",];	 
+
+    }
+
+    public function transaction_event_code_to_type($transaction_event_code){
+        //https://developer.paypal.com/docs/reports/reference/tcodes/
+        switch($transaction_event_code){
+            case "T0002": return 5; break; //subscription Payment
+            case "T0013": return 1; break;
+            default: return 0; break;
+        }
+    }
+
     public function donation_to_donor($override=array()){
         ### When uploading new dontations, this will find existings donors, or create new ones automatically.
         global $wpdb,$donation_to_donor; //cache donor lookups to speed up larger imports.       
@@ -247,10 +290,9 @@ class Donation extends ModelLite
         }
         print "Criteria: ".implode(", ",$where);
         $SQL="Select D.*,R.Type as ReceiptType,R.Address,R.DateSent,R.ReceiptId
-          FROM".Donation::get_table_name()." D
+          FROM ".Donation::get_table_name()." D
         LEFT JOIN ".DonationReceipt::get_table_name()." R ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE ".implode(" AND ", $where)." Order BY D.Date DESC,  D.DonationId DESC;";
         
-        //print $SQL;
         $donations = $wpdb->get_results($SQL);
         foreach ($donations as $r){
             $donorIdList[$r->DonorId]++;
@@ -315,7 +357,7 @@ class Donation extends ModelLite
                     if ($r->ReceiptType){
                         print "Sent: ".$r->ReceiptType." ".$r->Address;
                     }else{
-                        ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print $donation->DonationId?>" checked/> <a href="">Custom Response</a><?
+                        ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print $donation->DonationId?>" checked/> <a target="donation" href="?page=<?php print $_GET['page'].'&DonationId='.$donation->DonationId?>">Custom Response</a><?
                     }?></td><td><?php print $donation->display_key()?></td><td><?php print $donation->Date?></td><td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?
                     if ($donors[$donation->DonorId]){
                         print $donors[$donation->DonorId]->display_key()." ".$donors[$donation->DonorId]->name_check();
@@ -345,9 +387,6 @@ class Donation extends ModelLite
     static public function cvs_upload_check(){
         $timeNow=time();
         if(isset($_FILES['fileToUpload'])){
-            if ($_POST['nuke']=="true"){
-                //nuke(); 
-            } 
             $originalFile=basename($_FILES["fileToUpload"]["name"]);
             $target_file = $tmpfname = tempnam(sys_get_temp_dir(), 'CSV');
             if (file_exists($target_file)){ 
@@ -521,7 +560,7 @@ class Donation extends ModelLite
                         $paypal['ItemTitle']=$paypal['ItemID'];
                         $paypal['ItemID']='';
                     }
-                    ###  helps handle a file from PPGF -> Paypal Giving file try to handle. Soure: https://www.paypal.com/givingfund/activity
+                    ###  helps handle a file from PPGF -> Paypal Giving file try to handle. Source: https://www.paypal.com/givingfund/activity
                     $fieldShift=["CurrencyCode"=>"Currency","DonorEmail"=>'FromEmailAddress',"ReferenceInformation"=>"Note","DonationDate"=>"Date","GrossAmount"=>"Gross","TotalFees"=>"Fee","NetAmount"=>"Net"];                  
             
                     if (($paypal['DonorFirstName'] || $paypal['DonorLastName']) && !$paypal['Name']){
@@ -898,7 +937,7 @@ class Donation extends ModelLite
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false); 
         $file=$this->receipt_file_info();
-        $path=$file['path'];//dn_plugin_base_dir()."receipts/DonationReceipt-".$this->DonorId."-".$this->DonationId.".pdf"; //not acceptable on live server...
+        $path=$file['path'];//dn_plugin_base_dir()."resources/DonationReceipt-".$this->DonorId."-".$this->DonationId.".pdf"; //not acceptable on live server...
         $pdf->AddPage();
         $this->receipt_email();
         $pdf->writeHTML($customMessage?$customMessage:$this->emailBuilder->body, true, false, true, false, '');        
@@ -949,7 +988,7 @@ class Donation extends ModelLite
 
     function receipt_file_info(){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-DT'.$this->DonationId.'.pdf';
-        $path=dn_plugin_base_dir()."/receipts/".$file;
+        $path=dn_plugin_base_dir()."/resources/".$file;
         $link=site_url().str_replace($_SERVER['DOCUMENT_ROOT'],"/",$path);
         return array('path'=>$path,'file'=>$file,'link'=>$link);
     }

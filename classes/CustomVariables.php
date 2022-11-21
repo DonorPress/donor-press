@@ -8,7 +8,7 @@ class CustomVariables extends ModelLite
 {  
     const base = 'donation';
     const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId"];	
-    
+    const variables_protected = ["PaypalClientId","PaypalSecret"];
     static public function form(){
         $wpdb=self::db();  
         $vals=self::get_custom_variables();      
@@ -17,8 +17,7 @@ class CustomVariables extends ModelLite
         <form method="post">
         <input type="hidden" name="table" value="CustomVariables"/>
             <table>
-                <?php 
-                
+                <?php
                 foreach(self::variables as $var){                    
                     $fullVal=self::base."_".$var;
                     //$c->$var=get_option($fullVal);
@@ -26,11 +25,35 @@ class CustomVariables extends ModelLite
                     <tr><td><input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/><?php print $var?></td><td><input name="<?php print $var?>" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/>
                     <input type="hidden" name="<?php print $var?>_was" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/></td></tr>
                     <?php
-                }?>
+                }
+                ?>
+                </table>
+                <h3>Protected Variables (encoded)</h3>
+                <div>By entering a value, it will override what is currently there. Values are encrypted on the database.</div>
+                <table>
+                <?php
+                foreach(self::variables_protected as $var){                    
+                    $fullVal=self::base."_".$var;
+                    //$c->$var=get_option($fullVal);
+                    ?>
+                    <tr><td><input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/><?php print $var?></td><td><input name="<?php print $var?>" value=""/>
+                    <?php print $vals->$fullVal?"<span style='color:green;'> - set</span> ":" <span style='color:red;'>- not set</span>";
+                    ?></td></tr>
+                  <?php
+                } 
+                ?>
             </table>
             <button type="submit" class="primary" name="Function" value="Save">Save</button>
         </form>
         <?php
+    }
+    static function get_option($option,$decode=false){
+        $result=get_option(self::base."_".$option);
+        if($decode){
+            return base64_decode($result);
+        }else{
+            return $result;
+        }
     }
 
     static function get_custom_variables(){
@@ -45,21 +68,35 @@ class CustomVariables extends ModelLite
     }
 
     static public function request_handler(){        
-        $wpdb=self::db();  
+        //$wpdb=self::db();  
         if ($_POST['Function'] == 'Save' && $_POST['table']=="CustomVariables"){
             foreach(self::variables as $var){
                 if ($_POST[$var]!=$_POST[$var.'_was']){
                     if ($_POST[$var.'_id']){
                         //update
                         print "update ".$var."<br>";
-                        $wpdb->update_option( self::base."_".$var, $_POST[$var], true);
+                        update_option( self::base."_".$var, $_POST[$var], true);
                     }else{
                         print "insert ".$var." <br>";
                         //insert
-                        $wpdb->add_option( self::base."_".$var, $_POST[$var]);
+                        add_option( self::base."_".$var, $_POST[$var]);
                     }
                 }   
             }
+            foreach(self::variables_protected as $var){
+                if ($_POST[$var]!=""){
+                    if ($_POST[$var.'_id']){
+                        //update
+                        print "update ".$var."<br>";
+                        update_option( self::base."_".$var, base64_encode($_POST[$var]), true);
+                    }else{
+                        print "insert ".$var." <br>";
+                        //insert
+                        add_option( self::base."_".$var, base64_encode($_POST[$var]));
+                    }
+                }
+            }
+
         }
     }
 

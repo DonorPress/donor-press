@@ -8,7 +8,7 @@ class Donor extends ModelLite {
     protected $table = 'Donor';
 	protected $primaryKey = 'DonorId';
 	### Fields that can be passed 
-    protected $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting","MergedId"];	    
+    protected $fillable = ["Source","SourceId","Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting","MergedId"];	    
 	### Default Values
 	protected $attributes = [        
         'Country' => 'US',
@@ -27,6 +27,8 @@ class Donor extends ModelLite {
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php');
           $sql="CREATE TABLE IF NOT EXISTS `".self::get_table_name()."` (
             `DonorId` int(11) NOT NULL AUTO_INCREMENT,
+            `Source` varchar(20) NOT NULL,
+            `SourceId` varchar(50) NOT NULL,
             `Name` varchar(60) NOT NULL,
             `Name2` varchar(60)  NULL,
             `Email` varchar(80)  NULL,
@@ -45,6 +47,32 @@ class Donor extends ModelLite {
             PRIMARY KEY (`DonorId`)
             )";
           dbDelta( $sql );
+    }
+
+    static public function from_paypal_api_detail($detail){
+        $payer=$detail->payer_info;
+        $shipInfo=$detail->shipping_info;
+
+        $d = new self();
+        $d->Source='paypal';
+        $d->SourceId=$payer->account_id;
+        $d->Email=$payer->email_address; 
+        //$d->EmailStatus=1; //if already set elswhere... should not be etting this
+        $d->Name=$payer->payer_name->alternate_full_name;
+        $address=$payer->address?$payer->address:$shipInfo; //address not always provided, but if it is, look first if it is on the payer object, otherwise look at shipping_info
+        if ($address){
+            $d->Address1=$address->line1;
+            if ($address->line2) $d->Address2=$address->line2;
+            $d->City=$address->city;
+            if ($address->State) $d->Region=$address->state;
+            $d->Country=$address->country_code;
+        }elseif($payer->country_code){
+            $d->Country=$payer->country_code;  //entries without addresses usually at least have country codes.
+        }
+
+        return $d;
+        //$d->TaxReporting=0        
+
     }
 
     public function merge_form(){
@@ -183,7 +211,7 @@ class Donor extends ModelLite {
                     $pdf->SetFont('helvetica', '', 12);
                     $pdf->setPrintHeader(false);
                     $pdf->setPrintFooter(false); 
-                    $path=plugin_dir_url( __FILE__ )."receipts/YearEndReceipt".$year.".pdf"; //not acceptable on live server...
+                    $path=plugin_dir_url( __FILE__ )."resources/YearEndReceipt".$year.".pdf"; //not acceptable on live server...
                     foreach ($donorList as $donor){
                         $donor->year_receipt_email($year);
                         $pdf->AddPage();
@@ -538,7 +566,7 @@ class Donor extends ModelLite {
     }
     function receipt_file_info($year){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-'.$year.'.pdf';
-        $link=plugin_dir_url( __FILE__ )."receipts/".$file; //Not acceptable on live server... May need to scramble code name on file so it isn't guessale.
+        $link=plugin_dir_url( __FILE__ )."resources/".$file; //Not acceptable on live server... May need to scramble code name on file so it isn't guessale.
         return array('path'=>$_SERVER['DOCUMENT_ROOT'].$link,'file'=>$file,'link'=>$link);
     }
 

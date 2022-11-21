@@ -34,6 +34,7 @@ function donor_plugin_create_menu_entry() {
 	// adding the sub menu entry
 	add_submenu_page( 'donor-index', 'Reports', 'Reports', 'edit_posts', 'donor-reports', 'donor_show_reports',2 );
 	add_submenu_page( 'donor-index', 'Settings', 'Settings', 'edit_posts', 'donor-settings', 'donor_show_settings',3);
+	add_submenu_page( 'donor-index', 'Paypal', 'Paypal', 'edit_posts', 'donor-paypal', 'donor_show_paypal',4);
 }
 
 
@@ -63,6 +64,10 @@ function donor_show_reports() {
 
 function donor_show_settings() {
 	include('donor-settings.php');
+}
+
+function donor_show_paypal() {
+	include('donor-paypal.php');
 }
 
 function dn_plugin_base_dir(){
