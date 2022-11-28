@@ -153,7 +153,6 @@ class ModelLite{
         foreach ($result as $row){
 			$existingEntries[self::get_key($row)]=$row->C;
 		}
-		//self::dump($existingEntries);
 
         if (sizeof($q)>0){		
 			$iSQL=[];
@@ -171,7 +170,6 @@ class ModelLite{
             }
 			if (sizeof($iSQL)>0){
 				$SQL="INSERT INTO ".self::s()->get_table()." (`".implode("`,`",$row->fillable)."`) VALUES ".implode(", ",$iSQL);
-				//print self::get_key($row)."::".$SQL."<hr>";
 				$result= $wpdb->query($SQL);
 			}
 			return array('inserted'=>sizeof($iSQL),'skipped'=>$skipped,'insertResult'=>$result);

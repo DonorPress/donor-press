@@ -2,14 +2,13 @@
 /*
     Plugin Name: Donor Press - A Donation Tracking System
     Plugin URI: https://denversteiner.com/wp-plugins/donorpress
-    Description: A plugin for non-profits used to track donations. This integrates with Paypal as well as allows for manual entry.
+    Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry.
     Author: Denver Steiner
     Author URI: https://denversteiner.com/wp-plugins/donorpress
     Version: 0.1.0
 */
 
 require_once __DIR__ . '/vendor/autoload.php';
-
 require_once 'classes/Donation.php';
 require_once 'classes/Donor.php';
 require_once 'classes/DonationCategory.php';
@@ -41,6 +40,15 @@ function donor_plugin_create_menu_entry() {
 ## Search record
 add_action( 'wp_ajax_searchDonorList', 'searchDonorList_callback' );
 add_action( 'wp_ajax_nopriv_searchDonorList', 'searchDonorList_callback' );
+add_action("init", "ur_theme_start_session", 1);
+function ur_theme_start_session()
+{
+    if (!session_id())
+        session_start();
+}
+
+
+
 function searchDonorList_callback() {
 	$request = $_POST['request'];
 	$searchText = strtoupper($_POST['searchText']);

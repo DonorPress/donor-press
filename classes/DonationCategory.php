@@ -31,7 +31,7 @@ class DonationCategory extends ModelLite
             $old->donation_count();
             
             $wpdb->update(Donation::get_table_name(),array("CategoryId"=>$_POST['MergeTo']),array('CategoryId'=> $old->CategoryId));
-            self::display_notice($old->donation_count." donation record counts changed from Category '". $old->Category."' to ".$mergeTo->showField("CategoryId")." - ".$mergeTo->Category); 
+            self::display_notice($old->donation_count." donation record counts changed from Category '". $old->Category."' to ".$mergeTo->show_field("CategoryId")." - ".$mergeTo->Category); 
 
             if ($donationCategory->delete()){                
                 self::display_notice("Donation Category '".$donationCategory->Category."' deleted."); 
@@ -40,7 +40,7 @@ class DonationCategory extends ModelLite
             if ($_POST['Function']=="Save" && $_POST['table']=="donation_category"){
                 $donationCategory=new self($_POST);
                 if ($donationCategory->save()){
-                    self::display_notice("Donation Category#".$donationCategory->showField("CategoryId")." - ".$donationCategory->Cateogry." saved.");
+                    self::display_notice("Donation Category#".$donationCategory->show_field("CategoryId")." - ".$donationCategory->Cateogry." saved.");
                 }
             }
             $donationCategory=self::get_by_id($_REQUEST['CategoryId']);	

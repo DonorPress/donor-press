@@ -29,8 +29,8 @@ class Donor extends ModelLite {
             `DonorId` int(11) NOT NULL AUTO_INCREMENT,
             `Source` varchar(20) NOT NULL,
             `SourceId` varchar(50) NOT NULL,
-            `Name` varchar(60) NOT NULL,
-            `Name2` varchar(60)  NULL,
+            `Name` varchar(80) NOT NULL,
+            `Name2` varchar(80)  NULL,
             `Email` varchar(80)  NULL,
             `EmailStatus` tinyint(4) NOT NULL DEFAULT '1' COMMENT '-1=Bounced 1=Active',
             `Phone` varchar(20)  NULL,
@@ -52,27 +52,26 @@ class Donor extends ModelLite {
     static public function from_paypal_api_detail($detail){
         $payer=$detail->payer_info;
         $shipInfo=$detail->shipping_info;
-
         $d = new self();
         $d->Source='paypal';
         $d->SourceId=$payer->account_id;
         $d->Email=$payer->email_address; 
         //$d->EmailStatus=1; //if already set elswhere... should not be etting this
         $d->Name=$payer->payer_name->alternate_full_name;
-        $address=$payer->address?$payer->address:$shipInfo; //address not always provided, but if it is, look first if it is on the payer object, otherwise look at shipping_info
+        $address=$payer->address?$payer->address->address:$shipInfo->address; //address not always provided, but if it is, look first if it is on the payer object, otherwise look at shipping_info   
         if ($address){
             $d->Address1=$address->line1;
             if ($address->line2) $d->Address2=$address->line2;
             $d->City=$address->city;
-            if ($address->State) $d->Region=$address->state;
+            $d->Region=$address->state;
             $d->Country=$address->country_code;
+            $d->PostalCode=$address->postal_code;
         }elseif($payer->country_code){
             $d->Country=$payer->country_code;  //entries without addresses usually at least have country codes.
         }
-
+        //if ($d->Address1=="100 Lido Cr.H1") dd($d,$address);
         return $d;
-        //$d->TaxReporting=0        
-
+        //$d->TaxReporting=0
     }
 
     public function merge_form(){
@@ -81,6 +80,56 @@ class Donor extends ModelLite {
         Merge To Id: <input type="number" name="MergedId" value="">
         <button method="submit" name="Function" value="MergeConfirm">Merge</button>
         Enter the ID of the Donor you want to merge to. You will have the option to review this merge. Once merged, all donations will be relinked to the new profile.</form><?
+    }
+
+    static public function donor_update_suggestion($current,$new){   
+        $suggest_donor_changes=[];
+        foreach ($new as $donorN){
+            if ($donorN->DonorId && $current[$donorN->DonorId]){
+                foreach(self::s()->fillable as $field){
+                    if (isset($donorN->$field) && $donorN->$field!="" && $donorN->$field!=$current[$donorN->DonorId]->$field){
+                        $suggest_donor_changes[$donorN->DonorId][$field]['c']=$current[$donorN->DonorId]->$field;
+                        $suggest_donor_changes[$donorN->DonorId][$field]['n'][$donorN->$field]++;
+                    }
+                }
+                //If there is any changes for this donor, then set name so it can be read
+                if ($suggest_donor_changes[$donorN->DonorId]){
+                    $suggest_donor_changes[$donorN->DonorId]['Name']['c']=$current[$donorN->DonorId]->Name;
+                } 
+            }
+        }
+        //self::dump($suggest_donor_changes);
+        self::donor_update_suggestion_form($suggest_donor_changes);          
+    }
+
+    static public function donor_update_suggestion_form($suggest_donor_changes){
+        if (sizeof($suggest_donor_changes)==0) return;
+
+        print "<h2>The following changes are suggested</h2><form method='post'>";
+        print "<table border='1'><tr><th>#</th><th>Name</th><th>Change</th></tr>";
+        foreach ($suggest_donor_changes as $donorId => $changes){
+            print "<tr><td><a target='lookup' href='?page=donor-index&DonorId=".$donorId."'>".$donorId."</td><td>".$changes['Name']['c']."</td><td>";
+            foreach($changes as $field=>$values){
+               if ($values['n']){                               
+                   //krsort($values['n']);
+                   $i=0;
+                   foreach($values['n'] as $value=>$count){
+                       print "<div><label><input ".($i==0?" checked ":"")." type='checkbox' name='changes[]' value=\"".addslashes($donorId."||".$field."||".$value)."\"/> <strong>".$field.":</strong> ".($values['c']?$values['c']:"(blank)")." -> ".$value.(sizeof($values['n'])>1?" (".$count.")":"")."</label></div>";
+                       $i++;                                    
+                   }
+               }                         
+            }
+            print "</td><td>";
+            if ($changes['MatchOn']){
+                print_r($changes['MatchOn']);
+            }
+            print "</td></tr>";
+
+        }
+        print "</table><button type='submit' name='Function' value='MakeDonorChanges'>Make Donor Changes</button></form>";
+        print "<hr>";
+        print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View Summary</a></div>";
+   
     }
 
     public function merge_form_compare($oldDonor){
@@ -275,7 +324,7 @@ class Donor extends ModelLite {
             if ($_POST['Function']=="Save" && $_POST['table']=="Donor"){
                 $donor=new Donor($_POST);
                 if ($donor->save()){			
-                    self::display_notice("Donor #".$donor->showField("DonorId")." saved.");
+                    self::display_notice("Donor #".$donor->show_field("DonorId")." saved.");
                 }
                 
             }
@@ -295,7 +344,7 @@ class Donor extends ModelLite {
         }elseif ($_POST['Function']=="Save" && $_POST['table']=="Donor"){
             $donor=new Donor($_POST);
             if ($donor->save()){			
-                self::display_notice("Donor #".$donor->showField("DonorId")." saved.");
+                self::display_notice("Donor #".$donor->show_field("DonorId")." saved.");
                 $donor->view();
             }
             return true;

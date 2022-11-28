@@ -52,7 +52,6 @@ class Donation extends ModelLite
         $transaction=$detail->transaction_info;
         $payer=$detail->payer_info;
         $donation=new self();
-
         $donation->Source='paypal';
         $donation->SourceId=$transaction->paypal_account_id;
         $donation->TransactionID=$transaction->transaction_id;
@@ -396,23 +395,17 @@ class Donation extends ModelLite
             if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
                 echo "The file ". $originalFile. " has been uploaded.";               
                 if ($_REQUEST['submit']=="Upload NonPaypal"){
-                    //print "Ran A".$_REQUEST['submit'];
-                    $result=self::cvs_read_file_check($target_file,$firstLineColumns=true);
-                   
-                }else{
-                   // print "Ran B".$_REQUEST['submit'];
-                    $result=self::cvs_read_file($target_file,$firstLineColumns=true,$timeNow);
-                   
+                    $result=self::cvs_read_file_check($target_file,$firstLineColumns=true);                   
+                }else{              
+                    $result=self::cvs_read_file($target_file,$firstLineColumns=true,$timeNow);                   
                 }
-                
-                //print "<pre>"; print_r($result); print "</pre>";
-                //exit();
-                 if ($stats=self::replace_into_list($result)){//inserted'=>sizeof($iSQL),'skipped'
-                     echo "<div>Inserted ".$stats['inserted']." records. Skipped ".$stats['skipped']." repeats.</div>";
-                     unlink($target_file); //don't keep it on the server...
-                 }
-                 global $suggest_donor_changes;
-                 //self::dump($suggest_donor_changes);
+                ### This next step will Insert records if there is no duplicate on ["Date","Gross","FromEmailAddress","TransactionID"];
+                if ($stats=self::replace_into_list($result)){//inserted'=>sizeof($iSQL),'skipped'
+                    echo "<div>Inserted ".$stats['inserted']." records. Skipped ".$stats['skipped']." repeats.</div>";
+                    unlink($target_file); //don't keep it on the server...
+                }
+                global $suggest_donor_changes;
+
                  if ($suggest_donor_changes && sizeof($suggest_donor_changes)>0){
                      print "<h2>The following changes are suggested</h2><form method='post'>";
                      print "<table border='1'><tr><th>#</th><th>Name</th><th>Change</th></tr>";
@@ -636,11 +629,7 @@ class Donation extends ModelLite
                         $entry['ToEmailAddress']=$entry['FromEmailAddress'];
                         $entry['FromEmailAddress']=$from;
                         unset($from);
-              
-                       // $email swap...
-                        //test
                     }
-                    // self::dump($entry);
                     $obj=new self($entry);
                     // self::dump($obj);
                     $obj->donation_to_donor();  //Will Set DonorId on Donation Table.      
@@ -689,15 +678,16 @@ class Donation extends ModelLite
             if ($_POST['Function']=="Delete" && $_POST['table']=="Donation"){
                 $donation=new Donation($_POST);
                 if ($donation->delete()){
-                    self::display_notice("Donation #".$donation->showField("DonationId")." for $".$donation->Gross." from ".$donation->Name." on ".$donation->Date." deleted");
+                    self::display_notice("Donation #".$donation->show_field("DonationId")." for $".$donation->Gross." from ".$donation->Name." on ".$donation->Date." deleted");
                     //$donation->full_view();
                     return true;
                 }
             }
             if ($_POST['Function']=="Save" && $_POST['table']=="Donation"){
                 $donation=new Donation($_POST);
+                //dump($donation);
                 if ($donation->save()){
-                    self::display_notice("Donation #".$donation->showField("DonationId")." saved.");
+                    self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
                     $donation->full_view();
                     return true;
                 }
@@ -708,7 +698,7 @@ class Donation extends ModelLite
         }elseif ($_POST['Function']=="Save" && $_POST['table']=="Donation"){
             $donation=new Donation($_POST);            
             if ($donation->save()){
-                self::display_notice("Donation #".$donation->showField("DonationId")." saved.");
+                self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
                 $donation->full_view();
             }
             return true;
@@ -1026,7 +1016,7 @@ class Donation extends ModelLite
             `Date` datetime NOT NULL,
             `DateDeposited` date DEFAULT NULL,
             `DonorId` int(11) DEFAULT NULL,
-            `Name` varchar(29) NOT NULL,
+            `Name` varchar(80) NOT NULL,
             `Type` tinyint(4) DEFAULT NULL,
             `TypeOther` varchar(30) DEFAULT NULL,
             `Status` tinyint(4) DEFAULT NULL,

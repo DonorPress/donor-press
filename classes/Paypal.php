@@ -16,8 +16,8 @@ class Paypal extends ModelLite{
     public function get_token(){
         //Paypal token is cached as a SESSION variable to avoid the need to request a token multiple times.
         if($this->token){ //current classes token trumps anything stored in session. Not abosolutely necessary to do this.
-        }elseif ($_SESSION['wp_paypal_access_token'] && $_SESSION['wp_paypal_access_token_expires']<date("Y-m-d H:i:s")){
-            $this->token=$_SESSION['wp_paypal_access_token'];
+        }elseif ($_SESSION['wp_paypal_access_token'] && date("Y-m-d H:i:s")<$_SESSION['wp_paypal_access_token_expires']){
+            $this->token=$_SESSION['wp_paypal_access_token'];       
         }else{
            unset($_SESSION['wp_paypal_access_token'],$_SESSION['wp_paypal_access_token_expires']);
         }
@@ -41,9 +41,8 @@ class Paypal extends ModelLite{
         if(empty($result))die("Error: No Paypal response response from: ".$this->get_url()."oauth2/token");
         else{
             $json = json_decode($result); 
-            self::dump($json);
             $_SESSION['wp_paypal_access_token']=$json->access_token;
-            $_SESSION['wp_paypal_access_token_expires']=date("Y-m-d H:i:s",strtotime("+".($json->expires_in-30)." seconds")); //30 seconds removed to avoid timeouts on longer queries that might be stacked.
+            $_SESSION['wp_paypal_access_token_expires']=date("Y-m-d H:i:s",strtotime("+".($json->expires_in-30)." seconds")); //30 seconds removed to avoid timeouts on longer queries that might be stacked.           
             $this->token =$json->access_token;       
             return $this->token;
         }
@@ -110,11 +109,11 @@ class Paypal extends ModelLite{
         $response = curl_exec($ch);
         curl_close($ch); 
         $json =  json_decode($response);  
-        $this->processResponse($json); 
+        $this->process_response($json); 
         return $json;
     }
 
-    public function processResponse($response){
+    public function process_response($response){
         $donations=$donors=$donorEmails=array();
         $donationSkip=0;
         //This first loop caches results and puts them in Donor and Donation objects, but does NOT save them yet.         
@@ -140,6 +139,8 @@ class Paypal extends ModelLite{
                 $donors[$account_id_from_email]->DonorId=$r->MergeId?$r->MergeId:$r->DonorId;
             }           
         }
+        Donor::donor_update_suggestion($donorOriginal,$donors);
+        //dump($donors,$donorOriginal); 
 
         ### need to do some sort of compare -> check out existing...
         foreach($donors as $account_id=>$donor){
@@ -169,11 +170,7 @@ class Paypal extends ModelLite{
                 }else{
                     print "<div>Error: Donor Id not found on Paypal Transaction: ".$donation->TransactionID." on SourceId: ".$donation->SourceId."</div>";
                 }
-                
-
-                //
+            }
         }
-
     }
-
 }
