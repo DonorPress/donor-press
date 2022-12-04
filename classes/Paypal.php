@@ -5,12 +5,8 @@ class Paypal extends ModelLite{
     var $token;
     var $url;
 
-    public function __construct($token=false){
-        if ($token){
-            $this->token=$token;
-        }else{
-            $this->token=$this->get_token();
-        }
+    public function __construct(){
+
     }
 
     public function get_token(){
@@ -38,8 +34,10 @@ class Paypal extends ModelLite{
         ));
 
         $result = curl_exec($ch);
-        if(empty($result))die("Error: No Paypal response response from: ".$this->get_url()."oauth2/token");
-        else{
+        if(empty($result)){
+            self::display_error("Error: No Paypal response response from: ".$this->get_url()."oauth2/token");
+            die();
+        }else{
             $json = json_decode($result); 
             $_SESSION['wp_paypal_access_token']=$json->access_token;
             $_SESSION['wp_paypal_access_token_expires']=date("Y-m-d H:i:s",strtotime("+".($json->expires_in-30)." seconds")); //30 seconds removed to avoid timeouts on longer queries that might be stacked.           
@@ -56,7 +54,7 @@ class Paypal extends ModelLite{
     }
 
     public function get_transactions_date_range($start_date,$end_date=null){
-        //API only allwos for Date range is under 30 days. If it is greater, then this chunks it into shorter date ranges 
+        //API only allows for Date range  under 31 days. If it is greater the provided date range is greater, then this function chunks it into shorter date ranges 
         $response=null;
         $ts_start=strtotime($start_date);
         $ts_end=$end_date?strtotime($end_date):time();
@@ -87,10 +85,7 @@ class Paypal extends ModelLite{
         
         $start_date=date("Y-m-d",$ts_start)."T00:00:00.000Z";
         $end_date=($end_date?date("Y-m-d",$ts_end):date("Y-m-d"))."T23:59:59.999Z"; 
-        
-        //print $start_date." to ".$end_date."<br>";
-      //  return true;
-        
+
         $ch = curl_init();
         curl_setopt_array($ch, array(
             CURLOPT_URL => $this->get_url().'reporting/transactions?fields=transaction_info,payer_info,shipping_info&start_date='.$start_date.'&end_date='.$end_date,
@@ -105,16 +100,20 @@ class Paypal extends ModelLite{
                 'Authorization: Bearer '.$this->get_token()
             ),
         ));
-        //print $this->get_url().'reporting/transactions?fields=transaction_info,payer_info,shipping_info,auction_info,cart_info,incentive_info,store_info&start_date='.$start_date.'&end_date='.$end_date;
+
         $response = curl_exec($ch);
         curl_close($ch); 
-        $json =  json_decode($response);  
-        $this->process_response($json); 
+        $json =  json_decode($response);        
         return $json;
     }
 
-    public function process_response($response){
-        $donations=$donors=$donorEmails=array();
+    public function process_response($response,$dateEnd){    
+        
+        $date_from=CustomVariables::get_option('PaypalLastSyncDate');
+        if ($dateEnd>$date_from) CustomVariables::set_option('PaypalLastSyncDate',$dateEnd);
+        
+
+        $process=$donations=$donors=$donorEmails=array();
         $donationSkip=0;
         //This first loop caches results and puts them in Donor and Donation objects, but does NOT save them yet.         
         foreach($response->transaction_details as $r){           
@@ -123,54 +122,70 @@ class Paypal extends ModelLite{
                 $donorEmails[$r->payer_info->email_address]=$r->payer_info->account_id; //potentially one e-mail could have multiple... this grabs the most recent.
             }           
             if ($donations[$r->transaction_info->transaction_id]){
-                print "<div>Duplicate Transaction: ".$r->transaction_info->transaction_id." - using latest entry</div>";
+                self::display_error("Duplicate Transaction: ".$r->transaction_info->transaction_id." - using latest entry");
             }
             $donations[$r->transaction_info->transaction_id]=Donation::from_paypal_api_detail($r);
         }
+       
         //Do a database check on donors to ensure no duplicates - If not found, insert.
         $SQL="SELECT * FROM ".Donor::get_table_name()." WHERE (Source='paypal' AND SourceId IN ('".implode("','",array_keys($donors))."')) OR (Email<>'' AND Email IS NOT NULL AND Email IN ('".implode("','",array_keys($donorEmails))."'))";
-        $results = self::db()->get_results($SQL);
+        $results = self::db()->get_results($SQL);        
         foreach($results as $r){
-            $donorOriginal[$r->DonorId]=$r;
-            $account_id_from_email=$donorEmails[$r->Email];
-            if ($donors[$r->SourceId]){
-                $donors[$r->SourceId]->DonorId=$r->MergeId?$r->MergeId:$r->DonorId;               
-            }elseif($account_id_from_email){
-                $donors[$account_id_from_email]->DonorId=$r->MergeId?$r->MergeId:$r->DonorId;
+            $donorOriginal[$r->DonorId]=$r;          
+            $account_id=$donors[$r->SourceId]?$r->SourceId:$donorEmails[$r->Email];
+            $donor_id=$r->MergeId>0?$r->MergeId:$r->DonorId;
+            if ($donors[$account_id]){
+                $donors[$account_id]->DonorId=$donor_id;
+                $process['DonorsMatched'][$account_id]=$donor_id;
             }           
         }
         Donor::donor_update_suggestion($donorOriginal,$donors);
-        //dump($donors,$donorOriginal); 
+        //self::dd($donors,$donorOriginal);
 
         ### need to do some sort of compare -> check out existing...
-        foreach($donors as $account_id=>$donor){
-            //$donor->save(); ->should update existing ones. Insert entries if new.
+        foreach($donors as $account_id=>$donor){            
+            if (!$donor->DonorId){ //new Donor detected
+                $donor->save();
+                $donors[$account_id]->DonorId=$donor->DonorId;
+                $process['DonorsAdded'][$account_id]=$donor->DonorId;
+            }
         }
 
         //Do database check on donations to ensure no duplicates.
-        $SQL="SELECT * FROM ".Donation::get_table_name()." WHERE Source='paypal' AND TrnsactionId IN ('".implode("','",array_keys($donations))."')";
-        $results = self::db()->get_results($SQL);
+        $SQL="SELECT * FROM ".Donation::get_table_name()." WHERE Source='paypal' AND TransactionID IN ('".implode("','",array_keys($donations))."')";
+        $results = self::db()->get_results($SQL);       
         foreach($results as $r){
             if ($donations[$r->TransactionID]){ 
                 $donations[$r->TransactionID]->DonationId=$r->DonationId;
-                $donations[$r->TransactionID]->CreatedAt=$r->CreatedAt;
+                if ($r->SourceId==""){
+                    $donations[$r->TransactionID]->UpdateSourceId=true;
+                }
+                //$donations[$r->TransactionID]->CreatedAt=$r->CreatedAt;
+                $process['DonationsMatched'][$r->TransactionID]=$r->DonationId;                
             }
         }
+        $process['time']=time();
         foreach($donations as $transaction_id=>$donation){
-            if ($donation->DonationId){
-                $donationSkip++; //already inserted
-                if (!$r->SourceId){
+            if ($donation->DonationId){  
+                //print "<div>Found ". $donation->DonationId."</div>";
+                //dd($donations[$transaction_id],$donation) ;        
+                if ($donation->UpdateSourceId){
+                    //print "UpdateSource Id to: ".$donation->SourceId;
                     ### avoid a save... we don't want to overwrite everything in case manual adjustments were made. But update a few thigns we hadn't saved before. Can comment this out once DB is fixed.                    
                     self::db()->update($donation->get_table(),array('Source'=>'paypal','SourceId'=>$donation->SourceId),array('DonationId'=>$donation->DonationId));
                 }
             }else{
+                //print "<div>New". $donation->DonationId."</div>"; 
                 if($donors[$donation->SourceId]){
                     $donation->DonorId=$donors[$donation->SourceId]->DonorId;
-                    //$donation->save();
+                    //print "DonorId is: ".$donation->DonorId;
+                    $donation->save($process['time']);
+                    $process['DonationsAdded'][$donation->TransactionID]=$donation->DonationId;
                 }else{
-                    print "<div>Error: Donor Id not found on Paypal Transaction: ".$donation->TransactionID." on SourceId: ".$donation->SourceId."</div>";
+                    self::display_error("<div>Error: Donor Id not found on Paypal Transaction: ".$donation->TransactionID." on SourceId: ".$donation->SourceId."</div>");
                 }
             }
         }
+        return $process;
     }
 }

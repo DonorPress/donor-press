@@ -63,7 +63,11 @@ class Donation extends ModelLite
         $donation->Net=$donation->Gross-$donation->Fee;              
         $donation->Subject=$transaction->transaction_subject;
         $donation->Note=$transaction->transaction_note;
-        $donation->Name=$payer->payer_name->alternate_full_name; 
+        $donation->Name=$payer->payer_name->alternate_full_name;
+        if (!$donation->Name && $transaction->bank_reference_id){
+            $donation->Name="Bank ".$transaction->bank_reference_id;
+        }
+        //if (!$payer->payer_name->alternate_full_name) self::dd($payer->payer_name);
         $donation->FromEmailAddress=$payer->email_address;
         $donation->PaymentSource=10;
         $donation->Type=self::transaction_event_code_to_type($transaction->transaction_event_code);
@@ -86,6 +90,7 @@ class Donation extends ModelLite
         switch($transaction_event_code){
             case "T0002": return 5; break; //subscription Payment
             case "T0013": return 1; break;
+            case "T0400": return -1; break; //bank transfer
             default: return 0; break;
         }
     }
@@ -611,7 +616,7 @@ class Donation extends ModelLite
                         }									
                     }
                     $entry[self::CREATED_AT]=$timeNow;
-                    
+                    $entry['Source']='paypal';
                     ## Skip these types of entries.
                     if ($entry['Status']==-2 || $entry['Type']==-2 || 
                     in_array($entry['TypeOther'],array('Hold on Balance for Dispute Investigation','General Currency Conversion','Payment Review Hold','Payment Review Release'))){ //Denied

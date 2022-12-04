@@ -68,7 +68,8 @@ class ModelLite{
 		return $wpdb;
 	}
 
-	public function save(){ //both insert and update routine. Creates new if no ReworkId passed in.
+	public function save($time=""){ //both insert and update routine. Creates new if no ReworkId passed in.
+		if (!$time) $time=time();
 		$wpdb=self::db();  
 		$wpdb->show_errors();
 		$keyField=$this->primaryKey;
@@ -78,14 +79,14 @@ class ModelLite{
 			}
 		}		
 		if (defined (static::UPDATED_AT)){
-			$data[static::UPDATED_AT]= time();
+			$data[static::UPDATED_AT]= $time;
 		}
 
 		if ($this->$keyField>0){
 			$wpdb->update($this->get_table(),$data,array($keyField=>$this->$keyField));
 		}else{
 			if (defined (static::CREATED_AT) && !$data[static::CREATED_AT]){
-				$data[static::CREATED_AT]= time();
+				$data[static::CREATED_AT]= $time;
 			}		 	
 			$result=$wpdb->insert($this->get_table(),$data);	
 			

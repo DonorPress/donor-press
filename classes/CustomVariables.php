@@ -7,7 +7,7 @@
 class CustomVariables extends ModelLite
 {  
     const base = 'donation';
-    const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId"];	
+    const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate"];	
     const variables_protected = ["PaypalClientId","PaypalSecret"];
     static public function form(){
         $wpdb=self::db();  
@@ -50,10 +50,22 @@ class CustomVariables extends ModelLite
     static function get_option($option,$decode=false){
         $result=get_option(self::base."_".$option);
         if($decode){
-            return base64_decode($result);
+            return self::decode($result);
         }else{
             return $result;
         }
+    }
+
+    static function set_option($var,$value,$encode=false){
+        update_option(self::base."_".$var, $encode? self::encode($value):$value, true);       
+    }
+
+    static function encode($value){
+        return base64_encode($value);
+    }
+
+    static function decode($value){
+        return base64_decode($value);
     }
 
     static function get_custom_variables(){
@@ -88,15 +100,14 @@ class CustomVariables extends ModelLite
                     if ($_POST[$var.'_id']){
                         //update
                         print "update ".$var."<br>";
-                        update_option( self::base."_".$var, base64_encode($_POST[$var]), true);
+                        update_option( self::base."_".$var, self::encode($_POST[$var]), true);
                     }else{
                         print "insert ".$var." <br>";
                         //insert
-                        add_option( self::base."_".$var, base64_encode($_POST[$var]));
+                        add_option( self::base."_".$var, self::encode($_POST[$var]));
                     }
                 }
             }
-
         }
     }
 
