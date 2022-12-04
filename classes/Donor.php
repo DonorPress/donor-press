@@ -207,7 +207,26 @@ class Donor extends ModelLite {
     }
 
     static public function request_handler(){      
-        if ($_POST['Function']=='MergeDonor' && $_POST['DonorId']){
+        if ($_POST['table']=='Donor' && $_POST['DonorId'] && $_POST['Function']=="Delete"){
+            //check if any donations connected to this account or merged ids..
+            $donations=Donation::get(array('DonorId='.$_POST['DonorId']));
+            if (sizeof($donations)>0){
+                self::display_error("Can't delete Donor #".$_POST['DonorId'].". There are ".sizeof($donations)." donation(s) attached to this.");           
+                return false;
+            }
+            $donors=Donation::get(array('MergedId='.$_POST['DonorId']));
+            if (sizeof($donors)>0){
+                self::display_error("Can't delete Donor #".$_POST['DonorId'].". There are ".sizeof($donors)." donors merged to this entry.");                           
+                return false;
+            }else{
+                $dSQL="DELETE FROM ".Donor::get_table_name()." WHERE `DonorId`='".$_POST['DonorId']."'";
+                self::db()->query($dSQL);
+                self::display_notice("Deleted Donor #".$_POST['DonorId'].".");                           
+                return true;
+            }
+
+
+        }elseif ($_POST['Function']=='MergeDonor' && $_POST['DonorId']){
             //self::dump($_POST);            
             $data=array();
             foreach(self::s()->fillable as $field){
