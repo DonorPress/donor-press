@@ -52,10 +52,14 @@ class Donor extends ModelLite {
     static public function from_paypal_api_detail($detail){
         $payer=$detail->payer_info;
         $shipInfo=$detail->shipping_info;
+
+        $type=Donation::transaction_event_code_to_type($detail->transaction_info->transaction_event_code);
+
         $d = new self();
         $d->Source='paypal';
         $d->SourceId=$payer->account_id;
         $d->Email=$payer->email_address; 
+       
         //$d->EmailStatus=1; //if already set elswhere... should not be etting this
         $d->Name=$payer->payer_name->alternate_full_name;
         $address=$payer->address?$payer->address->address:$shipInfo->address; //address not always provided, but if it is, look first if it is on the payer object, otherwise look at shipping_info   
@@ -69,9 +73,18 @@ class Donor extends ModelLite {
         }elseif($payer->country_code){
             $d->Country=$payer->country_code;  //entries without addresses usually at least have country codes.
         }
-        //if ($d->Address1=="100 Lido Cr.H1") dd($d,$address);
-        return $d;
-        //$d->TaxReporting=0
+        //deposit scenerio detected
+        if ($type<0 && !$d->Email){
+            $d->Email=Donation::get_deposit_email();            
+        }
+        if (!$d->Name && $detail->transaction_info->bank_reference_id){
+            $d->Name="Bank ".$detail->transaction_info->bank_reference_id;
+            if (!$d->SourceId) $d->SourceId=$detail->transaction_info->bank_reference_id;
+        }
+
+        if (!$d->SourceId) $d->SourceId=$detail->transaction_info->bank_reference_id;
+        //if ($d->SourceId=="1023635738856") dd($d);
+        return $d;        
     }
 
     public function merge_form(){

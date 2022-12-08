@@ -66,11 +66,18 @@ class Donation extends ModelLite
         $donation->Name=$payer->payer_name->alternate_full_name;
         if (!$donation->Name && $transaction->bank_reference_id){
             $donation->Name="Bank ".$transaction->bank_reference_id;
+            if (!$donation->SourceId) $donation->SourceId=$transaction->bank_reference_id;
         }
         //if (!$payer->payer_name->alternate_full_name) self::dd($payer->payer_name);
         $donation->FromEmailAddress=$payer->email_address;
         $donation->PaymentSource=10;
         $donation->Type=self::transaction_event_code_to_type($transaction->transaction_event_code);
+
+        if (!$donation->FromEmailAddress && $donation->Type<0){ 
+            //Detect deposit situation or some sort of negative transaction. 
+            //Default to email set as contact email.
+            $donation->FromEmailAddress=self::get_deposit_email();
+        }
         //Fields we should drop:
         $donation->AddressStatus=$payer->address_status=="Y"?1:-1;    
         $donation->NotTaxExcempt =0;
@@ -85,7 +92,13 @@ class Donation extends ModelLite
 
     }
 
-    public function transaction_event_code_to_type($transaction_event_code){
+    static public function get_deposit_email(){
+        $email=CustomVariables::get_option('ContactEmail');
+        if (!$email) $email='deposit';
+        return $email;
+    }
+
+    static public function transaction_event_code_to_type($transaction_event_code){
         //https://developer.paypal.com/docs/reports/reference/tcodes/
         switch($transaction_event_code){
             case "T0002": return 5; break; //subscription Payment

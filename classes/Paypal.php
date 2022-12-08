@@ -110,14 +110,14 @@ class Paypal extends ModelLite{
     public function process_response($response,$dateEnd){    
         
         $date_from=CustomVariables::get_option('PaypalLastSyncDate');
-        if ($dateEnd>$date_from) CustomVariables::set_option('PaypalLastSyncDate',$dateEnd);
-        
+        if ($dateEnd>$date_from) CustomVariables::set_option('PaypalLastSyncDate',$dateEnd);        
 
         $process=$donations=$donors=$donorEmails=array();
         $donationSkip=0;
         //This first loop caches results and puts them in Donor and Donation objects, but does NOT save them yet.         
-        foreach($response->transaction_details as $r){           
-            $donors[$r->payer_info->account_id]=Donor::from_paypal_api_detail($r);
+        foreach($response->transaction_details as $r){
+            $donor=Donor::from_paypal_api_detail($r);
+            $donors[$donor->SourceId]=$donor;
             if ($r->payer_info->email_address){
                 $donorEmails[$r->payer_info->email_address]=$r->payer_info->account_id; //potentially one e-mail could have multiple... this grabs the most recent.
             }           
@@ -126,6 +126,7 @@ class Paypal extends ModelLite{
             }
             $donations[$r->transaction_info->transaction_id]=Donation::from_paypal_api_detail($r);
         }
+        //self::dd($donors);
        
         //Do a database check on donors to ensure no duplicates - If not found, insert.
         $SQL="SELECT * FROM ".Donor::get_table_name()." WHERE (Source='paypal' AND SourceId IN ('".implode("','",array_keys($donors))."')) OR (Email<>'' AND Email IS NOT NULL AND Email IN ('".implode("','",array_keys($donorEmails))."'))";
