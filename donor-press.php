@@ -17,16 +17,17 @@ require_once 'classes/CustomVariables.php';
 
 /* Resources: 
 https://www.sitepoint.com/working-with-databases-in-wordpress/
-
+https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-scratch--net-2668
 */
 // it inserts the entry in the admin menu
+//wp_enqueue_style( 'style', get_stylesheet_uri() );
 add_action('admin_menu', 'donor_plugin_create_menu_entry');
 register_activation_hook( __FILE__, 'donor_plugin_create_tables' );
 
 // creating the menu entries
 function donor_plugin_create_menu_entry() {
 	// icon image path that will appear in the menu
-	$icon = plugins_url('/images/box-heart-solid.svg', __FILE__);
+	$icon = plugins_url('/images/DonorPressWPIcon2.svg', __FILE__);
 	//add_menu_page( $page_title, $menu_title, $capability, $menu_slug, $function, $icon_url, $position );
 	// adding the main manu entry
 	add_menu_page('Donors', 'Donors', 'edit_posts', 'donor-index', 'donor_show_index', $icon);
@@ -41,9 +42,24 @@ function donor_plugin_create_menu_entry() {
 add_action( 'wp_ajax_searchDonorList', 'searchDonorList_callback' );
 add_action( 'wp_ajax_nopriv_searchDonorList', 'searchDonorList_callback' );
 add_action("init", "ur_theme_start_session", 1);
+
+
+// function wpdocs_register_plugin_styles() {
+// 	wp_register_style( 'donor-press', plugins_url( 'donor-press/css/style.css' ) );
+// 	wp_enqueue_style( 'donor-press' );
+// }
+// // Register style sheet.
+// add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
+
+function donor_press_styles() {
+    wp_enqueue_style( 'donor-press-styles',  plugin_dir_url( __FILE__ ) . '/css/style.css');                      
+}
+add_action( 'wp_enqueue_scripts', 'donor_press_styles' );
+
+
 function ur_theme_start_session()
 {
-    if (!session_id())
+	if (!session_id())
         session_start();
 }
 
