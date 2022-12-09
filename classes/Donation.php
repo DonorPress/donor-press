@@ -48,7 +48,7 @@ class Donation extends ModelLite
 	const UPDATED_AT = 'UpdatedAt';
     
     
-    public function from_paypal_api_detail($detail){               
+    static public function from_paypal_api_detail($detail){               
         $transaction=$detail->transaction_info;
         $payer=$detail->payer_info;
         $donation=new self();
@@ -577,7 +577,7 @@ class Donation extends ModelLite
                     if (($paypal['DonorFirstName'] || $paypal['DonorLastName']) && !$paypal['Name']){
                         $paypal['Name']=trim($paypal['DonorFirstName']." ".$paypal['DonorLastName']); 
 
-                        $entry['DateDeposited']=date("Y-m-d",strtotime($v." ".$paypal['PayoutDate']));  
+                        $entry['DateDeposited']=date("Y-m-d",strtotime($paypal['PayoutDate']));  
                         
                         $entry['CategoryId']=DonationCategory::get_category_id($paypal['ProgramName']);
                     }  

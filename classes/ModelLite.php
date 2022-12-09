@@ -17,6 +17,9 @@ Requires the following constants as seen in this example:
 *****/
 
 class ModelLite{
+	const CREATED_AT = 'CreatedAt';
+	const UPDATED_AT = 'UpdatedAt';
+	
 	public function __construct($attributes = []){
         $this->fill((array)$attributes);
 	}

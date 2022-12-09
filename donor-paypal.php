@@ -13,7 +13,6 @@ $clientSecret=CustomVariables::get_option('PaypalSecret');
         Paypal::display_notice("Donor Records Updated");
     }elseif($_POST['Function']=="PaypalDateSync"){
         $response=$paypal->get_transactions_date_range($_POST['date_from'],$_POST['date_to']);
-        //Paypal::dd($response->transaction_details);
         $process=$paypal->process_response($response,$_POST['date_to']); 
         if (sizeof($response)>0){
             Paypal::display_notice(
@@ -23,7 +22,6 @@ $clientSecret=CustomVariables::get_option('PaypalSecret');
                 (sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",$process['time']))."'>View These Donations/Send Acknowledgements</a></li>":"").
                 "</ul>"
             );
-            //Paypal::dump($response);
         }
     }
 

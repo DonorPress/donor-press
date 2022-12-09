@@ -99,12 +99,8 @@ function dn_plugin_base_dir(){
 }
 
 function load_initial_data(){
-	global $wpdb;
-	//$wpdb->query("TRUNCATE ".Donation::get_table_name());
-	// $result=Donation::cvs_read_file("2015-2018.CSV",$firstLineColumns=true);
-	// print "<pre>"; print_r($result); print "</pre>";
-	// print_r(Donation::replaceIntoList($result));
-	Donor::makeReceiptYearPageTemplate();
+	Donation::db()->query("TRUNCATE ".Donation::get_table_name());	
+	Donor::make_receipt_year_template();
 }
 
 function nuke(){

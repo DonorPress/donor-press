@@ -95,7 +95,7 @@ class Donor extends ModelLite {
         Enter the ID of the Donor you want to merge to. You will have the option to review this merge. Once merged, all donations will be relinked to the new profile.</form><?
     }
 
-    static public function donor_update_suggestion($current,$new){   
+    static public function donor_update_suggestion($current,$new,$timeProcessed=null){   
         $suggest_donor_changes=[];
         foreach ($new as $donorN){
             if ($donorN->DonorId && $current[$donorN->DonorId]){
@@ -112,10 +112,10 @@ class Donor extends ModelLite {
             }
         }
         //self::dump($suggest_donor_changes);
-        self::donor_update_suggestion_form($suggest_donor_changes);          
+        self::donor_update_suggestion_form($suggest_donor_changes,$timeProcessed);          
     }
 
-    static public function donor_update_suggestion_form($suggest_donor_changes){
+    static public function donor_update_suggestion_form($suggest_donor_changes,$timeProcessed=null){
         if (sizeof($suggest_donor_changes)==0) return;
 
         print "<h2>The following changes are suggested</h2><form method='post'>";
@@ -141,7 +141,7 @@ class Donor extends ModelLite {
         }
         print "</table><button type='submit' name='Function' value='MakeDonorChanges'>Make Donor Changes</button></form>";
         print "<hr>";
-        print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View Summary</a></div>";
+        print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeProcessed)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeProcessed)."'>View Summary</a></div>";
    
     }
 
@@ -274,7 +274,7 @@ class Donor extends ModelLite {
             $donor->edit_form();           
             return true;
         }elseif($_GET['f']=="summary_list" && $_GET['dt'] && $_GET['df']){            
-            self::summary_list(array("Date BETWEEN '".$_GET['df']." 00:00:00' AND '".$_GET['dt']." 23:59:59'"));
+            self::summary_list(array("Date BETWEEN '".$_GET['df']." 00:00:00' AND '".$_GET['dt']." 23:59:59'"),$_GET['Year']);
             return true;
         }elseif($_GET['f']=="summary_list_year" && $_GET['Year']){
             $year=$_GET['Year'];
@@ -432,14 +432,14 @@ class Donor extends ModelLite {
     }
 
     public function address(){
-        return ($this->Address1?$this->Address1.", ":"").($this->Address2?$this->Address2.", ":"").$this->City." ".$this->Region." ".$this->PostalCode." ".$thiCountry;
+        return ($this->Address1?$this->Address1.", ":"").($this->Address2?$this->Address2.", ":"").$this->City." ".$this->Region." ".$this->PostalCode." ".$this->Country;
     }
     
     public function phone(){
         return preg_replace('~.*(\d{3})[^\d]{0,7}(\d{3})[^\d]{0,7}(\d{4}).*~', '($1) $2-$3', $this->Phone);
     }
     
-    static function summary_list($where=[]){
+    static function summary_list($where=[],$year=null){
         $total=0;
         $where[]="Status>=0";
         $where[]="Type>=1";
@@ -452,7 +452,7 @@ class Donor extends ModelLite {
             ?>
             <tr>
                 <td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
-                <td><?php print $donor->DisplayEmail()?></td>    
+                <td><?php print $donor->display_email()?></td>    
                 <td><?php print $donor->phone()?></td> 
                 <td><?php print $donor->address()?></td>          
                 <td><?php print $r->donation_count?></td>
@@ -487,11 +487,12 @@ class Donor extends ModelLite {
                 }                    
             }
         </script> E-mail</th><th><input type="checkbox" checked onClick="toggleChecked(this,'pdf[]');")/> PDF</th><th>Sent</th></tr><?
+        $total=0;
         foreach ($results as $r){
             $donor=new self($r);
             ?>
             <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
-            <td><?php print $donor->DisplayEmail()?></td>            
+            <td><?php print $donor->display_email()?></td>            
             <td><?php print $r->donation_count?></td>
             <td align=right><?php print number_format($r->Total,2)?></td><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
             <td><?
@@ -527,6 +528,7 @@ class Donor extends ModelLite {
             self::display_notice("Page /donor-receiptyear created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
+        $total=0;
         $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'","NotTaxExcempt=0"),'Date');
         if ($donations){
             $ReceiptTable='<table border="1" cellpadding="4"><tr><th width="115">Date</th><th width="330">Subject</th><th width="100">Amount</th></tr>';
@@ -552,7 +554,7 @@ class Donor extends ModelLite {
                 $lastCurrency=$r->Currency;
             }
             $ReceiptTable.="<tr><td colspan=\"2\"><strong>Total:</strong></td><td align=\"right\"><strong>".trim(number_format($total,2)." ".$lastCurrency)."</strong></td></tr></table>";
-        }else{ $ReceiptTable.="<div><em>No Donations found in ".$year."</div>";}
+        }else{ $ReceiptTable="<div><em>No Donations found in ".$year."</div>";}
         
         $organization=get_option( 'donation_Organization');
         if (!$organization) $organization=get_bloginfo('name');

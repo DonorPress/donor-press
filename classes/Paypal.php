@@ -113,6 +113,7 @@ class Paypal extends ModelLite{
         if ($dateEnd>$date_from) CustomVariables::set_option('PaypalLastSyncDate',$dateEnd);        
 
         $process=$donations=$donors=$donorEmails=array();
+        $process['time']=time();
         $donationSkip=0;
         //This first loop caches results and puts them in Donor and Donation objects, but does NOT save them yet.         
         foreach($response->transaction_details as $r){
@@ -140,7 +141,7 @@ class Paypal extends ModelLite{
                 $process['DonorsMatched'][$account_id]=$donor_id;
             }           
         }
-        Donor::donor_update_suggestion($donorOriginal,$donors);
+        Donor::donor_update_suggestion($donorOriginal,$donors,$process['time']);
         //self::dd($donors,$donorOriginal);
 
         ### need to do some sort of compare -> check out existing...
@@ -165,7 +166,7 @@ class Paypal extends ModelLite{
                 $process['DonationsMatched'][$r->TransactionID]=$r->DonationId;                
             }
         }
-        $process['time']=time();
+        
         foreach($donations as $transaction_id=>$donation){
             if ($donation->DonationId){  
                 //print "<div>Found ". $donation->DonationId."</div>";
