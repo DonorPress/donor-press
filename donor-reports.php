@@ -21,7 +21,7 @@
 	<h1>Report Page</h1>
 	<?
 	if ($_GET['view']=='detail'){
-		?><h2>Detailed View: <?=$_GET['report']?></h2><?
+		?><h2>Detailed View: <?php print $_GET['report']?></h2><?
 		switch($_GET['report']){
 			case "reportMonthly":
 				reportMonthly();
@@ -36,14 +36,14 @@
 	
 	<div><strong>Year End Tax Summaries:</strong> <?
 	for($y=date("Y");$y>=date("Y")-4;$y--){
-		?><a href="?page=<?=$_GET['page']?>&f=YearSummaryList&Year=<?=$y?>"><?=$y?></a> | <?
+		?><a href="?page=<?php print $_GET['page']?>&f=YearSummaryList&Year=<?php print $y?>"><?php print $y?></a> | <?
 	}
 	
 	?></div>
 	<? 
 	//print_r(Donation::$tinyIntDescriptions);
 	//dd(['one','two']);?>
-	<form method="get"><input type="hidden" name="page" value="<?=$_GET['page']?>" />
+	<form method="get"><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
 	Source: <select name="PaymentSource"><?
 	$paymentSource=[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Paypal","6"=>"ACH/Bank Transfer"];
 	foreach($paymentSource as $key=>$label){
@@ -81,13 +81,13 @@ function reportCurrentMonthly(){
 	$results = $wpdb->get_results($SQL);
 	print $SQL;
 	if (sizeof($results)>0){
-		?><form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" /></form>
+		?><form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" /></form>
 		<h2>Current Monthly Donors</h2>
 		<table border=1><tr><th></th><th>Name</th><th>Monthly Give</th><th>Count</th><th>Give Day</th></tr>
 		<? $i=0;
 		foreach ($results as $r){ 
 			$i++;
-			?><tr><td><?=$i?></td><td><?=$r->Name?></td><td align=right><?=number_format($r->Total,2)?></td><td><?=$r->Count?></td><td><?=date("d",strtotime($r->LastDonation))?></td></tr><?
+			?><tr><td><?php print $i?></td><td><?php print $r->Name?></td><td align=right><?php print number_format($r->Total,2)?></td><td><?php print $r->Count?></td><td><?php print date("d",strtotime($r->LastDonation))?></td></tr><?
 		}
 		//print "<pre>"; print_r($results); print "</pre>";
 		?></table><?
@@ -99,8 +99,8 @@ function reportTop($top=20){
 	$dateFrom=$_GET['topDf'];
 	$dateTo=$_GET['topDt'];
 
-	?><form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" />
-			<h3>Top <input type="number" name="topL" value="<?=($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/>Donor Report From <input type="date" name="topDf" value="<?=$_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?=$_GET['topDt']?>"/> 
+	?><form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+			<h3>Top <input type="number" name="topL" value="<?php print ($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/>Donor Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> 
 			<select name='category[]' multiple>
 				<?php
 				$selectedCatagories=$_GET['category']?$_GET['category']:array();
@@ -113,12 +113,12 @@ function reportTop($top=20){
 			<button type="submit">Go</button></h3>
 			<div><?
 			for($y=date("Y");$y>=date("Y")-4;$y--){
-				?><a href="?page=<?=$_GET['page']?>&topDf=<?=$y?>-01-01&topDt=<?=$y?>-12-31"><?=$y?></a> | <?
+				?><a href="?page=<?php print $_GET['page']?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?
 			}
 			?>
 
-			| <a href="?page=<?=$_GET['page']?>&f=SummaryList&df=<?=$_GET['topDf']?>&dt=<?=$_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
-			| <a href="?page=<?=$_GET['page']?>&SummaryView=t&df=<?=$_GET['topDf']?>&dt=<?=$_GET['topDt']?>">Donation Report</a>
+			| <a href="?page=<?php print $_GET['page']?>&f=SummaryList&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
+			| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">Donation Report</a>
 			</div><?
 
 	$where=array("Type>0");
@@ -138,7 +138,7 @@ function reportTop($top=20){
 		<table border=1><tr><th>Name</th><th>Total</th><th>Average</th><th>Count</th><th>First Donation</th><th>Last Donation</th>
 		<?
 		foreach ($results as $r){
-			?><tr><td><a href="?page=<?=$_GET['page']?>&DonorId=<?=$r->DonorId?>"><?=$r->Name?></a></td><td align=right><?=$r->Total?></td><td align=right><?=$r->Average*1?></td><td align=right><?=$r->Count?></td><td align=right><?=$r->FirstDonation?></td><td align=right><?=$r->LastDonation?></td></tr><?
+			?><tr><td><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->Name?></a></td><td align=right><?php print $r->Total?></td><td align=right><?php print $r->Average*1?></td><td align=right><?php print $r->Count?></td><td align=right><?php print $r->FirstDonation?></td><td align=right><?php print $r->LastDonation?></td></tr><?
 		}
 		?></table></form><?
 	}
@@ -197,7 +197,7 @@ function reportMonthly(){
     google.charts.setOnLoadCallback(drawMonthlyChart);
     function drawMonthlyChart() {
 		var data = google.visualization.arrayToDataTable([
-        ['Type', '<?=implode("', '",array_keys($graph['Type']))?>', {'type': 'string', 'role': 'tooltip', 'p': {'html': true}} ]
+        ['Type', '<?php print implode("', '",array_keys($graph['Type']))?>', {'type': 'string', 'role': 'tooltip', 'p': {'html': true}} ]
 		<?php
 		foreach($graph['Total'] as $date=>$types){
 			print ", ['".$date."',";
@@ -226,13 +226,13 @@ function reportMonthly(){
 
 	}
 	</script>
-<form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" />
-			<h3>Monthly Donations Report From <input type="date" name="topDf" value="<?=$_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?=$_GET['topDt']?>"/> <button type="submit">Go</button></h3>
+<form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+			<h3>Monthly Donations Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> <button type="submit">Go</button></h3>
 			<div id="MonthlyDonationsChart" style="width: 1200px; height: 500px;"></div>
 			<table border=1><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
 		<?
 		foreach ($results as $r){
-			?><tr><td><?=$r->Month?></td><td><?=Donation::getTinyDescription('Type',$r->Type)??$r->Type?></td><td align=right><a href="?page=<?=$_GET['page']?>&report=reportMonthly&view=detail&month=<?=$r->Month?>&type=<?=urlencode($r->Type)?>"><?=number_format($r->Total,2)?></a></td><td align=right><?=$r->Count?></td></tr><?
+			?><tr><td><?php print $r->Month?></td><td><?php print Donation::getTinyDescription('Type',$r->Type)??$r->Type?></td><td align=right><a href="?page=<?php print $_GET['page']?>&report=reportMonthly&view=detail&month=<?php print $r->Month?>&type=<?php print urlencode($r->Type)?>"><?php print number_format($r->Total,2)?></a></td><td align=right><?php print $r->Count?></td></tr><?
 		}
 		?></table></form>
 		

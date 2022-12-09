@@ -281,10 +281,10 @@ class Donation extends ModelLite
         Group BY `CreatedAt` Order BY `CreatedAt` DESC LIMIT 20";
          $results = $wpdb->get_results($SQL);
          ?><h2>Upload Groups</h2>
-         <form method="get" action=""><input type="hidden" name="page" value="<?=$_GET['page']?>" />
-			Summary From <input type="date" name="df" value="<?=$_GET['df']?>"/> to <input type="date" name="dt" value="<?=$_GET['dt']?>"/> Date Field: <select name="dateField">
+         <form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+			Summary From <input type="date" name="df" value="<?php print $_GET['df']?>"/> to <input type="date" name="dt" value="<?php print $_GET['dt']?>"/> Date Field: <select name="dateField">
             <?php foreach (self::s()->dateFields as $field=>$label){?>
-                <option value="<?=$field?>"<?=$_GET['dateField']==$field?" selected":""?>><?=$label?> Date</option>
+                <option value="<?php print $field?>"<?php print $_GET['dateField']==$field?" selected":""?>><?php print $label?> Date</option>
             <?php } ?>
             </select>
              <button type="submit" name="SummaryView" value="t">View Summary</button></form>
@@ -824,7 +824,7 @@ class Donation extends ModelLite
        ?></select></td></tr>
        <tr><td align="right">Subject</td><td><input type="text" name="Subject" value="<?php print $this->Subject?>"></td></tr>
         <tr><td align="right">Note</td><td><textarea name="Note"><?php print $this->Note?></textarea></td></tr>
-        <tr><td align="right">Tax Excempt</td><td><?=$this->select_drop_down('NotTaxExcempt')?><div><em>Set to "Not Tax Exempt" if they have already been giving credit for the donation by donating through a donor advised fund.</div></td></tr>
+        <tr><td align="right">Tax Excempt</td><td><?php print $this->select_drop_down('NotTaxExcempt')?><div><em>Set to "Not Tax Exempt" if they have already been giving credit for the donation by donating through a donor advised fund.</div></td></tr>
         <tr></tr><tr><td colspan="2"><button type="submit" class="Primary" name="Function" value="Save">Save</button><button type="submit" name="Function" class="Secondary" value="Cancel" formnovalidate>Cancel</button>
         <?php 
         if ($this->DonationId){
@@ -980,15 +980,15 @@ class Donation extends ModelLite
         if (!$emailToUse) $emailToUse=$this->Donor->Email;
         ?><form method="post">
             <h2>Send Receipt</h2>
-            <input type="hidden" name="DonationId" value="<?=$this->DonationId?>">
-            <div>Send Receipt to: <input type="email" name="Email" value="<?=$emailToUse?>">
+            <input type="hidden" name="DonationId" value="<?php print $this->DonationId?>">
+            <div>Send Receipt to: <input type="email" name="Email" value="<?php print $emailToUse?>">
                 <button type="submit" name="Function" value="SendDonationReceipt">Send E-mail Receipt</button> <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>
                 <?php if (file_exists($file['path'])){
                     print  ' Download Pdf: <a target="pdf" href="'.$file['link'].'">'.$file['file'].'</a>';
                 }?>        
             </div>
-            <div><a target='pdf' href='post.php?post=<?=$this->emailBuilder->pageID?>&action=edit'>Edit Template</a></div>
-            <div style="font-size:18px;"><strong>Email Subject:</strong> <input style="font-size:18px; width:500px;" name="EmailSubject" value="<?=$_POST['EmailSubject']?stripslashes_deep($_POST['EmailSubject']):$this->emailBuilder->subject?>"/>
+            <div><a target='pdf' href='post.php?post=<?php print $this->emailBuilder->pageID?>&action=edit'>Edit Template</a></div>
+            <div style="font-size:18px;"><strong>Email Subject:</strong> <input style="font-size:18px; width:500px;" name="EmailSubject" value="<?php print $_POST['EmailSubject']?stripslashes_deep($_POST['EmailSubject']):$this->emailBuilder->subject?>"/>
             <?php wp_editor($bodyContent, 'customMessage',array("media_buttons" => false,"wpautop"=>false)); ?>
         </form>
         <?php    

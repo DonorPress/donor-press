@@ -36,9 +36,9 @@ $clientSecret=CustomVariables::get_option('PaypalSecret');
         ?>
         <form method=post>
             Sync Transactions From: 
-            <input type="date" name="date_from" value="<?=date('Y-m-d',strtotime($date_from))?>"/> 
+            <input type="date" name="date_from" value="<?php print date('Y-m-d',strtotime($date_from))?>"/> 
             to 
-            <input type="date" name="date_to" value="<?=date('Y-m-d',strtotime($date_to))?>"/>
+            <input type="date" name="date_to" value="<?php print date('Y-m-d',strtotime($date_to))?>"/>
             <button name="Function" value="PaypalDateSync">Sync</button>
         </form><?php
     }

@@ -18,12 +18,11 @@
 	 * include the CSS/JS file in all the pages of your website.
 	 */
 	// loading the CSS
-	wp_enqueue_style('empty-plugin-style', plugins_url( '/css/style.css', __FILE__ ) );
+	//wp_enqueue_style('empty-plugin-style', plugins_url( '/css/style.css', __FILE__ ) );
 	// loading the JS
-	wp_enqueue_script('empty-plugin-scripts', plugins_url( '/js/scripts.js', __FILE__ ) );
+	//wp_enqueue_script('empty-plugin-scripts', plugins_url( '/js/scripts.js', __FILE__ ) );
 	   // Pass ajax_url to script.js
-    wp_localize_script( 'script-js', 'plugin_ajax_object',
-	   array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
+   // wp_localize_script( 'script-js', 'plugin_ajax_object',	   array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
 	?>
 	<div id="pluginwrap">
 	<?php
@@ -34,8 +33,8 @@
 	?>
 	<h2>Donor Tracker</h2>
 	<form method="get">
-		<input type="hidden" name="page" value="<?=$_GET['page']?>"/>
-		Donor Search: <input id="donorSearch" name="dsearch" value="<?=$_GET['dsearch']?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
+		<input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
+		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print $_GET['dsearch']?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
 	<? if (trim($_GET['dsearch'])<>''){
 		$list=Donor::get(array("(UPPER(Name) LIKE '%".strtoupper($_GET['dsearch'])."%' 
@@ -65,7 +64,7 @@
   <input type="hidden" name="uploadSummary" value="true" checked/>
   <!--<label><input type="checkbox" name="nuke" value="true"/> Purge DB</label>-->
   <?php submit_button('Upload NonPaypal','primary','submit',false) ?>
- <a href="<?=plugin_dir_url( __FILE__ )?>resources/SampleNonPaypalFileUpload.csv">Download Non Paypal Template</a> - Must keep this structure intact!
+ <a href="<?php print plugin_dir_url( __FILE__ )?>resources/SampleNonPaypalFileUpload.csv">Download Non Paypal Template</a> - Must keep this structure intact!
   
 </form>
 
