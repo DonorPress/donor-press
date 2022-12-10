@@ -4,18 +4,21 @@ require_once 'CustomVariables.php';
 class Paypal extends ModelLite{
     var $token;
     var $url;
+    var $error;
 
     public function __construct(){
-
+        
     }
 
     public function get_token(){
+        $this->destroy_session();        
+        //unset($_SESSION['wp_paypal_access_token'],$_SESSION['wp_paypal_access_token_expires']);
         //Paypal token is cached as a SESSION variable to avoid the need to request a token multiple times.
         if($this->token){ //current classes token trumps anything stored in session. Not abosolutely necessary to do this.
         }elseif ($_SESSION['wp_paypal_access_token'] && date("Y-m-d H:i:s")<$_SESSION['wp_paypal_access_token_expires']){
             $this->token=$_SESSION['wp_paypal_access_token'];       
         }else{
-           unset($_SESSION['wp_paypal_access_token'],$_SESSION['wp_paypal_access_token_expires']);
+            $this->destroy_session();
         }
 
         if ($this->token) return $this->token;
@@ -35,17 +38,30 @@ class Paypal extends ModelLite{
 
         $result = curl_exec($ch);
         if(empty($result)){
-            self::display_error("Error: No Paypal response response from: ".$this->get_url()."oauth2/token");
+            $this->error="Error: No Paypal response response from: ".$this->get_url()."oauth2/token";
+            self::display_error($this->error);
             die();
-        }else{
-            $json = json_decode($result); 
-            $_SESSION['wp_paypal_access_token']=$json->access_token;
-            $_SESSION['wp_paypal_access_token_expires']=date("Y-m-d H:i:s",strtotime("+".($json->expires_in-30)." seconds")); //30 seconds removed to avoid timeouts on longer queries that might be stacked.           
-            $this->token =$json->access_token;       
-            return $this->token;
+        }else{                 
+            $json = json_decode($result);            
+            if ($json->error){              
+                $this->error="<strong>".$json->error.":</strong> ".$json->error_description;
+                if ($json->error=="invalid_client"){
+                    $this->error.=". Check your PaypalClientId and Paypal Secret. You may have to <a target='paypaltoken' href='https://developer.paypal.com/dashboard/applications/live'>create a new one here</a>. Once created, make sure it is <a target='paypaltoken' href='?page=donor-settings'>set here</a>.";
+                }
+                self::display_error($this->error);
+            }else{          
+                $_SESSION['wp_paypal_access_token']=$json->access_token;
+                $_SESSION['wp_paypal_access_token_expires']=date("Y-m-d H:i:s",strtotime("+".($json->expires_in-30)." seconds")); //30 seconds removed to avoid timeouts on longer queries that might be stacked.           
+                $this->token =$json->access_token;
+                return $this->token;
+            }
         }
         return false;
     }    
+
+    public function destroy_session(){
+        unset($_SESSION['wp_paypal_access_token'],$_SESSION['wp_paypal_access_token_expires']);
+    }
 
     public function get_url(){
         if (!$this->url) $this->url=CustomVariables::get_option('PaypalUrl',true);
@@ -65,7 +81,8 @@ class Paypal extends ModelLite{
                 $end=date("Y-m-d",$ts_start+(($month+1)*30-1)*24*60*60);
                 if ($end>date("Y-m-d",$ts_end)) $end=date("Y-m-d",$ts_end);
                 if ( $start> $end) return;// shouldn't happen, but just in case 
-                $responses[]=$this->get_transactions_date_range($start,$end);
+                $response=$this->get_transactions_date_range($start,$end);
+                if ($response)  $responses[]=$response;
             }
             ### combine results into one array.
             foreach($responses as $res){
@@ -87,30 +104,40 @@ class Paypal extends ModelLite{
         $end_date=($end_date?date("Y-m-d",$ts_end):date("Y-m-d"))."T23:59:59.999Z"; 
 
         $ch = curl_init();
-        curl_setopt_array($ch, array(
-            CURLOPT_URL => $this->get_url().'reporting/transactions?fields=transaction_info,payer_info,shipping_info&start_date='.$start_date.'&end_date='.$end_date,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => array(
-                'Authorization: Bearer '.$this->get_token()
-            ),
-        ));
+        $token=$this->get_token();
+        if ($token){
+            curl_setopt_array($ch, array(
+                CURLOPT_URL => $this->get_url().'reporting/transactions?fields=transaction_info,payer_info,shipping_info&start_date='.$start_date.'&end_date='.$end_date,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_HTTPHEADER => array(
+                    'Authorization: Bearer '.$token
+                ),
+            ));
 
-        $response = curl_exec($ch);
-        curl_close($ch); 
-        $json =  json_decode($response);        
-        return $json;
+            $response = curl_exec($ch);
+            curl_close($ch); 
+            $json =  json_decode($response);  
+           // print "<pre>".  print_r($json); print "</pre>"; exit();    
+            if ($json->localizedMessage){
+                self::display_error("Response Error: ".$json->localizedMessage);
+            } 
+            return $json;
+        }
+        return false;
     }
 
     public function process_response($response,$dateEnd){    
         
         $date_from=CustomVariables::get_option('PaypalLastSyncDate');
-        if ($dateEnd>$date_from) CustomVariables::set_option('PaypalLastSyncDate',$dateEnd);        
+        if (!$this->error){
+        }
+               
 
         $process=$donations=$donors=$donorEmails=array();
         $process['time']=time();

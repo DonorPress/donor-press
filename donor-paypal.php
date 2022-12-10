@@ -26,7 +26,7 @@ $clientSecret=CustomVariables::get_option('PaypalSecret');
     }
 
     if (!$clientId || !$clientSecret){
-        print Paypal::display_error("Paypal API Client/Password not setup. <a href='?page=donor-settings'>Please set this up first.</a>");
+        print Paypal::display_error("Paypal API Client/Password not setup. Create a <a target='paypaltoken' href='https://developer.paypal.com/dashboard/applications/live'>Client/Password on Paypal</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
     }else{
         $date_from=CustomVariables::get_option('PaypalLastSyncDate');
         if (!$date_from) $date_from=$_GET['date_from']?$_GET['date_from']:date("Y-01-01");
