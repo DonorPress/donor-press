@@ -51,16 +51,14 @@ add_action("init", "ur_theme_start_session", 1);
 // // Register style sheet.
 // add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
 
-function donor_press_styles() {
-    wp_enqueue_style( 'donor-press-styles',  plugin_dir_url( __FILE__ ) . '/css/style.css');                      
-}
-add_action( 'wp_enqueue_scripts', 'donor_press_styles' );
+// function donor_press_styles() {
+//     wp_enqueue_style( 'donor-press-styles',  plugin_dir_url( __FILE__ ) . '/css/style.css');                      
+// }
+// add_action( 'wp_enqueue_scripts', 'donor_press_styles' );
 
 
-function ur_theme_start_session()
-{
-	if (!session_id())
-        session_start();
+function ur_theme_start_session(){
+	if (!session_id()) session_start();
 }
 
 

@@ -290,7 +290,7 @@ class Donation extends ModelLite
              <button type="submit" name="SummaryView" value="t">View Summary</button></form>
          <table border=1><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?
          foreach ($results as $r){?>
-             <tr><td><?php print $r->CreatedAt?></td><td align=right><?php print $r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?php print $r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?php print $_GET['page']?>&UploadDate=<?php print $r->CreatedAt?>">View All</a> <?php print ($r->ReceiptSentCount<$r->C?" | <a href='?page=".$_GET['page']."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&UploadDate=<?php print $r->CreatedAt?>">View Summary</a></td></tr><?
+             <tr><td><?php print $r->CreatedAt?></td><td align=right><?php print $r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?php print $r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?php print $_GET['page']?>&UploadDate=<?php print urlencode($r->CreatedAt)?>">View All</a> <?php print ($r->ReceiptSentCount<$r->C?" | <a href='?page=".$_GET['page']."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&UploadDate=<?php print urlencode($r->CreatedAt)?>">View Summary</a></td></tr><?
             
          }?></table><?
     }
