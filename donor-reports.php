@@ -40,7 +40,7 @@
 	}
 	
 	?></div>
-	<? 
+	<?php 
 	//print_r(Donation::$tinyIntDescriptions);
 	//dd(['one','two']);?>
 	<form method="get"><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
@@ -51,9 +51,9 @@
 	}
 	?></select>
 	Year: <select name="Year">
-	<? for($y=date("Y");$y>=date("Y")-4;$y--){?>
+	<?php for($y=date("Y");$y>=date("Y")-4;$y--){?>
 		?><option value="<?php print $y;?>"><?php print $y;?></option>
-	<? }?>
+	<?php }?>
 	</select>
 	
 
@@ -84,7 +84,7 @@ function reportCurrentMonthly(){
 		?><form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" /></form>
 		<h2>Current Monthly Donors</h2>
 		<table border=1><tr><th></th><th>Name</th><th>Monthly Give</th><th>Count</th><th>Give Day</th></tr>
-		<? $i=0;
+		<?php $i=0;
 		foreach ($results as $r){ 
 			$i++;
 			?><tr><td><?php print $i?></td><td><?php print $r->Name?></td><td align=right><?php print number_format($r->Total,2)?></td><td><?php print $r->Count?></td><td><?php print date("d",strtotime($r->LastDonation))?></td></tr><?

@@ -1020,7 +1020,7 @@ class Donation extends ModelLite
             <td><?php print $r->DateDeposited?></td>
             </tr><?
         }
-        ?></table><?
+        ?></table><?php
     }
 
     static public function create_table(){
