@@ -100,7 +100,7 @@ class DonorTemplate extends ModelLite {
                 <td><?php print $r->post_title;?></td>
                 <td><?php print substr(strip_tags($r->post_content,array('<p>','<br>')),0,160)?>...</td>
                 <td><a href="?page=<?php print $_GET['page']?>&CopyDonorTemplateId=<?php print $r->ID?>&edit=t">Copy</a></td>
-            </tr><?
+            </tr><?php
         }
         ?></table><?php
     }

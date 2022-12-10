@@ -120,15 +120,15 @@ class ModelLite{
 	}
 
 	public function var_view(){
-		?><table border=1><?
+		?><table border=1><?php
 		$fields=$this->get_viewable_fields();
 		foreach($fields as $f){			
 			if ($this->$f){
-				?><tr><td><?php print $f?></td><td><?php print $this->show_field($f)?></td></tr><?
+				?><tr><td><?php print $f?></td><td><?php print $this->show_field($f)?></td></tr><?php
 			}
 		}
 		?></table>
-		<?
+		<?php
 	}
 
 	static public function get_key($row){
@@ -240,20 +240,20 @@ class ModelLite{
 			return "<div><em>".$noResultMessage."</em></div>"; 
 		}
 		ob_start(); 
-		?><table border=1><?
+		?><table border=1><?php
 			$i=0;
 			foreach($results as $r){
 				if ($i==0){
-					?><tr><?
+					?><tr><?php
 					foreach ($fields as $field){?><th><?php print $field?></th><?php }
-					?></tr><?
+					?></tr><?php
 				}
-				?><tr><?
+				?><tr><?php
 				foreach ($fields as $field){?><td><?php print $r->show_field($field)?></td><?php }
-				?></tr><?
+				?></tr><?php
 				$i++;
 			}
-		?></table><?
+		?></table><?php
 		return ob_get_clean(); 
 	}
 	
@@ -345,41 +345,41 @@ class ModelLite{
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
 		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
 	
-		<table><?
+		<table><?php
 		foreach($this->fillable as $field){
 			$type="text";
             if (strpos($field,"Date")>-1){
                 $type="date";
 			}
 			if ($field=="Date") $this->Date=substr($this->$field,0,10); //$type="datetime-local";
-			?><tr><td align=right><?php print $field?></td><td><?
+			?><tr><td align=right><?php print $field?></td><td><?php
 			if ($this->tinyIntDescriptions[$field]){
-				?><select name="<?php print $field?>"><?
+				?><select name="<?php print $field?>"><?php
 					foreach($this->tinyIntDescriptions[$field] as $key=>$label){
-						?><option value="<?php print $key?>"<?php print $key==$this->$field?" selected":""?>><?php print $key." - ".$label?></option><?
+						?><option value="<?php print $key?>"<?php print $key==$this->$field?" selected":""?>><?php print $key." - ".$label?></option><?php
 					}
 					if (!$this->tinyIntDescriptions[$field][$this->$field]){
-						?><option value="<?php print $this->$field?>" selected><?php print $this->$field." - Not Set"?></option><?
+						?><option value="<?php print $this->$field?>" selected><?php print $this->$field." - Not Set"?></option><?php
 					}
-					?></select><?
+					?></select><?php
 			}else{
-				?><input type="<?php print $type?>" name="<?php print $field?>" value="<?php print $this->$field?>"/><?
+				?><input type="<?php print $type?>" name="<?php print $field?>" value="<?php print $this->$field?>"/><?php
 			}	
 		
 			
-			?></td></tr><?
+			?></td></tr><?php
 			}
 		?><tr><tr><td colspan=2>
 		<button type="submit" class="primary" name="Function" value="Save">Save</button>
 		<button type="submit" name="Function" class="secondary" value="Cancel" formnovalidate>Cancel</button>
         <?php 
         if ($this->$primaryKey){
-            ?> <button type="submit" name="Function" value="Delete">Delete</button><?
+            ?> <button type="submit" name="Function" value="Delete">Delete</button><?php
         }
         ?>
 		</td></tr>
 		</table>
-		</form><?
+		</form><?php
 	}
 
 	static public function display_notice($html){

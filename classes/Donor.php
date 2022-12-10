@@ -92,7 +92,7 @@ class Donor extends ModelLite {
         <input type="hidden" name="MergeFrom" value="<?php print $this->DonorId?>"/> 
         Merge To Id: <input type="number" name="MergedId" value="">
         <button method="submit" name="Function" value="MergeConfirm">Merge</button>
-        Enter the ID of the Donor you want to merge to. You will have the option to review this merge. Once merged, all donations will be relinked to the new profile.</form><?
+        Enter the ID of the Donor you want to merge to. You will have the option to review this merge. Once merged, all donations will be relinked to the new profile.</form><?php
     }
 
     static public function donor_update_suggestion($current,$new,$timeProcessed=null){   
@@ -167,19 +167,19 @@ class Donor extends ModelLite {
         <input type='hidden' name='donorIds[]' value='<?php print $oldDonor->DonorId?>'>
         <h2>The following changes are suggested</h2>
         <form method='post'>
-        <table border='1'><tr><th>Field</th><th>Donor A</th><th>Donor B</th></tr><?
+        <table border='1'><tr><th>Field</th><th>Donor A</th><th>Donor B</th></tr><?php
         foreach($changes as $field=>$value){
             ?><tr><td><?php print $field?></td>
             <td><input type="radio" name="<?php print $field?>" value="<?php print $value?>"<?php print !$this->$field?" checked":""?>><?php print $value?></td>
             <td><input type="radio" name="<?php print $field?>" value="<?php print $this->$field?>"<?php print $this->$field?" checked":""?>><?php print $this->$field?></td>
             </tr><?php                                    
         }
-        ?><tr><td>Donation Details Will Merge</td><td><?
+        ?><tr><td>Donation Details Will Merge</td><td><?php
         $thisStat=$stats[$oldDonor->DonorId];
         print $thisStat->C." Donations $".number_format($thisStat->Total,2);
         print " ".substr($thisStat->DateEarliest,0,10).($thisStat->DateEarliest!=$thisStat->DateLatest?" to ".substr($thisStat->DateLatest,0,10):"");
         ?></td>
-        <td><?
+        <td><?php
         $thisStat=$stats[$this->DonorId];
         print $thisStat->C." Donations $".number_format($thisStat->Total,2);
         print " ".substr($thisStat->DateEarliest,0,10).($thisStat->DateEarliest!=$thisStat->DateLatest?" to ".substr($thisStat->DateLatest,0,10):"");
@@ -187,7 +187,7 @@ class Donor extends ModelLite {
         </td></tr>
         </table>
         <button type='submit' name='Function' value='MergeDonor'>Merge Donors</button>
-        </form><?
+        </form><?php
 
     }
 
@@ -195,7 +195,7 @@ class Donor extends ModelLite {
         $totals=[];    
         $this->var_view();
         ?>
-        <div><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=AddDonation">Add Donation</a></div><?
+        <div><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=AddDonation">Add Donation</a></div><?php
         $this->merge_form();
         ?>
         <h2>Donation Summary</h2>
@@ -204,9 +204,9 @@ class Donor extends ModelLite {
         $SQL="SELECT  `Type`,	SUM(`Gross`) as Total,Count(*) as Count FROM ".Donation::get_table_name()." 
         WHERE DonorId='".$this->DonorId."'  Group BY `Type`";
         $results = self::db()->get_results($SQL);
-        ?><table border=1><tr><th>Type</th><th>Count</th><th>Amount</th></tr><?
+        ?><table border=1><tr><th>Type</th><th>Count</th><th>Amount</th></tr><?php
         foreach ($results as $r){?>
-            <tr><td><?php print $r->Type?></td><td><?php print $r->Count?></td><td align=right><?php print number_format($r->Total,2)?></td></tr><?
+            <tr><td><?php print $r->Type?></td><td><?php print $r->Count?></td><td align=right><?php print number_format($r->Total,2)?></td></tr><?php
             $totals['Count']+=$r->Count;
             $totals['Total']+=$r->Total;
         }        
@@ -214,7 +214,7 @@ class Donor extends ModelLite {
         <tfoot style="font-weight:bold;"><tr><td>Totals:</td><td><?php print $totals['Count']?></td><td align=right><?php print number_format($totals['Total'],2)?></td></tr></tfoot>
         <?} ?></table>
         <h2>Donation List</h2>
-		<?
+		<?php
 		$results=Donation::get(array("DonorId='".$this->DonorId."'"),"Date DESC");
 		print Donation::show_results($results);		
     }
@@ -368,7 +368,7 @@ class Donor extends ModelLite {
                 if ($_REQUEST['edit']){
                     $donor->edit_form();
                 }else{
-                    ?><div><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $donor->DonorId?>&edit=t">Edit Donor</a></div><?
+                    ?><div><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $donor->DonorId?>&edit=t">Edit Donor</a></div><?php
                     $donor->view();                    
                 }
             ?></div><?php            
@@ -446,7 +446,7 @@ class Donor extends ModelLite {
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE ".implode(" AND ",$where)." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY  SUM(Gross) DESC,COUNT(*) DESC";
         $results = self::db()->get_results($SQL);
         ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
-        <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr><?
+        <table border=1><tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr><?php
         foreach ($results as $r){
             $donor=new self($r);
             ?>
@@ -459,11 +459,11 @@ class Donor extends ModelLite {
                 <td><?php print $r->Total?></td>
                 <td><?php print $r->DateEarliest?></td>
                 <td><?php print $r->DateLatest?></td>
-            </tr><?
+            </tr><?php
             $total+=$r->Total;
         }?><tr><td></td><td></td><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td></tr></table>
                   
-        <?
+        <?php
         return;
     }
 
@@ -486,7 +486,7 @@ class Donor extends ModelLite {
                     checkboxes[i].checked = source.checked;
                 }                    
             }
-        </script> E-mail</th><th><input type="checkbox" checked onClick="toggleChecked(this,'pdf[]');")/> PDF</th><th>Sent</th></tr><?
+        </script> E-mail</th><th><input type="checkbox" checked onClick="toggleChecked(this,'pdf[]');")/> PDF</th><th>Sent</th></tr><?php
         $total=0;
         foreach ($results as $r){
             $donor=new self($r);
@@ -495,26 +495,26 @@ class Donor extends ModelLite {
             <td><?php print $donor->display_email()?></td>            
             <td><?php print $r->donation_count?></td>
             <td align=right><?php print number_format($r->Total,2)?></td><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
-            <td><?
+            <td><?php
              if (filter_var($r->Email, FILTER_VALIDATE_EMAIL) && $r->EmailStatus>=0) {
-                ?><input name="emails[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId] ?"":" checked")?>/><?
+                ?><input name="emails[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId] ?"":" checked")?>/><?php
              }
             ?></td>
-            <td><?
+            <td><?php
              if ($r->Address1 && $r->City) {
-                ?><input name="pdf[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId]|| $r->donation_count<2?"":" checked")?>/><?
+                ?><input name="pdf[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId]|| $r->donation_count<2?"":" checked")?>/><?php
              }
-            ?></td><td><?
+            ?></td><td><?php
             //self::dump($receipts[$r->DonorId]);
             print DonationReceipt::displayReceipts($receipts[$r->DonorId]);
-            ?></td></tr><?
+            ?></td></tr><?php
             $total+=$r->Total;
         }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td><td></td></table>
         Limit: <Input type="number" name="limit" value="<?php print $_REQUEST['limit']?>" style="width:50px;"/>
         <button type="submit" name="Function" value="SendYearEndEmail">Send Year End E-mails</button>
         <button type="submit" name="Function" value="SendYearEndPdf">Send Year End Pdf</button> <label><input type="checkbox" name="blankBack" value="t"> Print Blank Back</label>
         </form>
-        <?
+        <?php
         return;
     }
 

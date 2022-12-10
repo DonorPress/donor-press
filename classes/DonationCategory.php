@@ -51,10 +51,10 @@ class DonationCategory extends ModelLite
                 if ($_REQUEST['edit']){
                     $donationCategory->edit_form();
                 }else{
-                    ?><div><a href="?page=<?php print $_GET['page']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?
+                    ?><div><a href="?page=<?php print $_GET['page']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?php
                     $donationCategory->view(); 
                 }
-            ?></div><?
+            ?></div><?php
             return true;
         }else{
             return false;
@@ -100,7 +100,7 @@ class DonationCategory extends ModelLite
                 print $r->Category." (".$r->CategoryId.")";?></option><?php
              }?></select> <button type="submit" name="Function" value="DonationCategoryMergeTo">Merge</button>
             <?php }?>           
-		</form><?
+		</form><?php
 
     }
     public function donation_count(){
@@ -150,7 +150,7 @@ class DonationCategory extends ModelLite
            
          }
         ?></table>	
-        <?
+        <?php
     }
 
     static function show_children($parentId,$parent,$level=0){

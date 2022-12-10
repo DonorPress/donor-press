@@ -19,9 +19,9 @@
 	?>
 	
 	<h1>Report Page</h1>
-	<?
+	<?php
 	if ($_GET['view']=='detail'){
-		?><h2>Detailed View: <?php print $_GET['report']?></h2><?
+		?><h2>Detailed View: <?php print $_GET['report']?></h2><?php
 		switch($_GET['report']){
 			case "reportMonthly":
 				reportMonthly();
@@ -34,9 +34,9 @@
 	Donation::donation_upload_groups();
 	?>
 	
-	<div><strong>Year End Tax Summaries:</strong> <?
+	<div><strong>Year End Tax Summaries:</strong> <?php
 	for($y=date("Y");$y>=date("Y")-4;$y--){
-		?><a href="?page=<?php print $_GET['page']?>&f=YearSummaryList&Year=<?php print $y?>"><?php print $y?></a> | <?
+		?><a href="?page=<?php print $_GET['page']?>&f=YearSummaryList&Year=<?php print $y?>"><?php print $y?></a> | <?php
 	}
 	
 	?></div>
@@ -44,10 +44,10 @@
 	//print_r(Donation::$tinyIntDescriptions);
 	//dd(['one','two']);?>
 	<form method="get"><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-	Source: <select name="PaymentSource"><?
+	Source: <select name="PaymentSource"><?php
 	$paymentSource=array(0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Paypal","6"=>"ACH/Bank Transfer");
 	foreach($paymentSource as $key=>$label){
-		?><option value="<?php print $key?>"><?php print $key." - ".$label?></option><?
+		?><option value="<?php print $key?>"><?php print $key." - ".$label?></option><?php
 	}
 	?></select>
 	Year: <select name="Year">
@@ -59,7 +59,7 @@
 
 	<button name="f" value="ViewPaymentSourceYearSummary">Go</button>
 	</form>	
-	<?
+	<?php
 
 	reportTop();
 	reportCurrentMonthly();
@@ -87,10 +87,10 @@ function reportCurrentMonthly(){
 		<?php $i=0;
 		foreach ($results as $r){ 
 			$i++;
-			?><tr><td><?php print $i?></td><td><?php print $r->Name?></td><td align=right><?php print number_format($r->Total,2)?></td><td><?php print $r->Count?></td><td><?php print date("d",strtotime($r->LastDonation))?></td></tr><?
+			?><tr><td><?php print $i?></td><td><?php print $r->Name?></td><td align=right><?php print number_format($r->Total,2)?></td><td><?php print $r->Count?></td><td><?php print date("d",strtotime($r->LastDonation))?></td></tr><?php
 		}
 		//print "<pre>"; print_r($results); print "</pre>";
-		?></table><?
+		?></table><?php
 	}
 }
 
@@ -106,20 +106,20 @@ function reportTop($top=20){
 				$selectedCatagories=$_GET['category']?$_GET['category']:array();
 				$donationCategory=DonationCategory::get(array('(ParentId=0 OR ParentId IS NULL)'),'Category');
 				foreach($donationCategory as $cat){
-					?><option value="<?php print $cat->CategoryId?>"<?php print in_array($cat->CategoryId,$selectedCatagories)?" selected":""?>><?php print $cat->Category?></option><?
+					?><option value="<?php print $cat->CategoryId?>"<?php print in_array($cat->CategoryId,$selectedCatagories)?" selected":""?>><?php print $cat->Category?></option><?php
 				}
 				?>
 			</select>
 			<button type="submit">Go</button></h3>
-			<div><?
+			<div><?php
 			for($y=date("Y");$y>=date("Y")-4;$y--){
-				?><a href="?page=<?php print $_GET['page']?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?
+				?><a href="?page=<?php print $_GET['page']?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?php
 			}
 			?>
 
 			| <a href="?page=<?php print $_GET['page']?>&f=SummaryList&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
 			| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">Donation Report</a>
-			</div><?
+			</div><?php
 
 	$where=array("Type>0");
 
@@ -136,11 +136,11 @@ function reportTop($top=20){
 	if (sizeof($results)>0){?>
 		
 		<table border=1><tr><th>Name</th><th>Total</th><th>Average</th><th>Count</th><th>First Donation</th><th>Last Donation</th>
-		<?
+		<?php
 		foreach ($results as $r){
-			?><tr><td><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->Name?></a></td><td align=right><?php print $r->Total?></td><td align=right><?php print $r->Average*1?></td><td align=right><?php print $r->Count?></td><td align=right><?php print $r->FirstDonation?></td><td align=right><?php print $r->LastDonation?></td></tr><?
+			?><tr><td><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->Name?></a></td><td align=right><?php print $r->Total?></td><td align=right><?php print $r->Average*1?></td><td align=right><?php print $r->Count?></td><td align=right><?php print $r->FirstDonation?></td><td align=right><?php print $r->LastDonation?></td></tr><?php
 		}
-		?></table></form><?
+		?></table></form><?php
 	}
 }
 
@@ -230,13 +230,13 @@ function reportMonthly(){
 			<h3>Monthly Donations Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> <button type="submit">Go</button></h3>
 			<div id="MonthlyDonationsChart" style="width: 1200px; height: 500px;"></div>
 			<table border=1><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
-		<?
+		<?php
 		foreach ($results as $r){
-			?><tr><td><?php print $r->Month?></td><td><?php print Donation::getTinyDescription('Type',$r->Type)??$r->Type?></td><td align=right><a href="?page=<?php print $_GET['page']?>&report=reportMonthly&view=detail&month=<?php print $r->Month?>&type=<?php print urlencode($r->Type)?>"><?php print number_format($r->Total,2)?></a></td><td align=right><?php print $r->Count?></td></tr><?
+			?><tr><td><?php print $r->Month?></td><td><?php print Donation::getTinyDescription('Type',$r->Type)??$r->Type?></td><td align=right><a href="?page=<?php print $_GET['page']?>&report=reportMonthly&view=detail&month=<?php print $r->Month?>&type=<?php print urlencode($r->Type)?>"><?php print number_format($r->Total,2)?></a></td><td align=right><?php print $r->Count?></td></tr><?php
 		}
 		?></table></form>
 		
 		
-		<?
+		<?php
 	}
 }
