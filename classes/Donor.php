@@ -364,7 +364,7 @@ class Donor extends ModelLite {
             ?>
             <div id="pluginwrap">
                 <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
-                <h1>Donor Profile #<?php print $_REQUEST['DonorId']?> <?php print $donor->Name?></h1><?	
+                <h1>Donor Profile #<?php print $_REQUEST['DonorId']?> <?php print $donor->Name?></h1><?php 
                 if ($_REQUEST['edit']){
                     $donor->edit_form();
                 }else{

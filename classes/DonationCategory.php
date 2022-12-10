@@ -47,7 +47,7 @@ class DonationCategory extends ModelLite
             ?>
             <div id="pluginwrap">
                 <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
-                <h1>Category #<?php print $donationCategory->CategoryId?></h1><?	
+                <h1>Category #<?php print $donationCategory->CategoryId?></h1><?php 
                 if ($_REQUEST['edit']){
                     $donationCategory->edit_form();
                 }else{
