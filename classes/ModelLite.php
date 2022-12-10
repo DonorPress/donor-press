@@ -41,7 +41,7 @@ class ModelLite{
 	}
 
 	public function get_viewable_fields(){
-		$fields=$this->fillable;
+		$fields=$this->fillable?$this->fillable:[];
 		$primaryKey=$this->primaryKey;
 		
 		### Add Primary Key to results

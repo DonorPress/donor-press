@@ -913,7 +913,7 @@ class Donation extends ModelLite
         $page = DonorTemplate::get_by_name('receipt-thank-you');  
         if (!$page){
             $postarr['ID']=0;
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_recipt_thank_you.html";          
+            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_thank_you.html";          
             $postarr['post_content']=file_get_contents($tempLoc);
             $postarr['post_title']='Thank You For Your ##Organization## Donation';
             $postarr['post_status']='private';

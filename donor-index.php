@@ -36,7 +36,7 @@
 		<input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
 		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print $_GET['dsearch']?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
-	<? if (trim($_GET['dsearch'])<>''){
+	<?php if (trim($_GET['dsearch'])<>''){
 		$list=Donor::get(array("(UPPER(Name) LIKE '%".strtoupper($_GET['dsearch'])."%' 
 		OR UPPER(Name2)  LIKE '%".strtoupper($_GET['dsearch'])."%'
 		OR UPPER(Email) LIKE '%".strtoupper($_GET['dsearch'])."%'

@@ -78,8 +78,7 @@ function reportCurrentMonthly(){
 	}
 
 	$SQL="SELECT `Name`,AVG(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation FROM ".Donation::get_table_name()." WHERE ".implode(" AND ",$where)." Group BY `Name` ORder BY AVG(`Gross`) DESC";
-	$results = $wpdb->get_results($SQL);
-	print $SQL;
+	$results = $wpdb->get_results($SQL);	
 	if (sizeof($results)>0){
 		?><form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" /></form>
 		<h2>Current Monthly Donors</h2>
