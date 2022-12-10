@@ -212,7 +212,7 @@ class Donor extends ModelLite {
         }        
         if (sizeof($results)>1){?>
         <tfoot style="font-weight:bold;"><tr><td>Totals:</td><td><?php print $totals['Count']?></td><td align=right><?php print number_format($totals['Total'],2)?></td></tr></tfoot>
-        <?} ?></table>
+        <?php } ?></table>
         <h2>Donation List</h2>
 		<?php
 		$results=Donation::get(array("DonorId='".$this->DonorId."'"),"Date DESC");
