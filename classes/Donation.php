@@ -994,21 +994,20 @@ class Donation extends ModelLite
         <?php    
     }
 
-    function receipt_file_info(){
+    public function receipt_file_info(){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-DT'.$this->DonationId.'.pdf';
         $path=dn_plugin_base_dir()."/resources/".$file;
         $link=site_url().str_replace($_SERVER['DOCUMENT_ROOT'],"/",$path);
         return array('path'=>$path,'file'=>$file,'link'=>$link);
     }
 
-    static function summary_by_payment_source($paymentSource,$year){
-        $wpdb=self::db();  
+    static public function summary_by_payment_source($paymentSource,$year){ 
         $SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource       
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE YEAR(Date)='".$year."' AND  Status>=0  AND PaymentSource='".$paymentSource."' Order BY DT.Date,DonationId";
         //AND Type>=0
         //print $SQL;
-        $results = $wpdb->get_results($SQL);
+        $results = self::db()->get_results($SQL);
         //return;
         ?><table border=1><tr><th>DonationId</th><th>Name</th><th>Transaction Id</th><th>Amount</th><th>Date</th><th>Deposit Date</th></tr><?
         foreach ($results as $r){?>

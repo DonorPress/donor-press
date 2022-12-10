@@ -45,7 +45,7 @@
 	//dd(['one','two']);?>
 	<form method="get"><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
 	Source: <select name="PaymentSource"><?
-	$paymentSource=[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Paypal","6"=>"ACH/Bank Transfer"];
+	$paymentSource=array(0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Paypal","6"=>"ACH/Bank Transfer");
 	foreach($paymentSource as $key=>$label){
 		?><option value="<?php print $key?>"><?php print $key." - ".$label?></option><?
 	}
@@ -146,7 +146,7 @@ function reportTop($top=20){
 
 function reportMonthly(){
 	global $wpdb,$wp;
-	$where=["Gross>0","Currency='USD'","Status=9"];
+	$where=array("Gross>0","Currency='USD'","Status=9");
 	//,"`Type` IN ('Subscription Payment','Donation Payment','Website Payment')"
 	if ($_GET['report']=="reportMonthly"&&$_GET['view']=='detail'){
 		if ($_GET['month']){
@@ -180,7 +180,7 @@ function reportMonthly(){
 	Group BY  EXTRACT(YEAR_MONTH FROM `Date`), `Type`";
 
 	//print $SQL;
-	$graph=[];
+	$graph=array();
 	$results = $wpdb->get_results($SQL);
 	if (sizeof($results)>0){		
 		foreach ($results as $r){
