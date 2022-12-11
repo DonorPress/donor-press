@@ -17,7 +17,7 @@ Once inside the folder, run this command:
 `git clone https://github.com/DonorPress/donor-press`
 
 Optional: Once successfully cloned, enter this directory and type:
-`composer update`
+`composer install`
 This will install required classes for PDF writer and Quickbook integrations if you woudl like this functionality.
 ## Activate Plugin
 [ add screenshot here ]
