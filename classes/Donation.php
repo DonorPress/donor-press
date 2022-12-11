@@ -968,9 +968,6 @@ class Donation extends ModelLite
 
     static public function create_table(){
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php'); 
-    	$wpdb=self::db();  
-        //$charset_collate = $wpdb->get_charset_collate();
-
         $sql = "CREATE TABLE IF NOT EXISTS `".self::get_table_name()."` (
             `DonationId` int(11) NOT NULL AUTO_INCREMENT,
             `Date` datetime NOT NULL,
@@ -994,12 +991,12 @@ class Donation extends ModelLite
             `Subject` varchar(50) DEFAULT NULL,
             `Note` TEXT DEFAULT NULL,
             `PaymentSource` tinyint(4) DEFAULT NULL,
-            `NotTaxExcempt` TINYINT NULL DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt'
+            `NotTaxExcempt` TINYINT NULL DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt',
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,            
             `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,            
             PRIMARY KEY (`DonationId`),
             KEY `Date` (`Date`,`Name`,`FromEmailAddress`,`TransactionID`)
-          )";       
+          )";
         dbDelta( $sql );        
     }
 
