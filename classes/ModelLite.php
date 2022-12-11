@@ -224,7 +224,6 @@ class ModelLite{
 	public function key_flat(){
 		//return key value. If key is mutiple fields, then it seperates by pipes "|". 
 		$keyField=$this->primaryKey;
-		//dump($keyField);
 		if (is_array($keyField)){
 			$key="";
 			foreach($keyField as $kf){

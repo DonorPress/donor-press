@@ -703,7 +703,6 @@ class Donation extends ModelLite
             }
             if ($_POST['Function']=="Save" && $_POST['table']=="Donation"){
                 $donation=new Donation($_POST);
-                //dump($donation);
                 if ($donation->save()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
                     $donation->full_view();
@@ -939,7 +938,11 @@ class Donation extends ModelLite
         return $notice;
     }
 
-    public function pdf_receipt($customMessage=null){   
+    public function pdf_receipt($customMessage=null){
+        if (!class_exists("TCPDF")){
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+            return false;
+        }
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);
@@ -969,34 +972,34 @@ class Donation extends ModelLite
     static public function create_table(){
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php'); 
         $sql = "CREATE TABLE IF NOT EXISTS `".self::get_table_name()."` (
-            `DonationId` int(11) NOT NULL AUTO_INCREMENT,
-            `Date` datetime NOT NULL,
-            `DateDeposited` date DEFAULT NULL,
-            `DonorId` int(11) DEFAULT NULL,
-            `Name` varchar(80) NOT NULL,
-            `Type` tinyint(4) DEFAULT NULL,
-            `TypeOther` varchar(30) DEFAULT NULL,
-            `Status` tinyint(4) DEFAULT NULL,
-            `Currency` varchar(3) DEFAULT NULL,
-            `Gross` float(10,2) NOT NULL,
-            `Fee` decimal(6,2) DEFAULT NULL,
-            `Net` varchar(10) DEFAULT NULL,
-            `FromEmailAddress` varchar(70) NOT NULL,
-            `ToEmailAddress` varchar(26) DEFAULT NULL,
-            `TransactionID` varchar(17) DEFAULT NULL,
-            `AddressStatus` tinyint(4) DEFAULT NULL,
-            `CategoryId` tinyint(4) DEFAULT NULL,
-            `ReceiptID` varchar(16) DEFAULT NULL,
-            `ContactPhoneNumber` varchar(20) DEFAULT NULL,
-            `Subject` varchar(50) DEFAULT NULL,
-            `Note` TEXT DEFAULT NULL,
-            `PaymentSource` tinyint(4) DEFAULT NULL,
-            `NotTaxExcempt` TINYINT NULL DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt',
-            `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,            
-            `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,            
-            PRIMARY KEY (`DonationId`),
-            KEY `Date` (`Date`,`Name`,`FromEmailAddress`,`TransactionID`)
-          )";
+                `DonationId` int(11) NOT NULL,
+                `Date` datetime NOT NULL,
+                `DateDeposited` date DEFAULT NULL,
+                `DonorId` int(11) DEFAULT NULL,
+                `Name` varchar(80) NOT NULL,
+                `Type` tinyint(4) DEFAULT NULL,
+                `TypeOther` varchar(30) DEFAULT NULL,
+                `Status` tinyint(4) DEFAULT NULL,
+                `Currency` varchar(3) DEFAULT NULL,
+                `Gross` float(10,2) NOT NULL,
+                `Fee` decimal(6,2) DEFAULT NULL,
+                `Net` varchar(10) DEFAULT NULL,
+                `FromEmailAddress` varchar(70) NOT NULL,
+                `ToEmailAddress` varchar(26) DEFAULT NULL,
+                `Source` varchar(20) NOT NULL,
+                `SourceId` varchar(50) NOT NULL,
+                `TransactionID` varchar(17) DEFAULT NULL,
+                `AddressStatus` tinyint(4) DEFAULT NULL,
+                `CategoryId` tinyint(4) DEFAULT NULL,
+                `ReceiptID` varchar(16) DEFAULT NULL,
+                `ContactPhoneNumber` varchar(20) DEFAULT NULL,
+                `Subject` varchar(50) DEFAULT NULL,
+                `Note` text,
+                `PaymentSource` tinyint(4) DEFAULT NULL,
+                `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `NotTaxExcempt` tinyint(4) DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt'
+                )";
         dbDelta( $sql );        
     }
 

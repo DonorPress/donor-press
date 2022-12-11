@@ -196,8 +196,7 @@ class Paypal extends ModelLite{
         
         foreach($donations as $transaction_id=>$donation){
             if ($donation->DonationId){  
-                //print "<div>Found ". $donation->DonationId."</div>";
-                //dd($donations[$transaction_id],$donation) ;        
+                //print "<div>Found ". $donation->DonationId."</div>";     
                 if ($donation->UpdateSourceId){
                     //print "UpdateSource Id to: ".$donation->SourceId;
                     ### avoid a save... we don't want to overwrite everything in case manual adjustments were made. But update a few thigns we hadn't saved before. Can comment this out once DB is fixed.                    

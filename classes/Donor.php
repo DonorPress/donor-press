@@ -287,6 +287,10 @@ class Donor extends ModelLite {
                     $donorIds[]=$_POST['pdf'][$i];
                 }
                 if (sizeof($donorIds)>0){
+                    if (!class_exists("TCPDF")){
+                        self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+                        return false;
+                    }
                     $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
                     $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
                     $pdf->SetFont('helvetica', '', 12);
@@ -604,8 +608,7 @@ class Donor extends ModelLite {
         }
     }
 
-    function year_receipt_form($year){
-        //require ( WP_PLUGIN_DIR.'/tcpdf-wrapper/lib/tcpdf/tcpdf.php' );        
+    function year_receipt_form($year){       
         $this->year_receipt_email($year);  
         $form="";      
         if ($_POST['Function']=="SendYearReceipt" && $_POST['Email']){
@@ -633,6 +636,10 @@ class Donor extends ModelLite {
         return $homeLinks."<h2>".$this->emailBuilder->subject."</h2>".$this->emailBuilder->body.$form;
     }
     function year_receipt_pdf($year){
+        if (!class_exists("TCPDF")){
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+            return false;
+        }
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         $this->year_receipt_email($year);
         $html="<h2>".$this->emailBuilder->subject."</h2>".$this->emailBuilder->body;

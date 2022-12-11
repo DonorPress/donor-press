@@ -7,8 +7,10 @@
     Author URI: https://denversteiner.com/wp-plugins/donorpress
     Version: 0.1.0
 */
-
-require_once __DIR__ . '/vendor/autoload.php';
+### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
+if (file_exists(__DIR__ . '/vendor/autoload.php')){
+	require_once __DIR__ . '/vendor/autoload.php';
+}
 require_once 'classes/Donation.php';
 require_once 'classes/Donor.php';
 require_once 'classes/DonationCategory.php';

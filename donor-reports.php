@@ -40,9 +40,6 @@
 	}
 	
 	?></div>
-	<?php 
-	//print_r(Donation::$tinyIntDescriptions);
-	//dd(['one','two']);?>
 	<form method="get"><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
 	Source: <select name="PaymentSource"><?php
 	$paymentSource=array(0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Paypal","6"=>"ACH/Bank Transfer");
