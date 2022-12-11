@@ -196,9 +196,9 @@ class Donation extends ModelLite
         $results = $wpdb->get_results($SQL);
         ?><table border=1><tr><th colspan=2>Period Stats</th><th>Avg</th></tr><?php
         foreach ($results as $r){
-            ?><tr><td>Total Donors</td><td align=right><?php print $r->TotalDonors?></td><td align=right>$<?php print number_format($r->TotalRaised/$r->TotalDonors,2)?> avg per Donor</td></tr>
-            <tr><td>Donation Count</td><td align=right><?php print $r->TotalDonations?></td><td align=right><?php print number_format($r->TotalDonations/$r->TotalDonors,2)?> avg # per Donor</td></tr>
-            <tr><td>Donation Total</td><td align=right><?php print number_format($r->TotalRaised,2)?></td><td align=right>$<?php print number_format($r->TotalRaised/$r->TotalDonations,2)?> average Donation</td></tr>
+            ?><tr><td>Total Donors</td><td align=right><?php print $r->TotalDonors?></td><td align=right>$<?php print $r->TotalDonors<>0?number_format($r->TotalRaised/$r->TotalDonors,2):"-"?> avg per Donor</td></tr>
+            <tr><td>Donation Count</td><td align=right><?php print $r->TotalDonations?></td><td align=right><?php print $r->TotalDonors<>0?number_format($r->TotalDonations/$r->TotalDonors,2):"-"?> avg # per Donor</td></tr>
+            <tr><td>Donation Total</td><td align=right><?php print number_format($r->TotalRaised,2)?></td><td align=right>$<?php print $r->TotalDonations<>0?number_format($r->TotalRaised/$r->TotalDonations,2):"-"?> average Donation</td></tr>
             
             <?php
         }
