@@ -60,7 +60,7 @@ class Donation extends ModelLite
         $donation->Gross=$transaction->transaction_amount->value;
         $donation->Currency=$transaction->transaction_amount->currency_code;
         $donation->Fee=$transaction->fee_amount->value;
-        $donation->Net=$donation->Gross-$donation->Fee;              
+        $donation->Net=$donation->Gross+$donation->Fee;              
         $donation->Subject=$transaction->transaction_subject;
         $donation->Note=$transaction->transaction_note;
         $donation->Name=$payer->payer_name->alternate_full_name;
@@ -319,7 +319,7 @@ class Donation extends ModelLite
         if (sizeof($donorIdList)>0){
             $donors=Donor::get(array("DonorId IN ('".implode("','",array_keys($donorIdList))."')"),'',array('key'=>true));
             // Find if first time donation
-            $result=$wpdb->get_results("Select DonorId, Count(*) as C From wp_donation where DonorId IN ('".implode("','",array_keys($donorIdList))."') Group BY DonorId");
+            $result=$wpdb->get_results("Select DonorId, Count(*) as C From ".Donation::get_table_name()." where DonorId IN ('".implode("','",array_keys($donorIdList))."') Group BY DonorId");
             foreach ($result as $r){
                 $donorCount[$r->DonorId]=$r->C;
             }
