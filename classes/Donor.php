@@ -83,7 +83,6 @@ class Donor extends ModelLite {
         }
 
         if (!$d->SourceId) $d->SourceId=$detail->transaction_info->bank_reference_id;
-        //if ($d->SourceId=="1023635738856") dd($d);
         return $d;        
     }
 
@@ -100,9 +99,30 @@ class Donor extends ModelLite {
         foreach ($new as $donorN){
             if ($donorN->DonorId && $current[$donorN->DonorId]){
                 foreach(self::s()->fillable as $field){
-                    if (isset($donorN->$field) && $donorN->$field!="" && $donorN->$field!=$current[$donorN->DonorId]->$field){
+                    switch($field){
+                        case "Name":
+                        case "Name2":
+                        case "Address1":
+                        case "Address2":
+                        case "City":                           
+                            $value=ucwords(strtolower($donorN->$field));
+                            break;
+                        case "Region":
+                        case "Country":
+                        case "PostalCode":
+                            $value=strtoupper($donorN->$field);
+                            break;
+                        case "Email":
+                            $value=strtolower($donorN->$field);
+                            break;
+                        default:
+                            $value=$donorN->$field;
+                        break;
+                    }
+                    $value=trim($value);
+                    if (isset($donorN->$field) && $value!="" && $value!=$current[$donorN->DonorId]->$field){
                         $suggest_donor_changes[$donorN->DonorId][$field]['c']=$current[$donorN->DonorId]->$field;
-                        $suggest_donor_changes[$donorN->DonorId][$field]['n'][$donorN->$field]++;
+                        $suggest_donor_changes[$donorN->DonorId][$field]['n'][$value]++;
                     }
                 }
                 //If there is any changes for this donor, then set name so it can be read
@@ -169,6 +189,7 @@ class Donor extends ModelLite {
         <form method='post'>
         <table border='1'><tr><th>Field</th><th>Donor A</th><th>Donor B</th></tr><?php
         foreach($changes as $field=>$value){
+            if ($field=="MergedId") continue; //don't allow mergeing of merge IF it is the original donor
             ?><tr><td><?php print $field?></td>
             <td><input type="radio" name="<?php print $field?>" value="<?php print $value?>"<?php print !$this->$field?" checked":""?>><?php print $value?></td>
             <td><input type="radio" name="<?php print $field?>" value="<?php print $this->$field?>"<?php print $this->$field?" checked":""?>><?php print $this->$field?></td>
@@ -338,6 +359,16 @@ class Donor extends ModelLite {
             $donorB=Donor::get_by_id($_POST['MergedId']);
             if (!$donorB->DonorId){
                  print self::display_error("Donor ".$_POST['MergedId']." not found.");
+                 return false;
+            }else{
+                $donorB->merge_form_compare($donorA);
+            }
+            return true;
+        }elseif($_GET['Function']=='MergeConfirm'){ 
+            $donorA=Donor::get_by_id($_GET['MergeFrom']);
+            $donorB=Donor::get_by_id($_GET['MergedId']);
+            if (!$donorB->DonorId){
+                 print self::display_error("Donor ".$_GET['MergedId']." not found.");
                  return false;
             }else{
                 $donorB->merge_form_compare($donorA);
@@ -672,5 +703,70 @@ class Donor extends ModelLite {
             $postarr['post_name']='donor-receiptyear';           
             return wp_insert_post($postarr);            
         }
+    }
+
+    static function find_duplicates_to_merge(){
+        ### function to track down duplicates by email. Helpful for cleaningup DB if a script goes awry.
+        $SQL="SELECT DN.* FROM ".Donor::get_table_name()." DN LEFT JOIN ".Donation::get_table_name()." DT ON DN.`DonorId`=DT.DonorID Where DonationId IS NULL and MergedId=0;";
+        $results = self::db()->get_results($SQL);
+        foreach ($results as $r){
+            $stats['e'][strtolower($r->Email)]=$r;
+            $stats['d'][$r->DonorId]=$r;
+        }
+        $SQL="Select * From ".Donor::get_table_name()." WHERE Email IN ('".implode("','",array_keys($stats['e']))."') AND DonorId NOT IN (".implode(',',array_keys($stats['d'])).")";
+        //print $SQL;
+        $results = self::db()->get_results($SQL);       
+        ?><h3>Merger list</h3><table><?php
+        
+        foreach ($results as $r){
+            $match= $stats['e'][strtolower($r->Email)];
+
+          
+
+
+            if ($match->Address1 && !$r->Address1){            
+                ?><tr>
+                    <td><a target='match' href="?page=donor-index&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> - <?php print $r->Name?></td><td><?php print $r->Address1?></td>
+                    <td><a target='match' href="?page=donor-index&DonorId=<?php print $match->DonorId?>"><?php print $match->DonorId?></a> -<?php print $match->Name?></td><td><?php print $match->Address1?></td>
+                    <td><a target='match' href='?page=donor-index&Function=MergeConfirm&MergeFrom=<?php print $match->DonorId?>&MergedId=<?php print $r->DonorId?>'><-Merge</a></td></tr><?php
+            }
+            $current[$r->DonorId]=$r;
+            $match->DonorId=$r->DonorId;
+            $match->email=strtolower($match->email);
+            $new[$r->DonorId]=$match;
+
+        }
+        ?></table>
+        <?php        
+        self::donor_update_suggestion($current,$new);
+    }
+
+    static function get_email_list(){
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
+        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        WHERE D.Email<>'' AND D.EmailStatus=1 AND D.MergedId=0        
+        Group BY D.DonorId, D.Name, D.Name2,`Email` Order BY D.Name";
+        $results = self::db()->get_results($SQL);
+        $fp = fopen(dn_plugin_base_dir()."/resources/email_list.csv", 'w');
+        fputcsv($fp, array_keys((array)$results[0]));//write first line with field names
+        foreach ($results as $r){
+            fputcsv($fp, (array)$r);
+        }
+        fclose($fp);
+    }
+
+    static function get_mail_list(){
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
+        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        WHERE D.Address1<>''      
+        Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY D.Name";
+        print "<pre>".$SQL."</pre>";
+        $results = self::db()->get_results($SQL);
+        $fp = fopen(dn_plugin_base_dir()."/resources/address_list.csv", 'w');
+        fputcsv($fp, array_keys((array)$results[0]));//write first line with field names
+        foreach ($results as $r){
+            fputcsv($fp, (array)$r);
+        }
+        fclose($fp);
     }
 }
