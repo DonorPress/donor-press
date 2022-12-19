@@ -157,8 +157,9 @@ function reportMonthly(){
 		if (isset($_GET['type'])){
 			$where[]="`Type`='".addslashes($_GET['type'])."'";
 		}
+		//dd($where);
 		$results=Donation::get($where);
-		print Donation::showResults($results);		
+		print Donation::show_results($results);		
 		return;
 		
 	}
@@ -172,66 +173,156 @@ function reportMonthly(){
 		$where[]="CategoryId IN ('".implode("','",$selectedCatagories)."')";
 	}
 
-	$SQL="SELECT EXTRACT(YEAR_MONTH FROM `Date`) as Month, `Type`,	SUM(`Gross`) as Total,Count(*) as Count FROM ".Donation::get_table_name()." WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")."
-	Group BY  EXTRACT(YEAR_MONTH FROM `Date`), `Type`";
+	$countField=($_GET['s']=="Count"?"Count":"Gross");	
 
-	//print $SQL;
 	$graph=array();
-	$results = $wpdb->get_results($SQL);
-	if (sizeof($results)>0){		
-		foreach ($results as $r){
-			$type=Donation::getTinyDescription('Type',$r->Type)??$r->Type;
-			$graph['Total'][$r->Month][$type]+=$r->Total;
-			$graph['Count'][$r->Month][$type]+=$r->Count;
-			$graph['Type'][$type]+=$r->Total;
+	$SQL="SELECT `Date`, `Type`, Gross, PaymentSource FROM ".Donation::get_table_name()." WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")."";
+	$results = $wpdb->get_results($SQL);		
+	foreach ($results as $r){
+		$timestamp=strtotime($r->Date);
+		if ($r->Type<>5){ //skip autopayments / subcriptions for day/time graph
+			$graph['Month'][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);
+			$graph['WeekDay'][date("N",$timestamp)]+=($countField=="Gross"?$r->Gross:1);			
+			if (date("His",$timestamp)>0){ //ignore entries without timestamp
+				$graph['time'][date("H",$timestamp)*1]+=($countField=="Gross"?$r->Gross:1);
+			}			
 		}
-		krsort($graph['Type']);
+		$yearMonth=date("Ym",$timestamp);
+		$type=$r->Type;
+		$graph['Total'][$yearMonth][$type]+=$r->Gross;
+		$graph['Count'][$yearMonth][$type]++;			
+		$graph['Type'][$type]+=$r->Gross;
+	}
+	foreach($graph['Type'] as $type=>$total){
+		$graph['TypeDescription'][$type]=Donation::get_tiny_description('Type',$type)??$type;
+	}
+	ksort($graph['WeekDay']);
+	ksort($graph['time']);
+	krsort($graph['Type']);
+
+	$weekDays=array("1"=>"Mon","2"=>"Tue","3"=>"Wed","4"=>"Thu","5"=>"Fri",6=>"Sat",7=>"Sun");
+
+
+	if (sizeof($graph['Type'])>0){	
+		ksort($graph[$countField=="Gross"?'Total':'Count']);
 		?>
-		  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script type="text/javascript">
     google.charts.load("current", {packages:['corechart']});
     google.charts.setOnLoadCallback(drawMonthlyChart);
     function drawMonthlyChart() {
 		var data = google.visualization.arrayToDataTable([
-        ['Type', '<?php print implode("', '",array_keys($graph['Type']))?>', {'type': 'string', 'role': 'tooltip', 'p': {'html': true}} ]
+        ['Type', '<?php print implode("', '",$graph['TypeDescription'])?>']
 		<?php
-		foreach($graph['Total'] as $date=>$types){
-			print ", ['".$date."',";
-			foreach($graph['Type'] as $type=>$total){
-				print ($types[$type]?$types[$type]:0).", ";
+		foreach($graph[$countField=="Gross"?'Total':'Count'] as $date=>$types){
+			print ", ['".$date."'";
+			foreach($graph['TypeDescription'] as $type=>$desc){
+				print ",".($types[$type]?$types[$type]:0);
 			}
-			//print "'<strong>".$date."</strong><br>Donation Total: $".number_format($graph['Total'][$date]['Donation Payment'],2)."']\r\n";
-
-			print "'<strong>".$date."</strong><br>Donation Total: <a target=\"detail\" href=\"?page=donor-reports&report=reportMonthly&view=detail&month=".$date."&type=1\">$".number_format($graph['Total'][$date]['Donation Payment'],2)."</a><br>Count: ".$graph['Count'][$date]['Donation Payment']."']\r\n";
+			print "]";
+			//print "'<strong>".$date."</strong><br>Donation Total: <a target=\"detail\" href=\"?page=donor-reports&report=reportMonthly&view=detail&month=".$date."&type=1\">$".number_format($graph['Total'][$date]['Donation Payment'],2)."</a><br>Count: ".$graph['Count'][$date]['Donation Payment']."']\r\n";
 		}
-
 		?>
       ]);
 
       var options = {
+		title:'Monthly Donation by <? print $countField;?>',
         width: 1200,
         height: 500,
         legend: { position: 'right', maxLines: 3 },
         bar: { groupWidth: '75%' },
-        isStacked: true,
-		tooltip: { isHtml: true, trigger: 'selection' }
+        isStacked: true
       };
 	
 	  var chart = new google.visualization.ColumnChart(document.getElementById("MonthlyDonationsChart"));
 	  chart.draw(data, options);
 
+	  var data2 = google.visualization.arrayToDataTable([
+        ['Week Day', '<? print $countField;?>']
+		<?php
+		foreach($graph['WeekDay'] as $day=>$count){
+			print ", ['".$weekDays[$day]."',".$count."]";
+		}
+		?>
+      ]);
+	  var options2 = {
+		title:'Day of Week by <? print $countField;?>',
+        width: 1200,
+        height: 500,
+        legend: { position: 'right', maxLines: 3 },
+        bar: { groupWidth: '75%' },
+        isStacked: true,		
+      };
+	
+	  var chart2 = new google.visualization.ColumnChart(document.getElementById("Weekday"));
+	  chart2.draw(data2, options2);
+
+	  var data3 = google.visualization.arrayToDataTable([
+        ['Week Day', '<? print $countField;?>']
+		<?php
+		for ($i=0;$i<=23;$i++){
+			print ", ['".$i."',".($graph['time'][$i]?$graph['time'][$i]:0)."]";
+		}
+		
+		?>
+      ]);
+	  var options3 = {
+		title:'Time of Day by <? print $countField;?>',
+        width: 1200,
+        height: 500,
+        legend: { position: 'right', maxLines: 3 },
+        bar: { groupWidth: '75%' },
+        isStacked: true,		
+      };
+
+	  var chart3 = new google.visualization.ColumnChart(document.getElementById("TimeChart"));
+	  chart3.draw(data3, options3);
+
+	  var data4 = google.visualization.arrayToDataTable([
+        ['Week Day', '<? print $countField;?>']
+		<?php
+		for ($i=1;$i<=12;$i++){
+			print ", ['".$i."',".($graph['Month'][$i]?$graph['Month'][$i]:0)."]";
+		}	
+		?>
+      ]);
+	  var options4 = {
+		title:'Month by <? print $countField;?>',
+        width: 1200,
+        height: 500,
+        legend: { position: 'right', maxLines: 3 },
+        bar: { groupWidth: '75%' },
+        isStacked: true,		
+      };
+	
+	  var chart4 = new google.visualization.ColumnChart(document.getElementById("MonthChart"));
+	  chart4.draw(data4, options4);
+	
+
 	}
 	</script>
 <form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-			<h3>Monthly Donations Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> <button type="submit">Go</button></h3>
+			<h3>Monthly Donations Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> 
+			Show: <select name="s">
+				<option value="Gross"<?php print ($countField=="Gross"?" selected":"")?>>Gross</option>	
+				<option value="Count"<?php print ($countField=="Count"?" selected":"")?>>Count</option>
+					
+</select>
+			<button type="submit">Go</button></h3>
 			<div id="MonthlyDonationsChart" style="width: 1200px; height: 500px;"></div>
-			<table border=1><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
+			<div id="Weekday" style="width: 1200px; height: 500px;"></div>
+			<div id="MonthChart" style="width: 1200px; height: 500px;"></div>		
+			<div id="TimeChart" style="width: 1200px; height: 500px;"></div>
+
+	<table border=1><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
 		<?php
-		foreach ($results as $r){
-			?><tr><td><?php print $r->Month?></td><td><?php print Donation::getTinyDescription('Type',$r->Type)??$r->Type?></td><td align=right><a href="?page=<?php print $_GET['page']?>&report=reportMonthly&view=detail&month=<?php print $r->Month?>&type=<?php print urlencode($r->Type)?>"><?php print number_format($r->Total,2)?></a></td><td align=right><?php print $r->Count?></td></tr><?php
-		}
-		?></table></form>
+		foreach ($graph['Total'] as $yearMonth =>$types){
+			foreach($types as $type=>$total){
+				?><tr><td><?php print  $yearMonth?></td><td><?php print Donation::get_tiny_description('Type',$type)??$type?></td><td align=right><a href="?page=<?php print $_GET['page']?>&report=reportMonthly&view=detail&month=<?php print $yearMonth?>&type=<?php print urlencode($type)?>"><?php print number_format($total,2)?></a></td><td align=right><?php print $graph['Count'][$yearMonth][$type]?></td></tr><?php
 		
+			}
+		}
+		?></table></form>	
 		
 		<?php
 	}

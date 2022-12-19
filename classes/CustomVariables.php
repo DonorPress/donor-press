@@ -8,7 +8,7 @@ class CustomVariables extends ModelLite
 {  
     const base = 'donation';
     const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate"];	
-    const variables_protected = ["PaypalClientId","PaypalSecret"];
+    const variables_protected = ["PaypalClientId","PaypalSecret","QuickbooksClientId","QuickbooksSecret"];
     static public function form(){
         $wpdb=self::db();  
         $vals=self::get_custom_variables();      
@@ -110,5 +110,4 @@ class CustomVariables extends ModelLite
             }
         }
     }
-
 }

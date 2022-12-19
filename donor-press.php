@@ -16,7 +16,7 @@ require_once 'classes/Donor.php';
 require_once 'classes/DonationCategory.php';
 require_once 'classes/DonorTemplate.php';
 require_once 'classes/CustomVariables.php'; 
-
+require_once 'classes/QuickBooks.php';
 /* Resources: 
 https://www.sitepoint.com/working-with-databases-in-wordpress/
 https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-scratch--net-2668
@@ -25,6 +25,18 @@ https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-s
 //wp_enqueue_style( 'style', get_stylesheet_uri() );
 add_action('admin_menu', 'donor_plugin_create_menu_entry');
 register_activation_hook( __FILE__, 'donor_plugin_create_tables' );
+
+
+
+function donor_header_check() {
+	if (!session_id()) session_start();	
+	$qb=new Quickbooks();
+	$qb->check_redirects($_GET['redirect']);
+	//dd("I am here");	
+}
+
+add_action( 'admin_init', 'donor_header_check',1);
+
 
 // creating the menu entries
 function donor_plugin_create_menu_entry() {
@@ -37,43 +49,7 @@ function donor_plugin_create_menu_entry() {
 	add_submenu_page( 'donor-index', 'Reports', 'Reports', 'edit_posts', 'donor-reports', 'donor_show_reports',2 );
 	add_submenu_page( 'donor-index', 'Settings', 'Settings', 'edit_posts', 'donor-settings', 'donor_show_settings',3);
 	add_submenu_page( 'donor-index', 'Paypal', 'Paypal', 'edit_posts', 'donor-paypal', 'donor_show_paypal',4);
-}
-
-
-## Search record
-add_action( 'wp_ajax_searchDonorList', 'searchDonorList_callback' );
-add_action( 'wp_ajax_nopriv_searchDonorList', 'searchDonorList_callback' );
-add_action("init", "ur_theme_start_session", 1);
-
-
-// function wpdocs_register_plugin_styles() {
-// 	wp_register_style( 'donor-press', plugins_url( 'donor-press/css/style.css' ) );
-// 	wp_enqueue_style( 'donor-press' );
-// }
-// // Register style sheet.
-// add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
-
-// function donor_press_styles() {
-//     wp_enqueue_style( 'donor-press-styles',  plugin_dir_url( __FILE__ ) . '/css/style.css');                      
-// }
-// add_action( 'wp_enqueue_scripts', 'donor_press_styles' );
-
-
-function ur_theme_start_session(){
-	if (!session_id()) session_start();
-}
-
-
-
-function searchDonorList_callback() {
-	$request = $_POST['request'];
-	$searchText = strtoupper($_POST['searchText']);
-	print json_encode(Donor::get(array("(UPPER(Name) LIKE '%".$searchText."%' 
-	OR UPPER(Name2)  LIKE '%".$searchText."%'
-	OR UPPER(Email) LIKE '%".$searchText."%'
-	OR UPPER(Phone) LIKE '%".$searchText."%')"
-	,"(MergedId =0 OR MergedId IS NULL)")));
-   	wp_die(); 
+	add_submenu_page( 'donor-index', 'QuickBooks', 'QuickBooks', 'edit_posts', 'donor-quickbooks', 'donor_show_quickbooks',4);
 }
 
 // function triggered in add_menu_page
@@ -93,6 +69,11 @@ function donor_show_settings() {
 function donor_show_paypal() {
 	include('donor-paypal.php');
 }
+
+function donor_show_quickbooks() {
+	include('donor-quickbooks.php');
+}
+
 
 function dn_plugin_base_dir(){
 	return str_replace("\\","/",dirname(__FILE__));
@@ -119,4 +100,46 @@ function donor_plugin_create_tables() {
 	Donation::create_table();
 	DonationReceipt::create_table();
 	DonationCategory::create_table();
+}
+
+
+function generate_email_list(){
+	print "I am here"; exit();
+	Donor::get_email_list();
+}
+
+
+
+
+## Search record
+//add_action( 'wp_ajax_searchDonorList', 'searchDonorList_callback' );
+//add_action( 'wp_ajax_nopriv_searchDonorList', 'searchDonorList_callback' );
+// add_action("init", "ur_theme_start_session", 1);
+// function ur_theme_start_session(){
+// 	if (!session_id()) session_start();
+// }
+
+// function wpdocs_register_plugin_styles() {
+// 	wp_register_style( 'donor-press', plugins_url( 'donor-press/css/style.css' ) );
+// 	wp_enqueue_style( 'donor-press' );
+// }
+// // Register style sheet.
+// add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
+
+// function donor_press_styles() {
+//     wp_enqueue_style( 'donor-press-styles',  plugin_dir_url( __FILE__ ) . '/css/style.css');                      
+// }
+// add_action( 'wp_enqueue_scripts', 'donor_press_styles' );
+
+
+
+function searchDonorList_callback() {
+	$request = $_POST['request'];
+	$searchText = strtoupper($_POST['searchText']);
+	print json_encode(Donor::get(array("(UPPER(Name) LIKE '%".$searchText."%' 
+	OR UPPER(Name2)  LIKE '%".$searchText."%'
+	OR UPPER(Email) LIKE '%".$searchText."%'
+	OR UPPER(Phone) LIKE '%".$searchText."%')"
+	,"(MergedId =0 OR MergedId IS NULL)")));
+   	wp_die(); 
 }
