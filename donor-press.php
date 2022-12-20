@@ -1,11 +1,11 @@
 <?php
 /*
     Plugin Name: Donor Press - A Donation Tracking System
-    Plugin URI: https://denversteiner.com/wp-plugins/donorpress
-    Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry.
+    Plugin URI: https://denversteiner.com/donorpress/
+    Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry. Syncing data to Quickbooks is also in beta.
     Author: Denver Steiner
-    Author URI: https://denversteiner.com/wp-plugins/donorpress
-    Version: 0.1.0
+    Author URI: https://denversteiner.com/donorpress/
+    Version: 0.0.2
 */
 ### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
 if (file_exists(__DIR__ . '/vendor/autoload.php')){
@@ -30,12 +30,23 @@ register_activation_hook( __FILE__, 'donor_plugin_create_tables' );
 
 function donor_header_check() {
 	if (!session_id()) session_start();	
-	$qb=new Quickbooks();
-	$qb->check_redirects($_GET['redirect']);
-	//dd("I am here");	
+	if ($_GET['redirect']){
+		$qb=new Quickbooks();
+		$qb->check_redirects($_GET['redirect']);
+	}
+	## download functions before page is loaded
+	if ($_POST['Function']=="DonationReceiptPdf"){
+		$donation=Donation::get_by_id($_REQUEST['DonationId']);	
+		$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));      
+	}
+	## add style
+	wp_enqueue_style('donorPressPluginStylesheet', plugins_url( '/css/style.css', __FILE__ ), false);
 }
 
+//wp_register_style( 'donorPressPluginStylesheet', plugins_url( '/css/style.css', __FILE__ ) );
 add_action( 'admin_init', 'donor_header_check',1);
+
+
 
 
 // creating the menu entries
@@ -125,11 +136,6 @@ function generate_email_list(){
 // }
 // // Register style sheet.
 // add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
-
-// function donor_press_styles() {
-//     wp_enqueue_style( 'donor-press-styles',  plugin_dir_url( __FILE__ ) . '/css/style.css');                      
-// }
-// add_action( 'wp_enqueue_scripts', 'donor_press_styles' );
 
 
 

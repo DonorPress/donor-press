@@ -120,7 +120,7 @@ class ModelLite{
 	}
 
 	public function var_view(){
-		?><table border=1><?php
+		?><table class="dp"><?php
 		$fields=$this->get_viewable_fields();
 		foreach($fields as $f){			
 			if ($this->$f){
@@ -233,13 +233,24 @@ class ModelLite{
 		return $key;
 	}
 
-	public static function show_results($results,$noResultMessage="No Results Found."){		
-		$fields=self::s()->get_viewable_fields();	
+	public static function show_results($results,$noResultMessage="<div class=\"notice notice-warning\">No Results Found</div>",$fieldList=[]){		
+		$fields=$fieldList?$fieldList:self::s()->get_viewable_fields();	
 		if (!$results || sizeof($results)==0){
 			return "<div><em>".$noResultMessage."</em></div>"; 
 		}
 		ob_start(); 
-		?><table border=1><?php
+		?>
+		<script>
+			function toggleDisplay(id){
+				var x = document.getElementById(id);
+				if (x.style.display === "none") {
+					x.style.display = "block";
+				} else {
+					x.style.display = "none";
+				}
+			}
+		</script>	
+		<table class="dp"><?php
 			$i=0;
 			foreach($results as $r){
 				if ($i==0){
@@ -248,22 +259,50 @@ class ModelLite{
 					?></tr><?php
 				}
 				?><tr><?php
-				foreach ($fields as $field){?><td><?php print $r->show_field($field)?></td><?php }
+				foreach ($fields as $field){
+					?><td><?php print $r->show_field($field)?></td><?php 
+				
+				}
 				?></tr><?php
 				$i++;
 			}
 		?></table><?php
 		return ob_get_clean(); 
 	}
+
+	public function phone_format($phone){
+        return preg_replace('~.*(\d{3})[^\d]{0,7}(\d{3})[^\d]{0,7}(\d{4}).*~', '($1) $2-$3', $phone);
+    }
+
+	function mailing_address($seperator="<br>",$include_name=true){
+        $address="";
+        if ($this->Address1) $address.=$this->Address1.$seperator;
+        if ($this->Address2) $address.=$this->Address2.$seperator;
+        if ($this->City || $this->Region) $address.=$this->City." ".$this->Region." ".$this->PostalCode." ".$this->Country;
+        $nameLine=$this->Name.($this->Name2?" & ".$this->Name2:"");
+        if ($include_name){
+            $address=$nameLine.(trim($address)?$seperator.$address:"");
+        }
+        return trim($address);
+    }
 	
 	public function show_field($fieldName,$idShow=true){
 		$v=$this->$fieldName;
 		switch($fieldName){
+			case "Address":
+				return $this->mailing_address(", ",false);
+				break;
+			case "Phone":
+				return $this->phone_format($v);
+			break;
 			case "Gross":
 			case "Fee":
 			case "Net":
 				return $v?number_format($v,2):"";
 			break;
+			case "Content":
+				return "<div><a href='#' onclick=\"toggleDisplay('message_".$this->ReceiptId."');return false;\">Show/Hide</a></div><div style='display:none;' id='message_".$this->ReceiptId."'>".$v."</div>";
+				break;
 			case "DonationId":
 				return '<a href="?page='.$_GET['page'].'&DonationId='.$v.'">'.$v.'</a>';
 			break;

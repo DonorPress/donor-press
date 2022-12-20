@@ -15,9 +15,17 @@
 	if (Donation::request_handler()) { print "</div>"; return;} //important to do this first
 	if (Donor::request_handler())  { print "</div>"; return;}
 	if (DonationCategory::request_handler()) { print "</div>"; return;}
-	//load_initial_data();
+
+	$tabs=['uploads'=>'Recent Uploads/Syncs','stats'=>'Stats','trends'=>'Trends'];
+	$active_tab=$_GET['tab']?$_GET['tab']:key($tabs);
 	?>
-	
+	<div class="dp-tab-links">
+		<?php foreach ($tabs as $tab=>$label){
+			print '<a href="?page='.$_GET['page'].'&tab='.$tab.'" class="tab'.($active_tab==$tab?" active":"").'">'.$label.'</a>';			
+		}	
+	?>
+	</div>
+
 	<h1>Report Page</h1>
 	<?php
 	if ($_GET['view']=='detail'){
@@ -79,7 +87,7 @@ function reportCurrentMonthly(){
 	if (sizeof($results)>0){
 		?><form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" /></form>
 		<h2>Current Monthly Donors</h2>
-		<table border=1><tr><th></th><th>Name</th><th>Monthly Give</th><th>Count</th><th>Give Day</th></tr>
+		<table class="dp"><tr><th></th><th>Name</th><th>Monthly Give</th><th>Count</th><th>Give Day</th></tr>
 		<?php $i=0;
 		foreach ($results as $r){ 
 			$i++;
@@ -131,7 +139,7 @@ function reportTop($top=20){
 	FROM ".Donation::get_table_name()." DD INNER JOIN ".Donor::get_table_name()." D ON D.DonorId=DD.DonorId WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")." Group BY  D.`DonorId`,D.`Name` Order BY SUM(`Gross`) DESC, COUNT(*) DESC LIMIT ".$top);
 	if (sizeof($results)>0){?>
 		
-		<table border=1><tr><th>Name</th><th>Total</th><th>Average</th><th>Count</th><th>First Donation</th><th>Last Donation</th>
+		<table class="dp"><tr><th>Name</th><th>Total</th><th>Average</th><th>Count</th><th>First Donation</th><th>Last Donation</th>
 		<?php
 		foreach ($results as $r){
 			?><tr><td><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->Name?></a></td><td align=right><?php print $r->Total?></td><td align=right><?php print $r->Average*1?></td><td align=right><?php print $r->Count?></td><td align=right><?php print $r->FirstDonation?></td><td align=right><?php print $r->LastDonation?></td></tr><?php
@@ -314,7 +322,7 @@ function reportMonthly(){
 			<div id="MonthChart" style="width: 1200px; height: 500px;"></div>		
 			<div id="TimeChart" style="width: 1200px; height: 500px;"></div>
 
-	<table border=1><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
+	<table class="dp"><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
 		<?php
 		foreach ($graph['Total'] as $yearMonth =>$types){
 			foreach($types as $type=>$total){

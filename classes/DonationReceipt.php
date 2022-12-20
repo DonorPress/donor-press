@@ -17,7 +17,7 @@ class DonationReceipt extends ModelLite {
     const UPDATED_AT = 'DateSent';
 
     protected $tinyIntDescriptions=[
-        "Type"=>["e"=>"Email","p"=>"Postal Mail"],        
+        "Type"=>["e"=>"Email","p"=>"Pdf/Postal Mail"],        
     ];
   
     static public function create_table(){

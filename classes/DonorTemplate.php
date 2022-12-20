@@ -93,7 +93,7 @@ class DonorTemplate extends ModelLite {
         $SQL="SELECT * FROM ".self::get_table_name()." WHERE post_type='donortemplate' AND post_parent=0 Order BY post_name,post_title";
         $results = $wpdb->get_results($SQL);        
         ?><h2>Template List</h2>
-        <table border=1><tr><th>Template</th><th>Subject</th><th>Body</th><th></th></tr>
+        <table class="dp"><tr><th>Template</th><th>Subject</th><th>Body</th><th></th></tr>
         <?php
         foreach ($results as $r){ 
             ?><tr><td><a href="?page=<?php print $_GET['page']?>&DonorTemplateId=<?php print $r->ID?>&edit=t"><?php print $r->post_name?></a></td>

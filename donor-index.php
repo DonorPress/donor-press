@@ -36,14 +36,14 @@
 		<input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
 		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print $_GET['dsearch']?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
+
 	<?php if (trim($_GET['dsearch'])<>''){
 		$list=Donor::get(array("(UPPER(Name) LIKE '%".strtoupper($_GET['dsearch'])."%' 
 		OR UPPER(Name2)  LIKE '%".strtoupper($_GET['dsearch'])."%'
 		OR UPPER(Email) LIKE '%".strtoupper($_GET['dsearch'])."%'
 		OR UPPER(Phone) LIKE '%".strtoupper($_GET['dsearch'])."%')","(MergedId =0 OR MergedId IS NULL)"));
 		//print "do lookup here...";
-		print Donor::show_results($list);
-		
+		print Donor::show_results($list,"",['DonorId',"Name","Name2","Email","Phone","Address"]);		
 	}?>
 
 	<form action="" method="post" enctype="multipart/form-data">

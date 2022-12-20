@@ -185,7 +185,7 @@ class QuickBooks extends ModelLite
                             <form method='post' action='?page=donor-quickbooks&table=".$_GET['table']."&Id=".$_GET['Id']."'>
                             <input type='hidden' name='quickbooks_table' value='".$_GET['table']."'/>
                             <input type='hidden' name='quickbooks_id' value='".$_GET['Id']."'/>
-                            <table border=1>";
+                            <table class=\"dp\">";
                             $this->edit_line('',$entity); 
                             print "</table>
                             <button name='Function' value='SaveQuickBooks'>Save</button><button>Cancel</button>
@@ -194,7 +194,7 @@ class QuickBooks extends ModelLite
                         }else{
                             print "
                             <div><a href='?page=donor-quickbooks&table=".$_GET['table']."&Id=".$_GET['Id']."&edit=t'>edit</a></div>
-                            <table border=1>";
+                            <table class=\"dp\">";
                             $notset=$this->display_line('',$entity);                        
                             print "</table>";
                         }                        
@@ -212,7 +212,7 @@ class QuickBooks extends ModelLite
                     }else{
                         print "<div><a href='?page=donor-quickbooks'>Back to Quickbook list</a></div>
                         <h3>".$_GET['table']." List</h3>";
-                        ?><table border=1>
+                        ?><table class="dp">
                         <?php
                         foreach ($entities as $entity){
                             $field=$tables[$_GET['table']];

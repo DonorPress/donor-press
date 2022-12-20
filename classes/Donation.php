@@ -194,7 +194,7 @@ class Donation extends ModelLite
 
         $SQL="SELECT COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM ".Donation::get_table_name()." DD WHERE ".implode(" AND ",$where);
         $results = $wpdb->get_results($SQL);
-        ?><table border=1><tr><th colspan=2>Period Stats</th><th>Avg</th></tr><?php
+        ?><table class="dp"><tr><th colspan=2>Period Stats</th><th>Avg</th></tr><?php
         foreach ($results as $r){
             ?><tr><td>Total Donors</td><td align=right><?php print $r->TotalDonors?></td><td align=right>$<?php print $r->TotalDonors<>0?number_format($r->TotalRaised/$r->TotalDonors,2):"-"?> avg per Donor</td></tr>
             <tr><td>Donation Count</td><td align=right><?php print $r->TotalDonations?></td><td align=right><?php print $r->TotalDonors<>0?number_format($r->TotalDonations/$r->TotalDonors,2):"-"?> avg # per Donor</td></tr>
@@ -216,7 +216,7 @@ class Donation extends ModelLite
             $SQL="SELECT $gf as $gfa, COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM ".Donation::get_table_name()." DD WHERE ".implode(" AND ",$where)." Group BY $gf";
             $results = $wpdb->get_results($SQL);
             if (sizeof($results)>0){
-                ?><table border=1><tr><th><?php print $gfa?></th><th>Total</th><th>Donations</th><th>Donors</th></tr><?php
+                ?><table class="dp"><tr><th><?php print $gfa?></th><th>Total</th><th>Donations</th><th>Donors</th></tr><?php
                 foreach ($results as $r){
                     ?><tr><td><?php print $r->$gfa.($tinyInt[$gf][$r->$gfa]?" - ". $tinyInt[$gf][$r->$gfa]:"")?></td>
                     <td align=right>$<?php print number_format($r->TotalRaised,2)?></td>
@@ -288,7 +288,7 @@ class Donation extends ModelLite
             <?php } ?>
             </select>
              <button type="submit" name="SummaryView" value="t">View Summary</button></form>
-         <table border=1><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?php
+         <table class="dp"><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?php
          foreach ($results as $r){?>
              <tr><td><?php print $r->CreatedAt?></td><td align=right><?php print $r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?php print $r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?php print $_GET['page']?>&UploadDate=<?php print urlencode($r->CreatedAt)?>">View All</a> <?php print ($r->ReceiptSentCount<$r->C?" | <a href='?page=".$_GET['page']."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&UploadDate=<?php print urlencode($r->CreatedAt)?>">View Summary</a></td></tr><?php
             
@@ -331,7 +331,7 @@ class Donation extends ModelLite
                 foreach ($type as $t=>$donationsByType){                    
                     $total=0;
                     ?><h2><?php print self::s()->tinyIntDescriptions["Type"][$t]?></h2>
-                    <table border=1><tr><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr><?php
+                    <table class="dp"><tr><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr><?php
                     foreach($donationsByType as $donations){
                         $donation=new Donation($donations[key($donations)]);
                         ?><tr><td  rowspan="<?php print sizeof($donations)?>"><?php
@@ -367,7 +367,7 @@ class Donation extends ModelLite
 
             }else{?>
                 <form method="post"><button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
-                <table border=1><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th></tr><?php
+                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th></tr><?php
                 foreach($donations as $r){
                     $donation=new Donation($r);
                     ?><tr><td><?php
@@ -947,25 +947,21 @@ class Donation extends ModelLite
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false); 
-        $file=$this->receipt_file_info();
-        $path=$file['path'];//dn_plugin_base_dir()."resources/DonationReceipt-".$this->DonorId."-".$this->DonationId.".pdf"; //not acceptable on live server...
+        $file=$this->receipt_file_info();        
         $pdf->AddPage();
         $this->receipt_email();
         $pdf->writeHTML($customMessage?$customMessage:$this->emailBuilder->body, true, false, true, false, '');        
-                         
-        if ($pdf->Output($path, 'F')){
+        
+        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Content"=>$customMessage));
+        $dr->save();
+
+        if ($pdf->Output($file, 'D')){
             return true;
         }else return false;
     }
 
-
-
-
     public function receipt_file_info(){
-        $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-DT'.$this->DonationId.'.pdf';
-        $path=dn_plugin_base_dir()."/resources/".$file;
-        $link=site_url().str_replace($_SERVER['DOCUMENT_ROOT'],"/",$path);
-        return array('path'=>$path,'file'=>$file,'link'=>$link);
+        return substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-DT'.$this->DonationId.'.pdf';
     }
 
 
@@ -1013,7 +1009,7 @@ class Donation extends ModelLite
         //print $SQL;
         $results = self::db()->get_results($SQL);
         //return;
-        ?><table border=1><tr><th>DonationId</th><th>Name</th><th>Transaction Id</th><th>Amount</th><th>Date</th><th>Deposit Date</th></tr><?php
+        ?><table class="dp"><tr><th>DonationId</th><th>Name</th><th>Transaction Id</th><th>Amount</th><th>Date</th><th>Deposit Date</th></tr><?php
         foreach ($results as $r){?>
             <tr>
             <td><a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>"><?php print $r->DonationId?></a> | <a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>&edit=t">Edit</a></td>
@@ -1033,8 +1029,6 @@ class Donation extends ModelLite
         if ($_POST['Function']=="SendDonationReceipt" && $_POST['Email']){
             print $this->email_receipt($_POST['Email'],stripslashes_deep($_POST['customMessage']),stripslashes_deep($_POST['EmailSubject']));
             
-        }elseif ($_POST['Function']=="DonationReceiptPdf"){
-            $this->pdf_receipt(stripslashes_deep($_POST['customMessage']));
         }
         print "<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
 
@@ -1053,10 +1047,8 @@ class Donation extends ModelLite
             <h2>Send Receipt</h2>
             <input type="hidden" name="DonationId" value="<?php print $this->DonationId?>">
             <div>Send Receipt to: <input type="email" name="Email" value="<?php print $emailToUse?>">
-                <button type="submit" name="Function" value="SendDonationReceipt">Send E-mail Receipt</button> <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>
-                <?php if (file_exists($file['path'])){
-                    print  ' Download Pdf: <a target="pdf" href="'.$file['link'].'">'.$file['file'].'</a>';
-                }?>        
+                <button type="submit" name="Function" value="SendDonationReceipt">Send E-mail Receipt</button> 
+                <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>                  
             </div>
             <div><a target='pdf' href='post.php?post=<?php print $this->emailBuilder->pageID?>&action=edit'>Edit Template</a></div>
             <div style="font-size:18px;"><strong>Email Subject:</strong> <input style="font-size:18px; width:500px;" name="EmailSubject" value="<?php print $_POST['EmailSubject']?stripslashes_deep($_POST['EmailSubject']):$this->emailBuilder->subject?>"/>
