@@ -238,7 +238,7 @@ function reportMonthly(){
       ]);
 
       var options = {
-		title:'Monthly Donation by <? print $countField;?>',
+		title:'Monthly Donation by <?php print $countField;?>',
         width: 1200,
         height: 500,
         legend: { position: 'right', maxLines: 3 },
@@ -250,7 +250,7 @@ function reportMonthly(){
 	  chart.draw(data, options);
 
 	  var data2 = google.visualization.arrayToDataTable([
-        ['Week Day', '<? print $countField;?>']
+        ['Week Day', '<?php print $countField;?>']
 		<?php
 		foreach($graph['WeekDay'] as $day=>$count){
 			print ", ['".$weekDays[$day]."',".$count."]";
@@ -258,7 +258,7 @@ function reportMonthly(){
 		?>
       ]);
 	  var options2 = {
-		title:'Day of Week by <? print $countField;?>',
+		title:'Day of Week by <?php print $countField;?>',
         width: 1200,
         height: 500,
         legend: { position: 'right', maxLines: 3 },
@@ -270,7 +270,7 @@ function reportMonthly(){
 	  chart2.draw(data2, options2);
 
 	  var data3 = google.visualization.arrayToDataTable([
-        ['Week Day', '<? print $countField;?>']
+        ['Week Day', '<?php print $countField;?>']
 		<?php
 		for ($i=0;$i<=23;$i++){
 			print ", ['".$i."',".($graph['time'][$i]?$graph['time'][$i]:0)."]";
@@ -279,7 +279,7 @@ function reportMonthly(){
 		?>
       ]);
 	  var options3 = {
-		title:'Time of Day by <? print $countField;?>',
+		title:'Time of Day by <?php print $countField;?>',
         width: 1200,
         height: 500,
         legend: { position: 'right', maxLines: 3 },
@@ -291,7 +291,7 @@ function reportMonthly(){
 	  chart3.draw(data3, options3);
 
 	  var data4 = google.visualization.arrayToDataTable([
-        ['Week Day', '<? print $countField;?>']
+        ['Week Day', '<?php print $countField;?>']
 		<?php
 		for ($i=1;$i<=12;$i++){
 			print ", ['".$i."',".($graph['Month'][$i]?$graph['Month'][$i]:0)."]";
@@ -299,7 +299,7 @@ function reportMonthly(){
 		?>
       ]);
 	  var options4 = {
-		title:'Month by <? print $countField;?>',
+		title:'Month by <?php print $countField;?>',
         width: 1200,
         height: 500,
         legend: { position: 'right', maxLines: 3 },
