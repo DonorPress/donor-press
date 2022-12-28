@@ -51,7 +51,7 @@ class DonationCategory extends ModelLite
                 if ($_REQUEST['edit']){
                     $donationCategory->edit_form();
                 }else{
-                    ?><div><a href="?page=<?php print $_GET['page']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?php
+                    ?><div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?php
                     $donationCategory->view(); 
                 }
             ?></div><?php
@@ -64,7 +64,7 @@ class DonationCategory extends ModelLite
     function edit_form(){
         $wpdb=self::db();         
         $primaryKey=$this->primaryKey;
-		?><form method="post" action="?page=<?php print $_GET['page']?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>">
+		?><form method="post" action="?page=<?php print $_GET['page'].($_GET['tab']?'&tab='.$_GET['tab']:"")."&".$primaryKey."=".$this->$primaryKey?>">
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
 		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
         <table>
@@ -157,7 +157,7 @@ class DonationCategory extends ModelLite
         if (!$parent[$parentId]) return;
         foreach ($parent[$parentId] as $r){
             ?><tr>
-                <td style="padding-left:<?php print $level*20?>px"><a href="?page=<?php print $_GET['page']?>&CategoryId=<?php print $r->CategoryId?>&edit=t"><?php print $r->CategoryId?></a></td>
+                <td style="padding-left:<?php print $level*20?>px"><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $r->CategoryId?>&edit=t"><?php print $r->CategoryId?></a></td>
                 <td><?php print $r->Category?></td>
                 <td><?php print $r->Description?></td>
                 <td><?php print $r->ParentId?></td>

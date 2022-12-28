@@ -91,12 +91,8 @@ class ModelLite{
 			if (defined (static::CREATED_AT) && !$data[static::CREATED_AT]){
 				$data[static::CREATED_AT]= $time;
 			}		 	
-			$result=$wpdb->insert($this->get_table(),$data);	
-			
+			$result=$wpdb->insert($this->get_table(),$data);			
 			$this->$keyField=$wpdb->insert_id;
-			// self::dump($this->get_table());
-			// self::dump($data);
-			// self::dd(array($keyField=>$this->$keyField));
 			$insert=true;
 		}
 		return $this;
@@ -286,7 +282,7 @@ class ModelLite{
         return trim($address);
     }
 	
-	public function show_field($fieldName,$idShow=true){
+	public function show_field($fieldName,$idShow=true,$settings=[]){
 		$v=$this->$fieldName;
 		switch($fieldName){
 			case "Address":
@@ -303,13 +299,15 @@ class ModelLite{
 			case "Content":
 				return "<div><a href='#' onclick=\"toggleDisplay('message_".$this->ReceiptId."');return false;\">Show/Hide</a></div><div style='display:none;' id='message_".$this->ReceiptId."'>".$v."</div>";
 				break;
+			case "QuickBooksId":
+				return '<a href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a>';
 			case "DonationId":
-				return '<a href="?page='.$_GET['page'].'&DonationId='.$v.'">'.$v.'</a>';
+				return '<a href="?page=donor-index&DonationId='.$v.'">'.$v.'</a>';
 			break;
 			case "MergedId":
-				return '<a href="?page='.$_GET['page'].'&DonorId='.$v.'">'.$v.'</a>';
+				return '<a href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>';
 			case "DonorId":
-				return '<a href="?page='.$_GET['page'].'&DonorId='.$v.'">'.$v.'</a> <a href="?page='.$_GET['page'].'&DonorId='.$v.'&f=AddDonation">+ Donation</a>';
+				return '<a href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>'.($settings['donationlink']?' <a href="?page=donor-index&DonorId='.$v.'&f=AddDonation">+ Donation</a>':"");
 			break;
 			case "FromEmailAddress":
 			case "ToEmailAddress":
@@ -432,6 +430,18 @@ class ModelLite{
 		print "<div class=\"notice notice-error is-dismissible\">".$html."</div>";
 	}
 
+	static public function show_tabs($tabs,$active_tab){
+		$active_tab=$_REQUEST['tab']?$_REQUEST['tab']:key($tabs);
+		?>
+		<div class="dp-tab-links">
+			<?php foreach ($tabs as $tab=>$label){
+				print '<a href="?page='.$_GET['page'].'&tab='.$tab.'" class="tab'.($active_tab==$tab?" active":"").'">'.$label.'</a>';			
+			}?>
+		</div>
+		<?php
+		return $active_tab;
+		
+	}
 
 	// public static function compare($old, $new){
 	// 	if (sizeof($old)==0){

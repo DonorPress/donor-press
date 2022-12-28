@@ -295,7 +295,7 @@ class Donation extends ModelLite
          }?></table><?php
     }
 
-    static public function view_donations($where=[],$settings=array()){ //$type[$r->Type][$r->DonorId]++;
+    static public function view_donations($where=[],$settings=array()){ //$type[$r->Type][$r->DonorId]++;       
         if (sizeof($where)==0){
            self::display_error("No Criteria Given");
         }
@@ -309,7 +309,7 @@ class Donation extends ModelLite
         $SQL="Select D.*,R.Type as ReceiptType,R.Address,R.DateSent,R.ReceiptId
           FROM ".Donation::get_table_name()." D
         LEFT JOIN ".DonationReceipt::get_table_name()." R ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE ".implode(" AND ", $where)." Order BY D.Date DESC,  D.DonationId DESC;";
-        
+   
         $donations = $wpdb->get_results($SQL);
         foreach ($donations as $r){
             $donorIdList[$r->DonorId]++;
@@ -374,7 +374,7 @@ class Donation extends ModelLite
                     if ($r->ReceiptType){
                         print "Sent: ".$r->ReceiptType." ".$r->Address;
                     }else{
-                        ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print $donation->DonationId?>" checked/> <a target="donation" href="?page=<?php print $_GET['page'].'&DonationId='.$donation->DonationId?>">Custom Response</a><?php
+                        ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print $donation->DonationId?>" checked/> <a target="donation" href="?page=donor-index&DonationId=<?php $donation->DonationId?>">Custom Response</a><?php
                     }?></td><td><?php print $donation->display_key()?></td><td><?php print $donation->Date?></td><td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?php
                     if ($donors[$donation->DonorId]){
                         print $donors[$donation->DonorId]->display_key()." ".$donors[$donation->DonorId]->name_check();
@@ -733,7 +733,7 @@ class Donation extends ModelLite
                 }                
             }
             ?>
-             <div id="pluginwrap">
+             <div>
                     <div><a href="?page=<?php print $_GET['page']?>">Return</a></div><?php
                     $where=[];
                     if ($_GET['UploadDate']){
@@ -749,7 +749,7 @@ class Donation extends ModelLite
                     self::view_donations($where,
                         array(
                             'unsent'=>$_GET['unsent']=="t"?true:false,
-                            'summary'=>$_GET['SummaryView']?true:false
+                            'summary'=>$_GET['SummaryView']=="t"?true:false
                             )
                         );                    
              ?></div><?php
@@ -762,13 +762,13 @@ class Donation extends ModelLite
 
     public function full_view(){
         ?>
-            <div id="pluginwrap">
+            <div>
                 <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
                 <h1>Donation #<?php print $this->DonationId?></h1><?php 
                 if ($_REQUEST['edit']){
                     $this->edit_form();
                 }else{
-                    ?><div><a href="?page=<?php print $_GET['page']?>&DonationId=<?php print $this->DonationId?>&edit=t">Edit Donation</a></div><?php
+                    ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t">Edit Donation</a></div><?php
                     $this->view();
                     $this->receipt_form();                   
                 }

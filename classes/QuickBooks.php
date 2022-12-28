@@ -104,7 +104,7 @@ class QuickBooks extends ModelLite
         if ($value){
             if(is_object($value)||is_array($value)){
                 foreach($value as $sf =>$sv){ 
-                    $this->display_line(($field?$field.".":"").$sf,$sv); // $this->display_line(($field?$field.(is_object($sv)?"->".$sf:"[".$sf."]"):""),$sv);                    
+                    $this->display_line(($field?$field."_":"").$sf,$sv); // $this->display_line(($field?$field.(is_object($sv)?"->".$sf:"[".$sf."]"):""),$sv);                    
                 }
             }else{
                 print "<tr><td><strong>".$field."</strong></td><td>".$value."</td></tr>";
@@ -119,7 +119,7 @@ class QuickBooks extends ModelLite
     public function edit_line($field,$value){        
         if(is_object($value)||is_array($value)){
             foreach($value as $sf =>$sv){ 
-                $this->edit_line(($field?$field.".":"").$sf,$sv); 
+                $this->edit_line(($field?$field."_":"").$sf,$sv); 
             }
         }else{
             print "<tr><td><strong>".$field."</strong></td><td>";
@@ -137,7 +137,7 @@ class QuickBooks extends ModelLite
     public function find_changed_fields($field,$value, $changedFields=[]){
         if(is_object($value)||is_array($value)){
             foreach($value as $sf =>$sv){ 
-                $this->find_changed_fields(($field?$field.".":"").$sf,$sv,$changedFields); 
+                $changedFields=$this->find_changed_fields(($field?$field."_":"").$sf,$sv,$changedFields); 
             }
         }else{
             if ($_POST[$field]!=$value){
@@ -147,10 +147,75 @@ class QuickBooks extends ModelLite
         return $changedFields;
     }
 
-    public function request_handler(){      
+    public function request_handler(){  
+        if ($_GET['syncDonorId']){
+            $donor=Donor::get_by_id($_GET['syncDonorId']);
+            if (!$donor){
+                print self::display_error("Donor #".$_GET['syncDonorId']." not found.");
+            }
+            if ($donor->MergedId>0){
+                print self::display_error("Donor #".$_GET['syncDonorId']." has been merged to #".$donor->show_field('MergedId',$donor->MergedId,true,['donationlink'=>false]).". Please don't sync a donor that has been merged.");
+            }
+            if ($this->authenticate()){
+                $customer=false;
+                if ($_GET['forceNew'=='true']){ //skip lookups and jump to creation.
+
+                }elseif ($_GET['QuickBooksId']){
+                    $customer=$this->dataService->FindById("Customer", $_GET['QuickBooksId']);
+                }elseif ($donor->QuickBooksId){
+                    $customer=$this->dataService->FindById("Customer", $donor->QuickBooksId);
+                }else{
+                    if ($donor->Email){
+                        $SQL="SELECT * FROM Customer Where PrimaryEmailAddr = '".$donor->Email."'";
+                        $entities =$this->dataService->Query($SQL);
+                        
+                    }
+                    if (!$entities || sizeof($entities)==0){
+                        $names=[];
+                        if ($donor->Name) $names[]=$donor->Name;
+                        if ($donor->Name2) $names[]=$donor->Name2;
+                        if (sizeof($names)>0) {
+                            $SQL="SELECT * FROM Customer Where DisplayName IN ('".implode("','",$names)."')";                   
+                            $entities =$this->dataService->Query($SQL);     
+                        }                   
+                    }
+                    if (isset($entities) && sizeof($entities)==1) $customer=$entities[0];
+                    if (isset($entities) && sizeof($entities)>1){
+                        print "<div class=\"notice notice-success\">Attempting to Sync Donor #".$donor->show_field('DonorId').", however multiple Quick Book Matches were found. Please select the closest match:<ul>";
+                        foreach($entities as $customer){
+                            print '<li><a href="?page='.$_GET['page'].'&syncDonorId='.$_GET['syncDonorId'].'&QuickBooksId='.$customer->Id.'">#'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address.'</li>';
+                        }
+                        print '<li><a href="?page='.$_GET['page'].'&syncDonorId='.$_GET['syncDonorId'].'&forceNew=true">Force New Entry</a></li>';
+                        print "</ul><div>";
+                        return false;
+                    }
+                }
+                if ($customer){
+                    print self::display_notice('Match Found. #'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address);
+                    print '<div><a href="?page='.$_GET['page'].'&syncDonorId='.$_GET['syncDonorId'].'&forceNew=true">Force New Entry</a> - careful when doing this. You want to avoid creating duplicate entries.</div>';
+                    print "Add Sync Logic Here";
+                }else{                    
+                    //create new entry here.
+                    $customerToCreate=$this->donor_to_customer($donor);
+                    $resultObj = $this->dataService->Add($customerToCreate);
+                    $error =$this->dataService->getLastError();
+                    if($error) self::display_error($error->getResponseBody());
+                    else{
+                        if ($resultObj->Id){
+                            $donor->QuickBooksId=$resultObj->Id;
+                            $donor->save();
+                            self::display_notice("Quick Books Id #".$donor->show_field('QuickBooksId')." created and linked to Donor #".$donor->show_field('DonorId'));
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+        
         if ($_POST['Function']=='SaveQuickBooks' && $_POST['quickbooks_table'] && $_POST['quickbooks_id']){
             ### Get Current entry
-            //dump($_POST);
+            //dump($_POST);           
+
             if ($this->authenticate()){
                 //$entity=$this->dataService->FindById($_GET['table'], $_GET['Id']);
                 $entity=$this->dataService->FindById($_POST['quickbooks_table'], $_POST['quickbooks_id']);
@@ -163,6 +228,49 @@ class QuickBooks extends ModelLite
                 }
             }
         }
+    }
+
+    public function donor_to_customer($donor){
+        ### takes a Donor Object and puts it into a QuickBooks Customer Object
+        $name=explode(" ",$donor->Name);        
+        $array=[           
+            'FullyQualifiedName'=>$donor->Name,
+            'CompanyName'=>$donor->Name,
+            'DisplayName'=>$donor->Name,
+            'OtherContactInfo'=>$donor->Name2,            
+            'PrimaryEmailAddr'=>['Address'=>$donor->Email,'Default'=>$donor->EmailStatus==1?1:0],
+            'PrimaryPhone'=>['FreeFormNumber'=>$donor->phone()],
+            'BillAddr'=>['Line1'=>$donor->Address1,'Line2'=>$donor->Address2,'City'=>$donor->City,'CountrySubDivisionCode'=>$donor->Region,'PostalCode'=>$donor->PostalCode,'PostalCode'=>$donor->PostalCode,'Country'=>$donor->Country,'CountryCode'=>$donor->Country],
+            'Notes'=>'donor|'.$donor->DonorId."|".$donor->Source."|".$donor->SourceId,
+            'BusinessNumber'=> $donor->DonorId      
+        ];
+        if (sizeof($name)==2){
+            $array['GivenName']=$name[0];    $array['FamilyName']=$name[1]; 
+        }
+
+        if (sizeof($name)==3){
+            $array['GivenName']=$name[0];    $array['MiddleName']=$name[2]; $array['FamilyName']=$name[2]; 
+        }
+        return Customer::create($array);
+    }
+
+    public function customer_to_donor($customer){
+        $array=[
+            "Source"=>'QuickBooks',
+            "SourceId"=>$customer->Id,
+            "Name"=>$customer->DisplayName,
+            "Name2"=>$customer->Organization?$customer->Organization:$customer->OtherContactInfo,
+            "Email"=>$customer->PrimaryEmailAddr->Address,
+            "Phone"=>$customer->PrimaryPhone->FreeFormNumber,
+            "Address1"=>$customer->BillAddr->Line1,
+            "Address2"=>$customer->BillAddr->Line2,
+            "City"=>$customer->BillAddr->City,
+            "Region"=>$customer->BillAddr->CountrySubDivisionCode,
+            "PostalCode"=>$customer->BillAddr->PostalCode,
+            "Country"=>$customer->BillAddr->CountryCode,
+            "QuickBooksId"=>$customer->Id         
+        ];
+        return new Donor($array);
     }
 
     public function show(){       

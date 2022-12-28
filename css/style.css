@@ -39,25 +39,48 @@ table.dp tbody tr:nth-child(odd){
 }
 
 .dp-tab-links{
-	background-color:white; 
+	background-color:#EEEEEE;
+	
 }
 .dp-tab-links a.tab {
 	text-decoration: none;
 	font-size: 130%;
 	display:inline-block;
 	padding:20px;
-	border-top: 2px solid #666;
-	border-left: 2px solid #666;
-	border-right: 2px solid #666;
+	border: 2px solid #666;
 }
 
 .dp-tab-links a.tab:hover{
-	color:#666;
+	background-color:#666;
+	color:white;
 }
 
 .dp-tab-links a.active{
-	background-color:#EEEEEE;
+	background-color:white; 	
 	color:#333;
+	border-bottom:2px solid white;
 }
 
+#pluginwrap{ 
+	margin:0px; 
+	padding:20px;
+	background-color:white;
+	border-right:2px solid #666;
+	border-left:2px solid #666;
+	border-bottom: 2px solid #666;
+}
+
+
+@media print
+{    
+    #adminmenumain,#wpadminbar,.no-print, .no-print *
+    {
+        display: none !important;
+    }
+	body { background-color:white;}
+	#wpcontent, #wpfooter{ margin-left:0px;}
+	#pluginwrap{
+		border: none;
+	}
+}
 

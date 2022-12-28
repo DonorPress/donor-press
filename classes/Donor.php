@@ -8,7 +8,7 @@ class Donor extends ModelLite {
     protected $table = 'Donor';
 	protected $primaryKey = 'DonorId';
 	### Fields that can be passed 
-    protected $fillable = ["Source","SourceId","Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting","MergedId"];	    
+    protected $fillable = ["Source","SourceId","Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting","MergedId","QuickBooksId"];	    
 	### Default Values
 	protected $attributes = [        
         'Country' => 'US',
@@ -41,6 +41,7 @@ class Donor extends ModelLite {
             `PostalCode` varchar(20)  NULL,
             `Country` varchar(2)  NULL,
             `MergedId` int(11) NOT NULL DEFAULT '0',
+            `QuickBooksId` int(11) DEFAULT NULL,
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `TaxReporting` tinyint(4) DEFAULT '0' COMMENT '0 - Standard -1 Not Required -2 Opt Out',
@@ -219,6 +220,7 @@ class Donor extends ModelLite {
         </div>
         <?php
         $this->var_view();
+        $this->quick_books_link();        
         $this->merge_form();
         ?>
         <h2>Donation Summary</h2>
@@ -241,6 +243,14 @@ class Donor extends ModelLite {
 		<?php
 		$results=Donation::get(array("DonorId='".$this->DonorId."'"),"Date DESC");
 		print Donation::show_results($results,"",["DonationId","Date","DateDeposited","Name","Type","Gross","FromEmailAddress","CategoryId","Subject","Note","PaymentSource","TransactionID"]);		
+    }
+
+    function quick_books_link(){
+        if (CustomVariables::get_option('QuickbooksClientId',true)){
+            if (!$this->QuickBooksId){                
+                print "<div><a href='?page=donor-quickbooks&syncDonorId=".$this->DonorId."'>Sync Donor to Quickbooks</a></div>";
+            }
+        }
     }
 
     static public function request_handler(){      
@@ -320,7 +330,7 @@ class Donor extends ModelLite {
                     $pdf->SetFont('helvetica', '', 12);
                     $pdf->setPrintHeader(false);
                     $pdf->setPrintFooter(false); 
-                    $path=plugin_dir_url( __FILE__ )."resources/YearEndReceipt".$year.".pdf"; //not acceptable on live server...
+                    $path=dn_plugin_base_dir()."/resources/YearEndReceipt".$year.".pdf"; //not acceptable on live server...
                     foreach ($donorList as $donor){
                         $donor->year_receipt_email($year);
                         $pdf->AddPage();
@@ -329,9 +339,8 @@ class Donor extends ModelLite {
                             $pdf->AddPage();
                         }
                     }                    
-                    if ($pdf->Output($_SERVER['DOCUMENT_ROOT'].$path, 'F')){
-                       
-                    }
+                    $pdf->Output($path, 'F');
+                  
                     self::display_notice("Outputed Year End PDF: <a target=\"pdf\" href=\"".$path."\">Download</a>");
                 }
 
@@ -400,7 +409,7 @@ class Donor extends ModelLite {
             }
             $donor=Donor::get_by_id($_REQUEST['DonorId']);	
             ?>
-            <div id="pluginwrap">
+            <div>
                 <div><a href="?page=<?php print $_GET['page']?>">Return to Donor Lookup</a></div>
                 <h1>Donor Profile #<?php print $_REQUEST['DonorId']?> <?php print $donor->Name?></h1><?php 
                 if ($_REQUEST['edit']){
@@ -607,7 +616,7 @@ class Donor extends ModelLite {
         $this->emailBuilder->subject=$subject;
         $this->emailBuilder->body=$body; 
         
-
+        $variableNotFilledOut=array();
         $pageHashes=explode("##",$body); 
         $c=0;
         foreach($pageHashes as $r){
@@ -671,8 +680,8 @@ class Donor extends ModelLite {
     }
     function receipt_file_info($year){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-'.$year.'.pdf';
-        $link=plugin_dir_url( __FILE__ )."resources/".$file; //Not acceptable on live server... May need to scramble code name on file so it isn't guessale.
-        return array('path'=>$_SERVER['DOCUMENT_ROOT'].$link,'file'=>$file,'link'=>$link);
+        $link=dn_plugin_base_dir()."/resources/".$file; //Not acceptable on live server... May need to scramble code name on file so it isn't guessale.
+        return array('path'=>$link,'file'=>$file,'link'=>$link);
     }
 
     static function make_receipt_year_template(){

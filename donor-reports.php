@@ -1,32 +1,14 @@
-<style>
-@media print
-{    
-    #adminmenumain,#wpadminbar,.no-print, .no-print *
-    {
-        display: none !important;
-    }
-	body { background-color:white;}
-	#wpcontent, #wpfooter{ margin-left:0px;}
-	
-}
-</style>
+<?php
+$tabs=['uploads'=>'Recent Uploads/Syncs','stats'=>'Stats','trends'=>'Trends'];
+$active_tab=Donor::show_tabs($tabs,$active_tab);
+?>
 <div id="pluginwrap">
 	<?php
 	if (Donation::request_handler()) { print "</div>"; return;} //important to do this first
 	if (Donor::request_handler())  { print "</div>"; return;}
 	if (DonationCategory::request_handler()) { print "</div>"; return;}
-
-	$tabs=['uploads'=>'Recent Uploads/Syncs','stats'=>'Stats','trends'=>'Trends'];
-	$active_tab=$_GET['tab']?$_GET['tab']:key($tabs);
 	?>
-	<div class="dp-tab-links">
-		<?php foreach ($tabs as $tab=>$label){
-			print '<a href="?page='.$_GET['page'].'&tab='.$tab.'" class="tab'.($active_tab==$tab?" active":"").'">'.$label.'</a>';			
-		}	
-	?>
-	</div>
-
-	<h1>Report Page</h1>
+	<h1>Report Page: <?php print $tabs[$active_tab]?></h1>
 	<?php
 	if ($_GET['view']=='detail'){
 		?><h2>Detailed View: <?php print $_GET['report']?></h2><?php
@@ -39,12 +21,32 @@
 		return;
 	}
 
-	Donation::donation_upload_groups();
-	?>
+	switch ($active_tab){
+		case "uploads":
+			Donation::donation_upload_groups();
+		break;
+		case "stats":
+			year_end_summmaries();
+		break;
+		case "trends":
+			report_top();
+			report_current_monthly();
+			reportMonthly();
+		break;
+	}
+
+
+
 	
+
+	?>	
+</div>
+<?php
+
+function year_end_summmaries(){?>	
 	<div><strong>Year End Tax Summaries:</strong> <?php
 	for($y=date("Y");$y>=date("Y")-4;$y--){
-		?><a href="?page=<?php print $_GET['page']?>&f=YearSummaryList&Year=<?php print $y?>"><?php print $y?></a> | <?php
+		?><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&f=YearSummaryList&Year=<?php print $y?>"><?php print $y?></a> | <?php
 	}
 	
 	?></div>
@@ -65,15 +67,10 @@
 	<button name="f" value="ViewPaymentSourceYearSummary">Go</button>
 	</form>	
 	<?php
+}
 
-	reportTop();
-	reportCurrentMonthly();
-	reportMonthly();
-	?>	
-</div>
-<?php
 
-function reportCurrentMonthly(){
+function report_current_monthly(){
 	global $wpdb;
 
 	$where=array("`Type` IN (5)","Date>='".date("Y-m-d",strtotime("-3 months"))."'");
@@ -98,7 +95,7 @@ function reportCurrentMonthly(){
 	}
 }
 
-function reportTop($top=20){
+function report_top($top=20){
 	global $wpdb,$wp;
 	$dateFrom=$_GET['topDf'];
 	$dateTo=$_GET['topDt'];
@@ -117,12 +114,12 @@ function reportTop($top=20){
 			<button type="submit">Go</button></h3>
 			<div><?php
 			for($y=date("Y");$y>=date("Y")-4;$y--){
-				?><a href="?page=<?php print $_GET['page']?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?php
+				?><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?php
 			}
 			?>
 
-			| <a href="?page=<?php print $_GET['page']?>&f=SummaryList&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
-			| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">Donation Report</a>
+			| <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&f=SummaryList&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
+			| <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&SummaryView=t&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">Donation Report</a>
 			</div><?php
 
 	$where=array("Type>0");
@@ -142,7 +139,15 @@ function reportTop($top=20){
 		<table class="dp"><tr><th>Name</th><th>Total</th><th>Average</th><th>Count</th><th>First Donation</th><th>Last Donation</th>
 		<?php
 		foreach ($results as $r){
-			?><tr><td><a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->Name?></a></td><td align=right><?php print $r->Total?></td><td align=right><?php print $r->Average*1?></td><td align=right><?php print $r->Count?></td><td align=right><?php print $r->FirstDonation?></td><td align=right><?php print $r->LastDonation?></td></tr><?php
+			?><tr>
+				<td><a href="?page=donor-index&DonorId=<?php print $r->DonorId?>"><?php print $r->Name?></a></td>
+				<td align=right><?php print number_format($r->Total)?></td>
+				<td align=right><?php print number_format($r->Average)?></td>
+				<td align=right><?php print $r->Count?></td>
+				<td align=right><?php print date("Y-m-d",strtotime($r->FirstDonation))?></td>
+				<td align=right><?php print date("Y-m-d",strtotime($r->LastDonation))?></td>
+			</tr>
+			<?php
 		}
 		?></table></form><?php
 	}
@@ -228,7 +233,6 @@ function reportMonthly(){
 				print ",".($types[$type]?$types[$type]:0);
 			}
 			print "]";
-			//print "'<strong>".$date."</strong><br>Donation Total: <a target=\"detail\" href=\"?page=donor-reports&report=reportMonthly&view=detail&month=".$date."&type=1\">$".number_format($graph['Total'][$date]['Donation Payment'],2)."</a><br>Count: ".$graph['Count'][$date]['Donation Payment']."']\r\n";
 		}
 		?>
       ]);
@@ -326,7 +330,7 @@ function reportMonthly(){
 		<?php
 		foreach ($graph['Total'] as $yearMonth =>$types){
 			foreach($types as $type=>$total){
-				?><tr><td><?php print  $yearMonth?></td><td><?php print Donation::get_tiny_description('Type',$type)??$type?></td><td align=right><a href="?page=<?php print $_GET['page']?>&report=reportMonthly&view=detail&month=<?php print $yearMonth?>&type=<?php print urlencode($type)?>"><?php print number_format($total,2)?></a></td><td align=right><?php print $graph['Count'][$yearMonth][$type]?></td></tr><?php
+				?><tr><td><?php print  $yearMonth?></td><td><?php print Donation::get_tiny_description('Type',$type)??$type?></td><td align=right><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&report=reportMonthly&view=detail&month=<?php print $yearMonth?>&type=<?php print urlencode($type)?>"><?php print number_format($total,2)?></a></td><td align=right><?php print $graph['Count'][$yearMonth][$type]?></td></tr><?php
 		
 			}
 		}

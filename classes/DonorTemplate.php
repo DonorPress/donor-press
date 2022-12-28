@@ -31,7 +31,7 @@ class DonorTemplate extends ModelLite {
             ?><h2>New Donor Template <?php print $_GET['CopyDonorTemplateId']?" Copy of #".$_GET['CopyDonorTemplateId']:""?></h2>
         <?php
         }?>
-        <form method="post" action="?page=<?php print $_GET['page']?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>">
+        <form method="post" action="?page=<?php print $_GET['page']?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>&tab=<?php print $_GET['tab']?>">
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
 		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
         <input type="hidden" name="post_type" value="donortemplate"/>
@@ -40,9 +40,9 @@ class DonorTemplate extends ModelLite {
 
         
         <table>
-            <tr><td align="right">Template Title</td><td><input style="width: 300px" type="text" name="post_name" value="<?php print $this->post_name?>"> <em>Example: donor-default</td></tr>
-            <tr><td align="right">Subject</td><td><input style="width: 600px" type="text" name="post_title" value="<?php print $this->post_title?>"> <em>Appears in the subject of an e-mail, but does not print on .pdf letter export</td></tr>
-            <tr><td align="right">Message</td><td><?php            
+            <tr><td align="right"><strong>Template Title</strong></td><td><input style="width: 300px" type="text" name="post_name" value="<?php print $this->post_name?>"> <em>Example: donor-default</td></tr>
+            <tr><td align="right"><strong>Subject</strong></td><td><input style="width: 600px" type="text" name="post_title" value="<?php print $this->post_title?>"> <em>Appears in the subject of an e-mail, but does not print on .pdf letter export</td></tr>
+            <tr><td  colspan="2"><div><strong>Message:</strong></div><?php            
             wp_editor($this->post_content, 'post_content',array("media_buttons" => false,"wpautop"=>false));
             ?></td></tr>
             
@@ -96,10 +96,10 @@ class DonorTemplate extends ModelLite {
         <table class="dp"><tr><th>Template</th><th>Subject</th><th>Body</th><th></th></tr>
         <?php
         foreach ($results as $r){ 
-            ?><tr><td><a href="?page=<?php print $_GET['page']?>&DonorTemplateId=<?php print $r->ID?>&edit=t"><?php print $r->post_name?></a></td>
+            ?><tr><td><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&DonorTemplateId=<?php print $r->ID?>&edit=t"><?php print $r->post_name?></a></td>
                 <td><?php print $r->post_title;?></td>
                 <td><?php print substr(strip_tags($r->post_content,array('<p>','<br>')),0,160)?>...</td>
-                <td><a href="?page=<?php print $_GET['page']?>&CopyDonorTemplateId=<?php print $r->ID?>&edit=t">Copy</a></td>
+                <td><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CopyDonorTemplateId=<?php print $r->ID?>&edit=t">Copy</a></td>
             </tr><?php
         }
         ?></table><?php
