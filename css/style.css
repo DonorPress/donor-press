@@ -39,15 +39,18 @@ table.dp tbody tr:nth-child(odd){
 }
 
 .dp-tab-links{
-	background-color:#EEEEEE;
-	
+	background-color:#EEEEEE;	
 }
+
 .dp-tab-links a.tab {
 	text-decoration: none;
 	font-size: 130%;
 	display:inline-block;
-	padding:20px;
-	border: 2px solid #666;
+	padding:10px 20px;
+	/* border: 2px solid #666; */
+	border-right: 1px solid #999;
+	border-left: 1px solid #999;
+	margin-top:2px;
 }
 
 .dp-tab-links a.tab:hover{
@@ -56,24 +59,29 @@ table.dp tbody tr:nth-child(odd){
 }
 
 .dp-tab-links a.active{
-	background-color:white; 	
+	background-color:white;	
 	color:#333;
 	border-bottom:2px solid white;
 }
+.dp-tab-links a.active::before {
+	content:" > ";
+}
 
 #pluginwrap{ 
-	margin:0px; 
+	/* margin:0px; 
 	padding:20px;
 	background-color:white;
 	border-right:2px solid #666;
 	border-left:2px solid #666;
-	border-bottom: 2px solid #666;
+	border-bottom: 2px solid #666; */
 }
-
+.update-nag {
+	display:none;
+}
 
 @media print
 {    
-    #adminmenumain,#wpadminbar,.no-print, .no-print *
+    #adminmenumain,#wpadminbar,.no-print, .no-print *,.dp-tab-links,.update-nag
     {
         display: none !important;
     }
