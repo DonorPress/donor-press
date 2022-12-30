@@ -367,26 +367,27 @@ class Donation extends ModelLite
 
             }else{?>
                 <form method="post"><button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
-                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th></tr><?php
+                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th></tr><?php
                 foreach($donations as $r){
                     $donation=new Donation($r);
                     ?><tr><td><?php
-                    if ($r->ReceiptType){
-                        print "Sent: ".$r->ReceiptType." ".$r->Address;
-                    }else{
-                        ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print $donation->DonationId?>" checked/> <a target="donation" href="?page=donor-index&DonationId=<?php $donation->DonationId?>">Custom Response</a><?php
-                    }?></td><td><?php print $donation->display_key()?></td><td><?php print $donation->Date?></td><td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?php
-                    if ($donors[$donation->DonorId]){
-                        print $donors[$donation->DonorId]->display_key()." ".$donors[$donation->DonorId]->name_check();
-                    }else print $donation->DonorId;
-                    print " (x".$donorCount[$donation->DonorId]
-                    .($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")
-                    .")";
-                    ?></td><td><?php print $donation->show_field('Gross')?> <?php print $donation->Currency?></td><td><?php
-                    if ($donation->CategoryId) print $donation->show_field("CategoryId",false);
-                    else print $donation->Subject;
-                    ?></td><td><?php print $donation->show_field("Note")?></td><td><?php print $donation->show_field("Type")?></td>
-                
+                        if ($r->ReceiptType){
+                            print "Sent: ".$r->ReceiptType." ".$r->Address;
+                        }else{
+                            ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print $donation->DonationId?>" checked/> <a target="donation" href="?page=donor-index&DonationId=<?php print $donation->DonationId?>">Custom Response</a><?php
+                        }?></td><td><?php print $donation->display_key()?></td><td><?php print $donation->Date?></td><td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?php
+                        if ($donors[$donation->DonorId]){
+                            print $donors[$donation->DonorId]->display_key()." ".$donors[$donation->DonorId]->name_check();
+                        }else print $donation->DonorId;
+                        print " (x".$donorCount[$donation->DonorId]
+                        .($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")
+                        .")";
+                        ?></td><td><?php print $donation->show_field('Gross')?> <?php print $donation->Currency?></td><td><?php
+                        if ($donation->CategoryId) print $donation->show_field("CategoryId",false);
+                        else print $donation->Subject;
+                        ?></td>
+                        <td><?php print $donation->show_field("Note")?></td>
+                        <td><?php print $donation->show_field("Type")?></td>                
                     </tr><?php
                 }
                 ?></table><?php
