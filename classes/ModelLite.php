@@ -282,11 +282,11 @@ class ModelLite{
         return trim($address);
     }
 	
-	public function show_field($fieldName,$idShow=true,$settings=[]){
+	public function show_field($fieldName,$settings=[]){
 		$v=$this->$fieldName;
 		switch($fieldName){
 			case "Address":
-				return $this->mailing_address(", ",false);
+				return $this->mailing_address(", ");
 				break;
 			case "Phone":
 				return $this->phone_format($v);
@@ -300,14 +300,14 @@ class ModelLite{
 				return "<div><a href='#' onclick=\"toggleDisplay('message_".$this->ReceiptId."');return false;\">Show/Hide</a></div><div style='display:none;' id='message_".$this->ReceiptId."'>".$v."</div>";
 				break;
 			case "QuickBooksId":
-				return '<a href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a>';
+				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a>';
 			case "DonationId":
-				return '<a href="?page=donor-index&DonationId='.$v.'">'.$v.'</a>';
+				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonationId='.$v.'">'.$v.'</a>';
 			break;
 			case "MergedId":
-				return '<a href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>';
+				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>';
 			case "DonorId":
-				return '<a href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>'.($settings['donationlink']?' <a href="?page=donor-index&DonorId='.$v.'&f=AddDonation">+ Donation</a>':"");
+				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>'.($settings['donationlink']?' <a href="?page=donor-index&DonorId='.$v.'&f=AddDonation">+ Donation</a>':"");
 			break;
 			case "FromEmailAddress":
 			case "ToEmailAddress":
@@ -331,7 +331,7 @@ class ModelLite{
 					
 										
 				}
-				return ($idShow?'<a href="?page='.$_GET['page'].'&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
+				return ($settings['idShow']?'<a href="?page='.$_GET['page'].'&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
 			break;
 			default:
 				if ($this->tinyIntDescriptions[$fieldName]){
@@ -339,7 +339,7 @@ class ModelLite{
 					if ($label){	
 						return $v." - ".$label;
 					}elseif ($fieldName=="Type" && $this->TypeOther){
-							return ($idShow?$v." - ":"").$this->TypeOther;						
+							return ($settings['idShow']?$v." - ":"").$this->TypeOther;						
 					}
 				}
 				return $v;				
@@ -353,7 +353,7 @@ class ModelLite{
 
 	public function display_key(){
 		$primaryKey=$this->primaryKey;
-		return '<a href="?page='.$_GET['page'].'&'.$primaryKey.'='.$this->$primaryKey.'">'.$this->$primaryKey."</a> ";
+		return '<a href="?page=donor-index&'.$primaryKey.'='.$this->$primaryKey.'">'.$this->$primaryKey."</a> ";
 	}
 
 	public function display_email($fieldName='Email'){
