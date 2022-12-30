@@ -27,6 +27,7 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 		break;
 		case "stats":
 			year_end_summmaries();
+			donor_regression();
 		break;
 		case "trends":
 			report_top();
@@ -151,6 +152,82 @@ function report_top($top=20){
 		}
 		?></table></form><?php
 	}
+}
+
+function donor_regression($where=[]){
+	global $wpdb,$wp;
+	$where[]='`Gross`>0';
+	if($_GET['RegressionDonorId']){
+		$where[]="D.DonorId='".$_GET['RegressionDonorId']."'";
+	}
+	$results = $wpdb->get_results("SELECT D.`DonorId`,D.`Name`,D.Name2,D.Email, Year(`Date`) as Year, SUM(`Gross`) as Total, Count(*) as Count
+	FROM ".Donation::get_table_name()." DD INNER JOIN ".Donor::get_table_name()." D ON D.DonorId=DD.DonorId WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")." 
+	Group BY  D.`DonorId`,D.`Name`,D.Name2,D.Email,Year(`Date`) Order BY Year(`Date`),SUM(`Gross`) DESC, COUNT(*)");//DESC LIMIT ".$top
+	foreach ($results as $r){
+		$donorYear[$r->DonorId][$r->Year]=$r->Total;
+		$donorCount[$r->DonorId][$r->Year]=$r->Count;
+		$allYears[$r->Year]=$r->Total;
+		$donor[$r->DonorId]=new Donor(['DonorId'=>$r->DonorId,'Name'=>$r->Name,'Name2'=>$r->Name2,'Email'=>$r->Email]);
+		//$donorEmail[$r->DonorId]=$r->Email;
+	}
+	//dd($donorYear);
+	//Stategy: take the earliest donor year for a specific donor. Compare the average of that start date to last year to this year, and show as a percentage and total.
+	foreach ($donorYear as $donorId=>$years){
+		ksort($years);
+		for($year=key($years);$year<date("Y");$year++){
+			$donorStats[$donorId]['years'][$year]=$donorYear[$donorId][$year];
+		}
+		if ($donorStats[$donorId]['years']) $donorStats[$donorId]['avg']=array_sum($donorStats[$donorId]['years'])/count($donorStats[$donorId]['years']);
+		
+		$amountDiff[$donorId]=$donorYear[$donorId][date("Y")]-$donorStats[$donorId]['avg'];
+	}
+	asort($amountDiff);
+	//dd($donorStats,$donorYear,$amountDiff);
+
+	if (sizeof($results)>0){?>		
+		<table class="dp"><tr><th>#</th><th>Name</th><th>Email</th><?php
+		foreach($allYears as $year=>$total) print "<th>".$year."</th>";
+		?><th>Avg</th><th>%</th></tr><?php
+		foreach ($amountDiff as $donorId=>$diff){
+			$years=$donorYear[$donorId];
+			//dd($years); //<a href="?page=donor-index&DonorId=print $donorId"> </a>
+			if ($years[date("Y")]-$donorStats[$donorId]['avg']<0){
+			?><tr>
+				<td><?php print $donor[$donorId]->show_field('DonorId',['target'=>'donor']);?> <a href="?page=donor-reports&tab=stats&RegressionDonorId=<?php print $donorId?>" target="donor">Summary</a></td>
+				<td><?php print $donor[$donorId]->name_combine()?></td>
+				<td><?php print $donor[$donorId]->Email;?></td>
+				<?php foreach($allYears as $year=>$total) print "<td align=right>".number_format($years[$year])."</td>";
+				?><td align=right><?php print number_format($donorStats[$donorId]['avg'])?></td>
+				<td align=right><?php print $donorStats[$donorId]['avg']?number_format(100*($years[date("Y")]-$donorStats[$donorId]['avg'])/$donorStats[$donorId]['avg'],2)."%":"-"?></td>
+			</tr>
+			<?php
+			}
+		}
+		?></table><?php
+	}
+	if($_GET['RegressionDonorId']){
+		?>
+		<div>Counts</div>	
+		<table class="dp"><tr><th>#</th><th>Name</th><th>Email</th><?php
+		foreach($allYears as $year=>$total) print "<th>".$year."</th>";
+		?></tr><?php
+		foreach ($amountDiff as $donorId=>$diff){
+			$years=$donorCount[$donorId];
+			//dd($years); //<a href="?page=donor-index&DonorId=print $donorId"> </a>
+			if ($years[date("Y")]-$donorStats[$donorId]['avg']<0){
+			?><tr>
+				<td><?php print $donor[$donorId]->show_field('DonorId',['target'=>'donor']);?> <a href="?page=donor-reports&tab=stats&RegressionDonorId=<?php print $donorId?>" target="donor">Summary</a></td>
+				<td><?php print $donor[$donorId]->name_combine()?></td>
+				<td><?php print $donor[$donorId]->Email;?></td>
+				<?php foreach($allYears as $year=>$total) print "<td align=right>".number_format($years[$year])."</td>";
+				?>				
+			</tr>
+			<?php
+			}
+		}
+		?></table><?php
+	}
+
 }
 
 function reportMonthly(){
