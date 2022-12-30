@@ -447,6 +447,28 @@ class Donor extends ModelLite {
         }
     }
 
+    function name_combine(){
+        if (trim($this->Name2)){
+            $name1=explode(" ",trim($this->Name));
+            $name2=explode(" ",trim($this->Name2));
+            if (end($name1)==end($name2)){ //if they share a last name, combine it.
+                $return=[];
+                for($i=0;$i<sizeof($name1)-1;$i++){
+                    $return[]=$name1[$i];
+                }
+                $return[]="&";
+                for($i=0;$i<sizeof($name2);$i++){
+                    $return[]=$name2[$i];
+                }
+                return implode(" ",$return);
+            }else{
+                return $this->Name." & ".$this->Name2;
+            }
+        }else{
+            return $this->Name;
+        }
+    }
+
     function name_check(){        
         return self::name_check_individual($this->Name).($this->Name2?" & ".self::name_check_individual($this->Name2):"");
     }
@@ -575,7 +597,7 @@ class Donor extends ModelLite {
                     default:  $ReceiptTable.= $r->Subject;
                     break;                  
                 } 
-                if (!$r->Subject && $r->CategoryId) $ReceiptTable.=" ".$r->show_field("CategoryId",false) ;
+                if (!$r->Subject && $r->CategoryId) $ReceiptTable.=" ".$r->show_field("CategoryId",['showId'=>false]) ;
                             
                 $ReceiptTable.="</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';
                 $total+=$r->Gross;
