@@ -51,6 +51,7 @@ table.dp tbody tr:nth-child(odd){
 	border-right: 1px solid #999;
 	border-left: 1px solid #999;
 	margin-top:2px;
+	background-color:white;
 }
 
 .dp-tab-links a.tab:hover{
@@ -58,10 +59,10 @@ table.dp tbody tr:nth-child(odd){
 	color:white;
 }
 
-.dp-tab-links a.active{
-	background-color:white;	
+.dp-tab-links a.active{	
 	color:#333;
 	border-bottom:2px solid white;
+	background-color:transparent;
 }
 .dp-tab-links a.active::before {
 	content:" > ";
