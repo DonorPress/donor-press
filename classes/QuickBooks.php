@@ -39,7 +39,7 @@ class QuickBooks extends ModelLite
                 'auth_mode' => 'oauth2',
                 'ClientID' => $clientId,
                 'ClientSecret' =>  $clientSecret,
-                'RedirectURI' => "http://localhost:8000/wp-admin/admin.php?redirect=donor_quickBooks_redirectUrl", //"http://pc007.ad.tilmor.com:8888/api/quickbooks/oauth2/callback",//https://www.tilmor.com/api/quickbooks/oauth2/callback
+                'RedirectURI' => self::redirect_url(),
                 'scope' => "com.intuit.quickbooks.accounting",
                 'baseUrl' => "Development", ///Production
                 'accessTokenKey' => $this->session(self::SESSION_PREFIX."accessToken"),
@@ -53,6 +53,10 @@ class QuickBooks extends ModelLite
         //$this->dataService->disableLog();   
         //$dataService->setLogLocation("/Your/Path/ForLog");     
         return $this->oAuth2LoginHelper;  
+    }
+
+    static public function redirect_url(){
+        return get_site_url()."/wp-admin/admin.php?redirect=donor_quickBooks_redirectUrl";
     }
     
     public function authenticate(){  

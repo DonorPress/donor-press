@@ -46,6 +46,9 @@ class CustomVariables extends ModelLite
             <button type="submit" class="primary" name="Function" value="Save">Save</button>
         </form>
         <?php
+        if (CustomVariables::get_option('QuickbooksClientId',true)){
+            self::display_notice("Allow Redirect access in the <a target='quickbooks' href='https://developer.intuit.com/app/developer/dashboard'>QuickBook API</a> for: ".QuickBooks::redirect_url());
+        }
     }
     static function get_option($option,$decode=false){
         $result=get_option(self::base."_".$option);
