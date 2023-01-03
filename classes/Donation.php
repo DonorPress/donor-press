@@ -7,7 +7,7 @@ class Donation extends ModelLite
     protected $table = 'Donation';
 	protected $primaryKey = 'DonationId';
 	### Fields that can be passed //,"Time","TimeZone"
-    protected $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxExcempt"];	 
+    protected $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxExcempt","QBOInvoiceId"];	 
 
     protected $paypal = ["Date","Time","TimeZone","Name","Type","Status","Currency","Gross","Fee","Net","From Email Address","To Email Address","Transaction ID","Address Status","Item Title","Item ID","Option 1 Name","Option 1 Value","Option 2 Name","Option 2 Value","Reference Txn ID","Invoice Number","Custom Number","Quantity","Receipt ID","Balance","Contact Phone Number","Subject","Note","Payment Source"];
 
@@ -720,14 +720,12 @@ class Donation extends ModelLite
                 $donation->full_view();
             }
             return true;
-        }elseif($_GET['UploadDate'] || $_GET['SummaryView']){           
-            if ($_POST['Function']=="EmailDonationReceipts" && sizeof($_POST['EmailDonationId'])>0){
+        }elseif($_GET['UploadDate'] || $_GET['SummaryView']){                    
+            if ($_POST['Function']=="EmailDonationReceipts" && sizeof($_POST['EmailDonationId'])>0){               
                 foreach($_POST['EmailDonationId'] as $donationId){
                     $donation=Donation::get_by_id($donationId);
-                    //print self::dump($donation);
-                    if ($donation->FromEmailAddress){
+                    if ($donation->FromEmailAddress){                        
                         print $donation->email_receipt($donation->FromEmailAddress);
-                        //print "send to : ".$donation->FromEmailAddress. " On Donation: ".$donationId."<br>";
                     }else{
                         print "not sent to: ".$donationId." ".$donation->Name."<br>";
                     }                   
@@ -935,6 +933,8 @@ class Donation extends ModelLite
             $notice="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$email."</div>";
             $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s"),"Content"=>$customMessage));
             $dr->save();
+        }else{
+            self::display_error("Error sending e-mail to: ".$email.". Check your wordpress email sending settings.");
         }
         return $notice;
     }
@@ -995,7 +995,8 @@ class Donation extends ModelLite
                 `PaymentSource` tinyint(4) DEFAULT NULL,
                 `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `NotTaxExcempt` tinyint(4) DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt'
+                `NotTaxExcempt` tinyint(4) DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt',
+                QBOInvoiceId int(11) DEFAULT NULL,
                 )";
         dbDelta( $sql );        
     }
@@ -1031,13 +1032,15 @@ class Donation extends ModelLite
             print $this->email_receipt($_POST['Email'],stripslashes_deep($_POST['customMessage']),stripslashes_deep($_POST['EmailSubject']));
             
         }
+        
         print "<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
-
         $file=$this->receipt_file_info();
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","KeyType='DonationId'","KeyId='".$this->DonationId."'"));
         $bodyContent=$receipts[0]->Content?$receipts[0]->Content:$this->emailBuilder->body; //retrieve last saved custom message
         $bodyContent=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']):$bodyContent; //Post value overrides this though.
-       
+        if (CustomVariables::get_option('QuickbooksClientId',true) && !$this->QBOInvoiceId){
+            print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
+        }
         //$receipts[0]->content
    
         print DonationReceipt::show_results($receipts,"You have not sent this donor a Receipt.");

@@ -370,7 +370,7 @@ class Donor extends ModelLite {
             $donorA=Donor::get_by_id($_POST['MergeFrom']);
             $donorB=Donor::get_by_id($_POST['MergedId']);
             if (!$donorB->DonorId){
-                 print self::display_error("Donor ".$_POST['MergedId']." not found.");
+                 self::display_error("Donor ".$_POST['MergedId']." not found.");
                  return false;
             }else{
                 $donorB->merge_form_compare($donorA);
@@ -380,7 +380,7 @@ class Donor extends ModelLite {
             $donorA=Donor::get_by_id($_GET['MergeFrom']);
             $donorB=Donor::get_by_id($_GET['MergedId']);
             if (!$donorB->DonorId){
-                 print self::display_error("Donor ".$_GET['MergedId']." not found.");
+                 self::display_error("Donor ".$_GET['MergedId']." not found.");
                  return false;
             }else{
                 $donorB->merge_form_compare($donorA);
@@ -650,7 +650,7 @@ class Donor extends ModelLite {
             $c++;
         }
         if (sizeof($variableNotFilledOut)>0){
-            print self::display_error("The Following Variables need manually changed:<ul><li>##".implode("##</li><li>##",array_keys($variableNotFilledOut))."##</li></ul> Please <a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>correct template</a>.");
+            self::display_error("The Following Variables need manually changed:<ul><li>##".implode("##</li><li>##",array_keys($variableNotFilledOut))."##</li></ul> Please <a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>correct template</a>.");
         }
     }
 
@@ -704,6 +704,29 @@ class Donor extends ModelLite {
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-'.$year.'.pdf';
         $link=dn_plugin_base_dir()."/resources/".$file; //Not acceptable on live server... May need to scramble code name on file so it isn't guessale.
         return array('path'=>$link,'file'=>$file,'link'=>$link);
+    }
+
+    static function autocomplete($query){       
+        $searchText = strtoupper($query);
+        $where= array("(UPPER(Name) LIKE '%".$searchText."%' 
+        OR UPPER(Name2)  LIKE '%".$searchText."%'
+        OR UPPER(Email) LIKE '%".$searchText."%'
+        OR UPPER(Phone) LIKE '%".$searchText."%')"
+        ,"(MergedId =0 OR MergedId IS NULL)");
+        //,Name2
+		$SQL="SELECT DonorId,Name, Name2, Email, Phone FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"")." LIMIT 10";
+
+		$all=self::db()->get_results($SQL);
+        print json_encode($all);
+        exit();
+        //wp_die(); 
+
+		// foreach($all as $r){
+        //     $return[]=$r->Name;
+        // }
+        // print json_encode($return);
+        // wp_die(); 
+      
     }
 
     static function make_receipt_year_template(){

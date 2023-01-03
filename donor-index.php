@@ -33,9 +33,38 @@
 	?>
 	<h2>Donor Tracker</h2>
 	<form method="get">
-		<input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
+	<input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
+	<!-- <div class="auto-search-wrapper">
+		<input type="text" id="basic" placeholder="type w">
+	</div> -->
 		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print $_GET['dsearch']?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
+	<script>
+		//https://tomik23.github.io/autocomplete/
+		new Autocomplete("basic", {
+		delay: 100,
+		clearButton: true,
+		howManyCharacters: 2,
+		onSearch: ({ currentValue }) => {
+			const api = `?donorAutocomplete=t&query=${encodeURI(
+			currentValue
+			)}`;
+			return new Promise((resolve) => {
+			fetch(api)
+				.then((response) => response.json())
+				.then((data) => {
+				resolve(data);
+				})
+				.catch((error) => {
+				console.error(error);
+				});
+			});
+		},
+
+		onResults: ({ matches }) =>
+			matches.map((el) => `<li>>${el.Name}</li>`).join(""),
+		}); //<a href="?page=donor-index&DonorId=${el.DonorId}"
+	</script>
 
 	<?php if (trim($_GET['dsearch'])<>''){
 		$list=Donor::get(array("(UPPER(Name) LIKE '%".strtoupper($_GET['dsearch'])."%' 

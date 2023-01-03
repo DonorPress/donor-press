@@ -6,6 +6,11 @@ use QuickBooksOnline\API\Core\ServiceContext;
 use QuickBooksOnline\API\Core\Http\Serialization\XmlObjectSerializer;
 use QuickBooksOnline\API\Facades\Customer;
 
+use QuickBooksOnline\API\Data\IPPInvoice;
+use QuickBooksOnline\API\Data\IPPLine;
+use QuickBooksOnline\API\Data\IPPItem;
+use QuickBooksOnline\API\Data\IPPDescriptionLineDetail;
+
 require_once 'CustomVariables.php';
 // use QuickBooksOnline\API\Core\ServiceContext;
 // use QuickBooksOnline\API\PlatformService\PlatformService;
@@ -61,7 +66,7 @@ class QuickBooks extends ModelLite
             $this->accessTokenObj=$this->oAuth2LoginHelper->refreshToken();
             $error = $this->oAuth2LoginHelper->getLastError();
             if($error){
-                print '<div class="alert alert-danger" role="alert"><strong>Error Refreshing Token</strong> '.$error->getResponseBody()."</div>";
+                self::display_error("<strong>Error Refreshing Token</strong> ".$error->getResponseBody()."</div>");
             }else{
                 $this->dataService->updateOAuth2Token($this->accessTokenObj);
                 $this->session([
@@ -147,87 +152,137 @@ class QuickBooks extends ModelLite
         return $changedFields;
     }
 
-    public function request_handler(){  
-        if ($_GET['syncDonorId']){
-            $donor=Donor::get_by_id($_GET['syncDonorId']);
-            if (!$donor){
-                print self::display_error("Donor #".$_GET['syncDonorId']." not found.");
-            }
-            if ($donor->MergedId>0){
-                print self::display_error("Donor #".$_GET['syncDonorId']." has been merged to #".$donor->show_field('MergedId',$donor->MergedId,true,['donationlink'=>false]).". Please don't sync a donor that has been merged.");
-            }
-            if ($this->authenticate()){
-                $customer=false;
-                if ($_GET['forceNew'=='true']){ //skip lookups and jump to creation.
-
-                }elseif ($_GET['QuickBooksId']){
-                    $customer=$this->dataService->FindById("Customer", $_GET['QuickBooksId']);
-                }elseif ($donor->QuickBooksId){
-                    $customer=$this->dataService->FindById("Customer", $donor->QuickBooksId);
-                }else{
-                    if ($donor->Email){
-                        $SQL="SELECT * FROM Customer Where PrimaryEmailAddr = '".$donor->Email."'";
-                        $entities =$this->dataService->Query($SQL);
-                        
-                    }
-                    if (!$entities || sizeof($entities)==0){
-                        $names=[];
-                        if ($donor->Name) $names[]=$donor->Name;
-                        if ($donor->Name2) $names[]=$donor->Name2;
-                        if (sizeof($names)>0) {
-                            $SQL="SELECT * FROM Customer Where DisplayName IN ('".implode("','",$names)."')";                   
-                            $entities =$this->dataService->Query($SQL);     
-                        }                   
-                    }
-                    if (isset($entities) && sizeof($entities)==1) $customer=$entities[0];
-                    if (isset($entities) && sizeof($entities)>1){
-                        print "<div class=\"notice notice-success\">Attempting to Sync Donor #".$donor->show_field('DonorId').", however multiple Quick Book Matches were found. Please select the closest match:<ul>";
-                        foreach($entities as $customer){
-                            print '<li><a href="?page='.$_GET['page'].'&syncDonorId='.$_GET['syncDonorId'].'&QuickBooksId='.$customer->Id.'">#'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address.'</li>';
-                        }
-                        print '<li><a href="?page='.$_GET['page'].'&syncDonorId='.$_GET['syncDonorId'].'&forceNew=true">Force New Entry</a></li>';
-                        print "</ul><div>";
-                        return false;
-                    }
-                }
-                if ($customer){
-                    print self::display_notice('Match Found. #'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address);
-                    print '<div><a href="?page='.$_GET['page'].'&syncDonorId='.$_GET['syncDonorId'].'&forceNew=true">Force New Entry</a> - careful when doing this. You want to avoid creating duplicate entries.</div>';
-                    print "Add Sync Logic Here";
-                }else{                    
-                    //create new entry here.
-                    $customerToCreate=$this->donor_to_customer($donor);
-                    $resultObj = $this->dataService->Add($customerToCreate);
-                    $error =$this->dataService->getLastError();
-                    if($error) self::display_error($error->getResponseBody());
-                    else{
-                        if ($resultObj->Id){
-                            $donor->QuickBooksId=$resultObj->Id;
-                            $donor->save();
-                            self::display_notice("Quick Books Id #".$donor->show_field('QuickBooksId')." created and linked to Donor #".$donor->show_field('DonorId'));
-                        }
-                    }
-                }
-            }
-            return true;
-        }
-        
-        if ($_POST['Function']=='SaveQuickBooks' && $_POST['quickbooks_table'] && $_POST['quickbooks_id']){
-            ### Get Current entry
-            //dump($_POST);           
-
-            if ($this->authenticate()){
-                //$entity=$this->dataService->FindById($_GET['table'], $_GET['Id']);
+    public function request_handler(){ 
+        if ($this->authenticate()){ 
+            if ($_GET['syncDonorId']){
+                $this->donor_to_customer_check($_GET['syncDonorId'],$_GET['QuickBooksId']);
+                return true;
+            }elseif($_GET['syncDonation']){
+                $this->donation_to_invoice_check($_GET['syncDonation']);
+                return true;
+            }elseif ($_POST['Function']=='SaveQuickBooks' && $_POST['quickbooks_table'] && $_POST['quickbooks_id']){
+                ### Get Current entry
                 $entity=$this->dataService->FindById($_POST['quickbooks_table'], $_POST['quickbooks_id']);
-                $this->dataService->throwExceptionOnError(true);
-                $error =$this->dataService->getLastError();
-                if($error) self::display_error($error->getResponseBody());
-                else{
+                $this->dataService->throwExceptionOnError(true);               
+                if($this->check_dateService_error()){
                     $changedFields=$this->find_changed_fields('',$entity);
                     dump($changedFields);
                 }
+            
             }
         }
+    }
+
+    public function check_dateService_error(){
+        $error =$this->dataService->getLastError();
+            if($error){ 
+                self::display_error($error->getResponseBody());
+                return false;
+            }else{
+                return true;
+            }
+    }
+
+
+    public function donation_to_invoice_check($donationId){
+        $donation=Donation::get_by_id($donationId);
+        if (!$donation){
+            self::display_error("Donation #".$donationId." not found.");
+            return;
+        }
+        if ($donation->QBOInvoiceId){
+            self::display_error("Donation #".$donation->show_field("DonationId")." already linked to Invoice #".$donation->show_field("QBOInvoiceId"));
+            return $donation->QBOInvoiceId;
+        }
+        $donor=Donor::get_by_id($donation->DonorId);
+        if (!$donor->QuickBooksId){
+            $donor->QuickBooksId=$this->donor_to_customer_check($donation->DonorId);
+        }
+        if ($donor->QuickBooksId){
+            $invoice=$this->donation_to_invoice($donation,$donor);
+            if (!$invoice) return false; //errored out earlier        
+            $resultObj=$this->dataService->Add($invoice);
+            if($this->check_dateService_error()){
+                if ($resultObj->Id){
+                    $donation->QBOInvoiceId=$resultObj->Id;
+                    $donation->save();
+                    self::display_notice("Quick Books Invoice Id #".$donation->show_field('QBOInvoiceId')." created and linked to Donation #".$donation->show_field('DonationId'));
+                     dd($resultObj,$invoice,$donation,$donor);
+                    return $donation->QBOInvoiceId;
+                }
+            }
+            //dd($invoice,$donation,$donor);
+        }       
+    }
+
+    public function donor_to_customer_check($donorId,$quickBookId=""){
+        $donor=Donor::get_by_id($donorId);
+        if (!$donor){
+            self::display_error("Donor #".$donorId." not found.");
+            return;
+        }
+        if ($donor->QuickBooksId>0){
+            self::display_notice("Quickbooks customer account #".$donor->show_field("QuickBooksId")." already connected to this Donor #".$donor->show_field("DonorId"));
+            return $donor->QuickBooksId;          
+        }
+
+        if ($donor->MergedId>0){
+            self::display_error("Donor #".$donorId." has been merged to #".$donor->show_field('MergedId',$donor->MergedId,true,['donationlink'=>false]).". Please don't sync a donor that has been merged.");
+            return;
+        }
+        if ($this->authenticate()){
+            $customer=false;
+            if ($_GET['forceNew'=='true']){ //skip lookups and jump to creation.
+
+            }elseif ($quickBookId){
+                $customer=$this->dataService->FindById("Customer", $quickBookId);
+            }elseif ($donor->QuickBooksId){
+                $customer=$this->dataService->FindById("Customer", $donor->QuickBooksId);
+            }else{
+                if ($donor->Email){
+                    $SQL="SELECT * FROM Customer Where PrimaryEmailAddr = '".$donor->Email."'";
+                    $entities =$this->dataService->Query($SQL);
+                    
+                }
+                if (!$entities || sizeof($entities)==0){
+                    $names=[];
+                    if ($donor->Name) $names[]=$donor->Name;
+                    if ($donor->Name2) $names[]=$donor->Name2;
+                    if (sizeof($names)>0) {
+                        $SQL="SELECT * FROM Customer Where DisplayName IN ('".implode("','",$names)."')";                   
+                        $entities =$this->dataService->Query($SQL);     
+                    }                   
+                }
+                if (isset($entities) && sizeof($entities)==1) $customer=$entities[0];
+                if (isset($entities) && sizeof($entities)>1){
+                    print "<div class=\"notice notice-success\">Attempting to Sync Donor #".$donor->show_field('DonorId').", however multiple Quick Book Matches were found. Please select the closest match:<ul>";
+                    foreach($entities as $customer){
+                        print '<li><a href="?page='.$_GET['page'].'&syncDonorId='.$donorId.'&QuickBooksId='.$customer->Id.'">#'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address.'</li>';
+                    }
+                    print '<li><a href="?page='.$_GET['page'].'&syncDonorId='.$donorId.'&forceNew=true">Force New Entry</a></li>';
+                    print "</ul><div>";
+                    return false;
+                }
+            }
+            if ($customer){
+                self::display_notice('Match Found. #'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address);
+                print '<div><a href="?page='.$_GET['page'].'&syncDonorId='.$donorId.'&forceNew=true">Force New Entry</a> - careful when doing this. You want to avoid creating duplicate entries.</div>';
+                print "Add Sync Logic Here";
+            }else{                    
+                //create new entry here.
+                $customerToCreate=$this->donor_to_customer($donor);
+                $resultObj = $this->dataService->Add($customerToCreate);
+                if($this->check_dateService_error()){
+                    if ($resultObj->Id){
+                        $donor->QuickBooksId=$resultObj->Id;
+                        $donor->save();
+                        self::display_notice("Quick Books Id #".$donor->show_field('QuickBooksId')." created and linked to Donor #".$donor->show_field('DonorId'));
+                        return $donor->QuickBooksId;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     public function donor_to_customer($donor){
@@ -252,6 +307,90 @@ class QuickBooks extends ModelLite
             $array['GivenName']=$name[0];    $array['MiddleName']=$name[2]; $array['FamilyName']=$name[2]; 
         }
         return Customer::create($array);
+    }
+
+    public function item_donation(){
+        if (!$this->authenticate()){
+            self::display_error("Could Not Authenticate to Quickbooks API.");
+            return false;
+        }
+        ### finds Donation item. If it doesn't exist, creates it.
+        $entities =$this->dataService->Query("SELECT * FROM Item WHERE FullyQualifiedName = 'Donation'");
+        if($this->check_dateService_error()){
+            if ($entities[0]){               
+                return $entities[0];
+            }else{
+                if ($_POST['IncomeAccount']){ //creation form submitted
+                $item = new IPPItem();
+                $item->Name="Donation";
+                $item->Description="Donation";
+                $item->Active=true;
+                $item->Type="NonInventory";
+                $item->IncomeAccountRef=$_POST['IncomeAccount'];
+                $resultObj=$this->dataService->Add($item);
+                if($this->check_dateService_error()){                   
+                    return $resultObj;
+                }
+                }else{ //creation form.
+                    self::display_error("You must create an item Type 'Donation' before proceeding either in Quickbooks, or through this interface.");
+                    ?><h2>Create Donation Item</h2>
+                    <form method="post">
+                    <select name="IncomeAccount"><?php
+                    $entities =$this->dataService->Query("SELECT * FROM Account WHERE AccountType = 'Income' Orderby FullyQualifiedName");
+                    if($this->check_dateService_error()){
+                        foreach($entities as $account){
+                            print '<option value="'.$account->Id.'">'.$account->FullyQualifiedName."</option>";
+                        }
+                    }?></select><button>Create Donation Item</button>
+                    </form>
+                    <?php
+                    return false;
+                }
+            }
+        }
+    }
+
+    public function donation_to_invoice($donation,$donor){
+        $item=$this->item_donation();
+        if (!$item){
+            return false; //expects error message to have already been displayed in above function.
+        }
+        
+        $invoice = new IPPInvoice();
+        $invoice->Deposit       = 0;
+        $invoice->domain        =  "QBO";
+        //$invoice->AutoDocNumber = true;
+        $invoice->DocNumber=$donation->DonorId."|".$donation->DonationId;
+        $invoice->TxnDate = date('Y-m-d', strtotime($donation->DateDeposited));
+        $invoice->ShipDate = date('Y-m-d', strtotime($donation->Date)); //check date... not sure if this is the best field
+        $invoice->CustomerRef   = $donor->QuickBooksId;
+        $invoice->PrivateNote   = $donation->Source."|".$donation->SourceId."|".$donation->Note;
+        $invoice->TxnStatus     = "Payable";
+        $invoice->PONumber      = substr($donation->TransactionID,0,15); //
+
+        
+        $lineDetail=new IPPDescriptionLineDetail();
+        $lineDetail->ItemRef=(object)['value'=>$item->Id,'name'=>"Donation"];
+        $lineDetail->TaxCodeRef="NON";
+        //$lineDetail->UnitPrice        = 1;
+        //$lineDetail->Qty              = $donation->Gross;
+        
+        $line = new IPPLine();
+        $line->Id = "0";
+        $line->LineNum          = "1";
+        $line->Description      = $donation->Subject?$donation->Subject:"Donation";
+        $line->Amount           = $donation->Gross; 
+        $line->DetailType       = "SalesItemLineDetail"; 
+        $line->SalesItemLineDetail=$lineDetail;
+
+        //should we add something for the fee? $donation->Fee
+
+        $invoice->Line          = array($line);
+        $invoice->RemitToRef    = $donor->QuickBooksId;
+        $invoice->TotalAmt      = $donation->Gross;
+        $invoice->FinanceCharge = 'false';
+        return $invoice;
+
     }
 
     public function customer_to_donor($customer){
@@ -281,11 +420,7 @@ class QuickBooks extends ModelLite
             if ($_GET['table']){      
                 if ($_GET['Id']){
                     $entity=$this->dataService->FindById($_GET['table'], $_GET['Id']);
-                    $this->dataService->throwExceptionOnError(true);
-                    $error =$this->dataService->getLastError();
-                    if($error){
-                        self::display_error($error->getResponseBody());
-                    }else{
+                    if($this->check_dateService_error()){
                         print "<div><a href='?page=donor-quickbooks&table=".$_GET['table']."'>Back to ".$_GET['table']." list</a></div>
                         <h3>".$_GET['table']." #".$_GET['Id']."</h3>";
                         if ($_GET['edit']){
@@ -313,11 +448,7 @@ class QuickBooks extends ModelLite
                     }
                 }else{
                     $entities =$this->dataService->Query("SELECT * FROM ".$_GET['table']);
-                    $error =$this->dataService->getLastError();
-                    $this->dataService->throwExceptionOnError(true);
-                    if($error){
-                       self::display_error($error->getResponseBody());
-                    }else{
+                    if($this->check_dateService_error()){
                         print "<div><a href='?page=donor-quickbooks'>Back to Quickbook list</a></div>
                         <h3>".$_GET['table']." List</h3>";
                         ?><table class="dp">
@@ -330,7 +461,10 @@ class QuickBooks extends ModelLite
                         <?php    
                     }                           
                 }
-            }else{ ?>
+            }else{ 
+                $companyInfo = $this->dataService->getCompanyInfo();               
+                ?>
+                <h2>Company: <?php print $companyInfo->LegalName?></h2>             
                 <h3>View</h3>
                  <?php foreach ($tables as $tbl=>$key){ ?>
                     <div><a href="?page=donor-quickbooks&table=<?php print $tbl?>"><?php print $tbl?></a></div>
@@ -338,116 +472,7 @@ class QuickBooks extends ModelLite
                  }  
                          
             }
-            return;
-
-
-            $cust=$this->dataService->FindById("Customer", 58);
-            $error = $this->dataService->getLastError();
-            dd($cust,$error);
-
-            $cust=$this->dataService->FindById("Customer", 58);
-            $customerToUpdate= Customer::update($cust,[              
-                // "Source" =>"donor-press",
-                "ContactName"=>"Tara Steiner",
-                "ClientEntityId"=>"999"             
-              ]);
-
-            $resultObj = $this->dataService->Update( $customerToUpdate);
-
-
-
-            // $customerToCreate = Customer::create([
-            //     "FullyQualifiedName" => "Denver Steiner",
-            //     "CompanyName" => "Denver Steiner",
-            //     "DisplayName" => "Denver Steiner",
-            //     "PrintOnCheckName" => "Denver Steiner" ,
-            //     "Source" =>"donor-press"             
-            //   ]);
-
-            //   $resultObj = $this->dataService->Add( $customerToCreate);
-              $error = $this->dataService->getLastError();
-              if ($error) {
-                  echo "The Status code is: " . $error->getHttpStatusCode() . "\n";
-                  echo "The Helper message is: " . $error->getOAuthHelperError() . "\n";
-                  echo "The Response message is: " . $error->getResponseBody() . "\n";
-              }else {
-                  dd($resultObj);
-                  // echo "Created Id={$resultObj->Id}. Reconstructed response body:\n\n";
-                  // $xmlBody = XmlObjectSerializer::getPostXmlFromArbitraryEntity($resultingObj, $urlResource);
-                  // echo $xmlBody . "\n";
-              }
-        
-
-
-
-            $cust=$this->dataService->FindById("Customer", 1);
-            $statement = "SELECT * FROM INVOICE";
-            $numberOfCustomers = $this->dataService->Query($statement);
-            $error =$this->dataService->getLastError();
-            dd(  $this->dataService->getCompanyInfo(),$numberOfCustomers[1], $cust,$cust->BillAddr,$error);
-
-
-            $entities =$this->dataService->Query("SELECT * FROM Customer");
-            $error =$this->dataService->getLastError();
-            $this->dataService->throwExceptionOnError(true);
-            if($error){
-              self::display_error($error->getResponseBody());
-            }else{
-                dump($entities);
-            }
-            return;
-
-
-
-            $invoiceToCreate = Invoice::create([
-                "DocNumber" => "101",
-                "Line" => [
-                  [
-                    "Description" => "Sewing Service for Alex",
-                    "Amount" => 150.00,
-                    "DetailType" => "SalesItemLineDetail",
-                    "SalesItemLineDetail" => [
-                      "ItemRef" => [
-                        "value" => 1,
-                        "name" => "Services"
-                      ]
-                    ]
-                  ]
-                ],
-                "CustomerRef" => [
-                    "value" => "1",
-                    "name" => "Alex"
-                ]
-              ]);
-            $this->dataService->disableLog();           
-            $resultObj = $this->dataService->Add($invoiceToCreate);
-            $error = $this->dataService->getLastError();
-            if ($error) {
-                echo "The Status code is: " . $error->getHttpStatusCode() . "\n";
-                echo "The Helper message is: " . $error->getOAuthHelperError() . "\n";
-                echo "The Response message is: " . $error->getResponseBody() . "\n";
-            }else {
-                dd($resultObj);
-                // echo "Created Id={$resultObj->Id}. Reconstructed response body:\n\n";
-                // $xmlBody = XmlObjectSerializer::getPostXmlFromArbitraryEntity($resultingObj, $urlResource);
-                // echo $xmlBody . "\n";
-            }
-
-            
-            
-
-            
-           return;
-           // dd($this->dataService);
-            $customerObj = new Customer();
-            $customerObj->Name = "Name" . rand();
-            $customerObj->CompanyName = "CompanyName" . rand();
-            $customerObj->GivenName = "GivenName" . rand();
-            $customerObj->DisplayName = "DisplayName" . rand();
-            $resultingCustomerObj = $this->dataService->Add($customerObj);
-            dd($customerObj,$resultingCustomerObj);
-            return;
-           
+            return;           
         }
 	}
 

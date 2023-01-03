@@ -39,8 +39,15 @@ function donor_header_check() {
 		$donation=Donation::get_by_id($_REQUEST['DonationId']);	
 		$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));      
 	}
+
+	if ($_GET['donorAutocomplete']){
+		Donor::autocomplete($_GET['query']);
+		exit();
+	}
 	## add style
 	wp_enqueue_style('donorPressPluginStylesheet', plugins_url( '/css/style.css', __FILE__ ), false);
+	//wp_enqueue_style('donorPressPluginAutoComplete', plugins_url( '/css/autocomplete.min.css', __FILE__ ), false);
+	//wp_enqueue_script('donorPressPluginAutoComplete', plugins_url( '/js/autocomplete.min.js', __FILE__ ), false);
 }
 
 //wp_register_style( 'donorPressPluginStylesheet', plugins_url( '/css/style.css', __FILE__ ) );
@@ -139,13 +146,4 @@ function generate_email_list(){
 
 
 
-function searchDonorList_callback() {
-	$request = $_POST['request'];
-	$searchText = strtoupper($_POST['searchText']);
-	print json_encode(Donor::get(array("(UPPER(Name) LIKE '%".$searchText."%' 
-	OR UPPER(Name2)  LIKE '%".$searchText."%'
-	OR UPPER(Email) LIKE '%".$searchText."%'
-	OR UPPER(Phone) LIKE '%".$searchText."%')"
-	,"(MergedId =0 OR MergedId IS NULL)")));
-   	wp_die(); 
-}
+

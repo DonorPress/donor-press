@@ -201,7 +201,7 @@ class ModelLite{
 	
 	public static function get($where=array(),$orderby="",$settings=false){
 		$wpdb=self::db();  
-		$SQL="SELECT * FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"");
+		$SQL="SELECT ".($settings['select']?$settings['select']:"*")." FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"");
 		//print $SQL;
 		$all=$wpdb->get_results($SQL);
 		foreach($all as $r){
@@ -299,6 +299,8 @@ class ModelLite{
 			case "Content":
 				return "<div><a href='#' onclick=\"toggleDisplay('message_".$this->ReceiptId."');return false;\">Show/Hide</a></div><div style='display:none;' id='message_".$this->ReceiptId."'>".$v."</div>";
 				break;
+			case "QBOInvoiceId":
+				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a>';
 			case "QuickBooksId":
 				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a>';
 			case "DonationId":
