@@ -7,7 +7,7 @@ class Donation extends ModelLite
     protected $table = 'Donation';
 	protected $primaryKey = 'DonationId';
 	### Fields that can be passed //,"Time","TimeZone"
-    protected $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxExcempt","QBOInvoiceId"];	 
+    public $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxExcempt","QBOInvoiceId"];	 
 
     protected $paypal = ["Date","Time","TimeZone","Name","Type","Status","Currency","Gross","Fee","Net","From Email Address","To Email Address","Transaction ID","Address Status","Item Title","Item ID","Option 1 Name","Option 1 Value","Option 2 Name","Option 2 Value","Reference Txn ID","Invoice Number","Custom Number","Quantity","Receipt ID","Balance","Contact Phone Number","Subject","Note","Payment Source"];
 
@@ -15,6 +15,7 @@ class Donation extends ModelLite
 
     protected $csvHeaders = ["DepositDate","CheckDate","CheckNumber","Name1","Name2","Gross","Account","ReceiptNeeded","Note","Email","Phone","Address1","Address2","City","Region","PostalCode","Country"];
 
+    public $flat_key = ["Date","Name","Gross","FromEmailAddress","TransactionID"];
     protected $duplicateCheck=["Date","Gross","FromEmailAddress","TransactionID"]; //check these fields before reinserting a matching entry.
    
     protected $tinyIntDescriptions=[
@@ -46,7 +47,13 @@ class Donation extends ModelLite
 
 	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';
-    
+
+    const UPLOAD_PATTERN = [
+        'Last, Name1 & Name2'=>'Name|Name2',
+        'City, Region Postal Country'=>'City|Region|PostalCode|Country'
+    ];
+
+    const UPLOAD_AUTO_SELECT = ['name'=>'Name','check'=>'TransactionID','date'=>'Date','deposit'=>'DateDeposited','amount'=>'Gross','total'=>'Gross','note'=>'Note','comment'=>'Note','address'=>'Address1','address1'=>'Address1','address2'=>'Address2','e-mail'=>'Email','Phone'=>'Phone'];    
     
     static public function from_paypal_api_detail($detail){               
         $transaction=$detail->transaction_info;
@@ -402,21 +409,31 @@ class Donation extends ModelLite
         
     }
 
-    static public function cvs_upload_check(){
+    static public function upload_dir(){
+        return dn_plugin_base_dir()."/uploads/";
+    }
+
+    static public function csv_upload_check(){
         $timeNow=time();
         if(isset($_FILES['fileToUpload'])){
             $originalFile=basename($_FILES["fileToUpload"]["name"]);
-            $target_file = $tmpfname = tempnam(sys_get_temp_dir(), 'CSV');
+           // $target_file = $tmpfname = tempnam(sys_get_temp_dir(), 'CSV');            
+            //if (!file_exists(self::upload_dir()) {   mkdir(self::upload_dir(), 0777, true); }
+            $target_file=self::upload_dir()."/".$originalFile;
+            //dd($target_file);
             if (file_exists($target_file)){ 
                 unlink($target_file);
             }
-            print '<div class="notice notice-success is-dismissible">';
+           
             if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
-                echo "The file ". $originalFile. " has been uploaded.";               
-                if ($_REQUEST['submit']=="Upload NonPaypal"){
-                    $result=self::cvs_read_file_check($target_file,$firstLineColumns=true);                   
+                self::display_notice("The file ". $originalFile. " has been uploaded.");               
+                if ($_REQUEST['submit']=="Upload File"){
+                    $result=self::csv_read_file_map($originalFile,$firstLineColumns=true,$timeNow);
+                    return; 
+                }elseif ($_REQUEST['submit']=="Upload NonPaypal"){
+                    $result=self::csv_read_file_check($target_file,$firstLineColumns=true);                               
                 }else{              
-                    $result=self::cvs_read_file($target_file,$firstLineColumns=true,$timeNow);                   
+                    $result=self::csv_read_file($target_file,$firstLineColumns=true,$timeNow);                   
                 }
                 ### This next step will Insert records if there is no duplicate on ["Date","Gross","FromEmailAddress","TransactionID"];
                 if ($stats=self::replace_into_list($result)){//inserted'=>sizeof($iSQL),'skipped'
@@ -458,14 +475,13 @@ class Donation extends ModelLite
                  if ($_POST['uploadSummary']=="true"){
 
                  }
-            } else {
-                echo "Sorry, there was an error uploading your file: ".$originalFile;
-            }
-            print "</div>";
+            } else {                 
+                self::display_error("Sorry, there was an error uploading your file: ".$originalFile."<br>Destination: ".$target_file);
+            }           
         }
     }
 
-    static public function cvs_read_file_check($csvFile,$firstLineColumns=true){
+    static public function csv_read_file_check($csvFile,$firstLineColumns=true){
         $donorMap=["Name1"=>"Name","Name2"=>"Name2","Note"=>"Note"];
         $donationMap=["Name1"=>"Name","Email"=>"FromEmailAddress","DepositDate"=>"DateDeposited","CheckDate"=>"Date","CheckNumber"=>"TransactionID","Name1"=>"Name","Gross"=>"Gross","ReceiptNeeded"=>"ReceiptId"];
         $row=0;
@@ -541,7 +557,219 @@ class Donation extends ModelLite
 
     }
 
-    static public function cvs_read_file($csvFile,$firstLineColumns=true,$timeNow=""){//2019-2020-05-23.CSV
+    static public function process_map_file($post){
+        //dd($post);
+        $csv=self::csv_file_to_array($post["file"],$post["firstLineColumns"]);
+       
+        $recommended_bulk['Donor']=["Source","Country"];
+        $recommended_bulk['Donation']=["Date","DateDeposited","Source","PaymentSource"];
+        
+        $selectDonation=Donation::s()->fillable; 
+        $selectDonor=Donor::s()->fillable; 
+
+        foreach($csv->data as $row => $r){
+            $donor = new Donor();
+            $donation = new Donation();
+            foreach($r as $c=>$v){
+                if (trim($v)=="") continue; //skip blanks    
+                if ($field=$post['column'.$c]){                    
+                    switch($field){
+                        case 'Last, Name1 & Name2':
+                            $andSplit=explode("&",$v);
+                            $commaSplit=explode(",",$andSplit[0]);
+                            if (sizeof($andSplit)>=1 && sizeof($andSplit)<=2 && sizeof($commaSplit)==2){
+                                $donor->Name=trim($commaSplit[1])." ".trim($commaSplit[0]);
+                                if (trim($andSplit[1])) $donor->Name2=trim($andSplit[1])." ".trim($commaSplit[0]);
+                            }else{
+                                $donor->Name=trim($v);
+                            }
+                            $donation->Name=trim($v);
+                            //dd($donor);
+                            //print "pattern $field set to $v on Index $c. <br>";
+                        break;
+                        case 'City, Region Postal Country':
+                            $commaSplit=explode(",",$v);
+                            $regionSplit=explode(" ",$commaSplit[1]);
+                            $donor->City=trim($commaSplit[0]);
+                            $donor->Region=trim($regionSplit[0]);
+                            $donor->PostalCode=trim($regionSplit[1]);
+                            if($regionSplit[2]) $donor->Country=trim($regionSplit[2]);
+                            //print "pattern $field set to $v on Index $c. <br>";
+                        break;
+                        case "Date":
+                        case "DateDeposited":
+                            if ($v) $v=date("Y-m-d",strtotime($v));
+                        break;
+                        default:
+                            if (in_array($field,$selectDonor)){
+                                //print "field $field set to $v on Index $c row $row. <br>";
+                                $donor->$field=trim($v);
+                            }
+                            if (in_array($field,$selectDonation)){
+                                $donation->$field=trim($v);
+                            }
+                        break;
+                    }                          
+
+                    //dd($headerField,$field,$c,$selectDonor,$v,$post,$csv,$donor);
+                
+                }               
+            }
+            //dd($donor,$post,$csv);
+            if ($donor->Name){
+                $key=$donor->flat_key($_POST['donorKey']);
+                $donors[$key]['donor']=$donor;
+                $donors[$key]['donations'][$donation->flat_key()]=$donation;
+            }else{
+                $skippedLines[]=$r;
+            }
+        }
+        ksort($donors);
+        $stats=[];
+        ### get donor keys for ALL donors -> if this gets big, might run into memory errors with this.
+        $SQL="SELECT DonorId,MergedId,".(implode(",",$_POST['donorKey']))." FROM ".Donor::s()->get_table();
+		$all=self::db()->get_results($SQL);
+        foreach($all as $r){
+            $donor=new Donor($r);
+            $existingDonors[$donor->flat_key($_POST['donorKey'])]=$r->MergedId>0?$r->MergedId:$r->DonorId; //if the match has been merged, then return the merged to entry.
+        }
+
+        foreach($donors as $key=>$a){
+            if ($existingDonors[$key]){
+                $a['donor']->DonorId=$existingDonors[$key]; //donor already created
+                $stats['donorFound']++;
+            }else{
+                $a['donor']->save();
+                $stats['donorCreated']++;
+            }          
+            
+            foreach($a['donations'] as $donation){
+                ### eventually add a duplicate donation check...
+                $donation->DonorId= $a['donor']->DonorId;
+                $donation->save();
+                $stats['donationsAdded']++;
+            }
+        }
+        $notice="The following was the result of this export:<ul>";
+        if ($stats['donorFound']) $notice.="<li>".$stats['donorFound']." Donors already existed.</li>";
+        if ($stats['donorCreated']) $notice.="<li>".$stats['donorCreated']." Donors Created.</li>";
+        if ($stats['donationsAdded']) $notice.="<li>".$stats['donationsAdded']." Donations Added.</li>";
+        $notice.="</ul>";
+        self::display_notice($notice);
+        return true;
+
+    }
+
+    static public function csv_read_file_map($csvFile,$firstLineColumns=true,$timeNow=""){
+        if (!$timeNow) $timeNow=time();
+        $csv=self::csv_file_to_array($csvFile,$firstLineColumns);
+        $selectDonation=Donation::s()->fillable; 
+        $selectDonor=Donor::s()->fillable; 
+        ?>
+        <form method="post">
+            <input type="hidden" name="file" value="<?php print $csvFile;?>"/>
+            <input type="hidden" name="timenow" value="<?php print $timeNow?>"/>
+            <?php if ($firstLineColumns){?> 
+                <input type="hidden" name="firstLineColumns" value="true"/>
+            <?php }?>           
+            <button name="Function" value="ProcessMapFile">Process File</button>
+            Key Fields -  
+            Donor:
+            <select name="donorKey[]" multiple>
+                <?php 
+                $flatKeys=Donor::s()->flat_key;
+                foreach($flatKeys as $field){
+                    ?><option name="<?php print $field?>" selected><?php print $field?></option>
+                <?php 
+                }
+                foreach(Donor::s()->fillable as $field){
+                    if (!in_array($field,$flatKeys)) print "<option>".$field."</option>";
+                }                    
+                ?>
+            </select> 
+            Donation: <select name="donationKey[]" multiple>
+                <?php 
+                $flatKeysD=Donation::s()->flat_key;
+                foreach($flatKeysD as $field){
+                    ?><option name="<?php print $field?>" selected><?php print $field?></option>
+                <?php }
+                foreach(Donation::s()->fillable as $field){
+                    if (!in_array($field,$flatKeys)) print "<option>".$field."</option>";
+                } 
+                
+                ?>
+            </select>  <em>Key fields are used to detect duplicates</em>
+        <table class="dp">
+            <tr><?php foreach($csv->headers as $c =>$headerField) 
+                    print "<th>".$headerField."</th>";
+            ?></tr>
+            <tr><?php foreach($csv->headers as $c => $headerField){
+                $selected="";
+                foreach(self::UPLOAD_AUTO_SELECT as $key=>$fieldsMapped){
+                    if (strpos(strtolower($headerField),strtolower($key))>-1) $selected=$fieldsMapped;
+                }               
+                ?>
+                <th><select name="column<?php print $c?>">
+                    <option value="">--ignore--</option>
+                    <?php foreach(self::UPLOAD_PATTERN as $pattern =>$field){                       
+                        ?><option value="<?php print $pattern?>"<?php print strtolower($headerField)==strtolower($field) ||$selected==$field?" selected":"";?>><?php print $pattern?></option><?php
+                    }?>
+                    <option disabled>--Donor Fields--</option>
+                    <?php foreach($selectDonor as $field){                          
+                        ?><option value="<?php print $field?>"<?php print strtolower($headerField)==strtolower($field) ||$selected==$field?" selected":"";?>><?php print $field?></option><?php
+                    }?>
+                     <option disabled>--Donation Fields--</option>
+                    <?php foreach($selectDonation as $field){
+                        ?><option value="<?php print $field?>"<?php print strtolower($headerField)==strtolower($field) ||$selected==$field?" selected":"";?>><?php print $field?></option><?php
+                    }?>
+                </select><?php print $selected;?></th>
+            <?php }?>
+            </tr>
+        <?php foreach($csv->data as $r){?>
+            <tr><?php foreach($csv->headers as $c => $headerField){?>
+                <td><?php print $r[$c]?></td>
+                <?php } ?>
+            </tr>        
+        <?php } ?>
+        </table>
+        </form>
+        <?php
+        dd($csv);      
+        
+    }
+
+    static public function csv_file_to_array($csvFile,$firstLineColumns=true,$settings=[]){      
+        $headerRow=$return=$headers=[];
+        if (($handle = fopen(self::upload_dir().$csvFile, "r")) !== FALSE) {
+            $row=0;
+            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {        
+                if ($firstLineColumns && $row==0){
+                    $headerRow= preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $data);
+                }else{
+                    $array=[];                   
+                    for ($c=0; $c<sizeof($data); $c++) {
+                        if ($headerRow) {
+                            $fieldName=preg_replace("/[^a-zA-Z0-9 ]+/", "", $headerRow[$c]);//str_replace(" ","",$headerRow[$c]);   
+                            if (!$fieldName) $fieldName=$c;
+                        }else $fieldName=$c;                  
+                        if (trim($data[$c])){ 
+                            $array[$c]=$data[$c];
+                            $headers[$fieldName]++;
+                        }
+                    } 
+                    if (sizeof($array)>0){
+                        $return[$row]=$array; 
+                    }
+                }
+                $row++;
+            }
+        }else{
+            self::display_error("Could not open ".self::upload_dir().$csvFile);
+        }
+        return (object)['headers'=>array_keys($headers),'data'=>$return];
+    }
+
+    static public function csv_read_file($csvFile,$firstLineColumns=true,$timeNow=""){//2019-2020-05-23.CSV
         if (!$timeNow) $timeNow=time();
         //self::create_table();
         $dbHeaders=self::s()->fillable; 
@@ -665,9 +893,13 @@ class Donation extends ModelLite
     static public function request_handler(){
         if (!isset($_GET['f'])) $_GET['f']=null;
         if(isset($_FILES['fileToUpload'])){
-            self::cvs_upload_check();
+            self::csv_upload_check();
             return true;
-        }elseif ($_GET['f']=="AddDonation"){           
+        }elseif($_POST['Function']=="ProcessMapFile"){
+            self::process_map_file($_POST);
+        }       
+
+        elseif ($_GET['f']=="AddDonation"){           
             $donation=new Donation();
             if ($_GET['DonorId']){
                $donor=Donor::get_by_id($_GET['DonorId']);
@@ -967,7 +1199,7 @@ class Donation extends ModelLite
 
 
     static public function create_table(){
-        require_once( ABSPATH . 'wp-admin/includes/upgrade.php'); 
+        require_once( ABSPATH . 'wp-admin/includes/upgrade.php');
         $sql = "CREATE TABLE IF NOT EXISTS `".self::get_table_name()."` (
                 `DonationId` int(11) NOT NULL,
                 `Date` datetime NOT NULL,
@@ -996,8 +1228,8 @@ class Donation extends ModelLite
                 `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `NotTaxExcempt` tinyint(4) DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt',
-                QBOInvoiceId int(11) DEFAULT NULL,
-                )";
+                QBOInvoiceId int(11) DEFAULT NULL
+                )";               
         dbDelta( $sql );        
     }
 

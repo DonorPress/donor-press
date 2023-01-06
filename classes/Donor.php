@@ -8,8 +8,10 @@ class Donor extends ModelLite {
     protected $table = 'Donor';
 	protected $primaryKey = 'DonorId';
 	### Fields that can be passed 
-    protected $fillable = ["Source","SourceId","Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting","MergedId","QuickBooksId"];	    
-	### Default Values
+    public $fillable = ["Source","SourceId","Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting","MergedId","QuickBooksId"];	    
+	
+    public $flat_key = ["Name","Name2","Email","Phone","City","Region"];
+    ### Default Values
 	protected $attributes = [        
         'Country' => 'US',
         'TaxReporting'=> 0,
@@ -758,10 +760,6 @@ class Donor extends ModelLite {
         
         foreach ($results as $r){
             $match= $stats['e'][strtolower($r->Email)];
-
-          
-
-
             if ($match->Address1 && !$r->Address1){            
                 ?><tr>
                     <td><a target='match' href="?page=donor-index&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> - <?php print $r->Name?></td><td><?php print $r->Address1?></td>

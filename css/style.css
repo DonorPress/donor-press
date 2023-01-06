@@ -68,14 +68,7 @@ table.dp tbody tr:nth-child(odd){
 	content:" > ";
 }
 
-#pluginwrap{ 
-	/* margin:0px; 
-	padding:20px;
-	background-color:white;
-	border-right:2px solid #666;
-	border-left:2px solid #666;
-	border-bottom: 2px solid #666; */
-}
+
 .update-nag {
 	display:none;
 }

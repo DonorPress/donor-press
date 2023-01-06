@@ -127,7 +127,7 @@ class ModelLite{
 		<?php
 	}
 
-	static public function get_key($row){
+	static public function get_key($row){ //maybe discontiue this and replace with flat_key();
 		$key=[];
 		foreach(self::s()->duplicateCheck as $field){
 			$value=$row->$field;
@@ -143,6 +143,15 @@ class ModelLite{
 		}
 		return implode("|",$key);
 	}
+
+	public function flat_key($keys=[]){ //takes key fields and flattens them for the sake of comparison
+        if (sizeof($keys)==0) $keys=$this->flat_key;
+		$return="";
+        foreach($keys as $key){
+           $return.=($return?"|":"").preg_replace("/[^a-zA-Z0-9 ]+/", "",strtolower($this->$key));
+        }
+        return $return;        
+    }
 
 	static public function replace_into_list($q){
 		### Adds a check to avoid duplicate rows basd on 
