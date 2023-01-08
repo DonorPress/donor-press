@@ -36,10 +36,16 @@ function donor_header_check() {
 		$qb->check_redirects($_GET['redirect']);
 	}
 	## download functions before page is loaded
-	if ($_POST['Function']=="DonationReceiptPdf"){
-		$donation=Donation::get_by_id($_REQUEST['DonationId']);	
-		$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));      
-	}
+	switch($_POST['Function']){
+		case "DonationReceiptPdf":
+			$donation=Donation::get_by_id($_REQUEST['DonationId']);	
+			$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));
+		break;
+		case 'BackupDonorPress':		
+			CustomVariables::backup(true);
+			break;
+		break;
+	}	
 
 	if ($_GET['donorAutocomplete']){
 		Donor::autocomplete($_GET['query']);

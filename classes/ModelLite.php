@@ -461,7 +461,11 @@ class ModelLite{
 	}
 
 	static public function upload_dir(){
-        return dn_plugin_base_dir()."/uploads/";
+		$dir=dn_plugin_base_dir()."/uploads/";
+		if (!is_dir($dir)){
+			mkdir($dir, 0777, true);
+		}
+        return $dir;
     }
 
 	// public static function compare($old, $new){

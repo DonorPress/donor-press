@@ -91,13 +91,22 @@ class CustomVariables extends ModelLite
     static function backup($download=false){
         //Backups up all donor related tables and partial tables on posts and options
         global $wpdb;
-        $file = fopen(Donor::upload_dir()."DonorPressBackup".date("YmdHis").".json", "w");
+        $fileName="DonorPressBackup".date("YmdHis").".json";
+        $filePath=Donor::upload_dir().$fileName;
+        $file = fopen($filePath, "w");
         foreach(donor_press_tables() as $table){
             $records=[];           
             $SQL="Select * FROM ".$table::get_table_name();
             if(!$download) print "Backing up TABLE: ".$table::get_table_name()."<br>";
             $results=$wpdb->get_results($SQL);
-            foreach ($results as $r){               
+            foreach ($results as $r){ 
+                $c=clone($r); 
+                ### cleanup backup to not add "null" or blank values               
+                foreach($c as $field=>$value){
+                    if (!$value){
+                        unset($r->$field);
+                    }
+                }              
                 $records[]=$r;
             }
             fwrite($file, json_encode(["TABLE"=>$table,'RECORDS'=>$records])."\n");
@@ -113,11 +122,23 @@ class CustomVariables extends ModelLite
             } 
             $a['RECORDS']=$records;           
             fwrite($file, json_encode($a)."\n");
-        }	
-        fclose($file);
-        if (!$download){
-            self::display_notice($file." backup created");
         }
+        fclose($file);
+
+        if ($download){           
+            header('Content-Description: File Transfer');
+            header('Content-Disposition: attachment; filename='.basename($filePath));
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($filePath));
+            header("Content-Type: text/plain");
+            readfile($filePath);
+            exit();
+        }else{
+            self::display_notice($fileName." backup created");
+        }
+        
     }
 
     static public function nuke_confirm(){
@@ -166,7 +187,7 @@ class CustomVariables extends ModelLite
             self::nuke_it($_POST);
         }
         if ($_POST['Function'] == 'BackupDonorPress'){
-            self::backup(true);
+            self::backup();
         }elseif($_POST['Function'] == 'NukeDonorPress'){
             self::nuke_confirm();
             return true;
