@@ -396,34 +396,8 @@ class Donation extends ModelLite
         
     }
 
-    static public function nuke_confirm(){
-        ?><h2>You are about to remove all donor/donations records from the database</h2>
-        <div style='color:red;'>This will be permanent. Please back up anything important before proceeding0.</div>
-        <form method="post" action="?page=<?php print $_GET['page']?>">
-            <label><input type="checkbox" name="drop[]" value="tables" checked>Drop All Tables Data and Structures (Donor, Donation, Categories)</label><br>
-           
-            <label><input type="checkbox" name="drop[]" value="fields" checked>Drop All Custom Fields (Letter Templates, settings)</label><br>
-            <label><input type="checkbox" name="rebuild" value="true" checked>Recreate Tables (will be blank)</input></label><br>
-
-            <button name="Function" value="NukeIt">Nuke It</button>
-            <button>Cancel</button>
-        </form>
-        <?php
-    }
-
-    static public function nuke_it($post){
-        
-    }
-    
-
     static public function request_handler(){
-        if ($_POST['Function']=="NukeIt"){
-            self::nuke_it($_POST);
-        }
-        if ($_GET['nuke']){
-            self::nuke_confirm();
-            return true;
-        }elseif (!isset($_GET['f'])) $_GET['f']=null;
+        if (!isset($_GET['f'])) $_GET['f']=null;
         if(isset($_FILES['fileToUpload'])){
             DonationUpload::csv_upload_check();
             return true;

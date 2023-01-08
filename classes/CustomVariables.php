@@ -4,11 +4,17 @@
 * Use wordpress funcitons to edit these
 * all custom variables shoudl ahve a "base" of donation, example donation_Organization
 */
+
 class CustomVariables extends ModelLite
 {  
     const base = 'donation';
     const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate"];	
     const variables_protected = ["PaypalClientId","PaypalSecret","QuickbooksClientId","QuickbooksSecret"];
+    const partialTables = [
+        ['TABLE'=>'posts','WHERE'=>"post_type='donortemplate'",'COLUMN_IGNORE'=>'ID'],
+        ['TABLE'=>'options','WHERE'=>"option_name LIKE 'donation_%'",'COLUMN_IGNORE'=>'option_id']
+    ];
+
     static public function form(){
         $wpdb=self::db();  
         $vals=self::get_custom_variables();      
@@ -82,8 +88,89 @@ class CustomVariables extends ModelLite
         return $c;
     }
 
+    static function backup($download=false){
+        //Backups up all donor related tables and partial tables on posts and options
+        global $wpdb;
+        $file = fopen(Donor::upload_dir()."DonorPressBackup".date("YmdHis").".json", "w");
+        foreach(donor_press_tables() as $table){
+            $records=[];           
+            $SQL="Select * FROM ".$table::get_table_name();
+            if(!$download) print "Backing up TABLE: ".$table::get_table_name()."<br>";
+            $results=$wpdb->get_results($SQL);
+            foreach ($results as $r){               
+                $records[]=$r;
+            }
+            fwrite($file, json_encode(["TABLE"=>$table,'RECORDS'=>$records])."\n");
+        }    
+       
+        foreach(self::partialTables as $a){
+            $records=[];
+            $SQL="Select * FROM ".$wpdb->prefix.$a['TABLE']." WHERE ".($a['TABLE']?$a['TABLE']:1);
+            if(!$download)print "Backing up QUERY: ". $SQL."<br>";
+            $results=$wpdb->get_results($SQL);
+            foreach ($results as $r){
+                $records[]=$r;
+            } 
+            $a['RECORDS']=$records;           
+            fwrite($file, json_encode($a)."\n");
+        }	
+        fclose($file);
+        if (!$download){
+            self::display_notice($file." backup created");
+        }
+    }
+
+    static public function nuke_confirm(){
+        ?><h2>You are about to remove all donor/donations records from the database</h2>
+        <div style='color:red;'>This will be permanent. Please back up anything important before proceeding.</div>
+        <form method="post" action="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>">
+            <label><input type="checkbox" name="backup" value="t" checked>Backup Existing Donor Press Records to a flat file</label><br>  
+            <label><input type="checkbox" name="droptable" value="t" checked>Drop All Tables Data and Structures (Donor, Donation, Categories)</label><br>           
+            <label><input type="checkbox" name="dropfields" value="t" checked>Drop All Custom Fields (Letter Templates, settings)</label><br>
+            <label><input type="checkbox" name="rebuild" value="true" checked>Recreate Tables (will be blank)</input></label><br>
+
+            <button name="Function" value="NukeIt">Nuke It</button>
+            <button>Cancel</button>
+        </form>
+        <?php
+    }
+
+    static public function nuke_it($post){
+        if ($post['backup']) self::backup(); //back it up to flat file before nuke
+        if ($post['droptable']){
+            foreach(donor_press_tables() as $table){
+                $SQL= "DROP TABLE IF EXISTS ".$table::get_table_name();
+                print $SQL."<br>";
+                self::db()->query($SQL);
+            }
+        }
+        if($post['dropfields']){
+            foreach(self::partialTables as $a){   
+                $SQL="DELETE FROM ".$wpdb->prefix.$a['TABLE']." WHERE ".($a['TABLE']?$a['TABLE']:1); 
+                print $SQL."<br>";       
+                self::db()->query($SQL);
+            }
+        }
+
+        if ($post['rebuild']){ 
+            donor_plugin_create_tables();
+            print "TABLES Rebuilt";    
+        }
+
+    }
+
+
     static public function request_handler(){        
         //$wpdb=self::db();  
+        if ($_POST['Function']=="NukeIt"){
+            self::nuke_it($_POST);
+        }
+        if ($_POST['Function'] == 'BackupDonorPress'){
+            self::backup(true);
+        }elseif($_POST['Function'] == 'NukeDonorPress'){
+            self::nuke_confirm();
+            return true;
+        }
         if ($_POST['Function'] == 'Save' && $_POST['table']=="CustomVariables"){
             foreach(self::variables as $var){
                 if ($_POST[$var]!=$_POST[$var.'_was']){
