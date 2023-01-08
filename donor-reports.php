@@ -305,9 +305,9 @@ function reportMonthly(){
 	foreach($graph['Type'] as $type=>$total){
 		$graph['TypeDescription'][$type]=Donation::get_tiny_description('Type',$type)??$type;
 	}
-	ksort($graph['WeekDay']);
-	ksort($graph['time']);
-	krsort($graph['Type']);
+	if ($graph['WeekDay']) ksort($graph['WeekDay']);
+	if ($graph['time']) ksort($graph['time']);
+	if ($graph['Type']) krsort($graph['Type']);
 
 	$weekDays=array("1"=>"Mon","2"=>"Tue","3"=>"Wed","4"=>"Thu","5"=>"Fri",6=>"Sat",7=>"Sun");
 
@@ -345,6 +345,7 @@ function reportMonthly(){
 	  var chart = new google.visualization.ColumnChart(document.getElementById("MonthlyDonationsChart"));
 	  chart.draw(data, options);
 
+<?php if ($graph['time']){?> 
 	  var data2 = google.visualization.arrayToDataTable([
         ['Week Day', '<?php print $countField;?>']
 		<?php
@@ -364,6 +365,7 @@ function reportMonthly(){
 	
 	  var chart2 = new google.visualization.ColumnChart(document.getElementById("Weekday"));
 	  chart2.draw(data2, options2);
+<?php } ?>
 
 	  var data3 = google.visualization.arrayToDataTable([
         ['Week Day', '<?php print $countField;?>']

@@ -14,6 +14,7 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')){
 require_once 'classes/Donation.php';
 require_once 'classes/Donor.php';
 require_once 'classes/DonationCategory.php';
+require_once 'classes/DonationUpload.php';
 require_once 'classes/DonorTemplate.php';
 require_once 'classes/CustomVariables.php'; 
 require_once 'classes/QuickBooks.php';
@@ -102,18 +103,36 @@ function load_initial_data(){
 	Donor::make_receipt_year_template();
 }
 
+function donor_press_tables(){
+	return ["Donor","Donation","DonationReceipt","DonationCategory"];
+}
+
+function backup($download=true){
+	//loop throuh donor_press_tables() Select * -> export json to flat file - do same for posts and settinngs where ...
+}
+
 function nuke(){
+	### used in testing to wipe out everything and recreate blank
 	global $wpdb;
 	$wpdb->show_errors();
-	### used in testing to wipe out everything and recreate blank
-	$wpdb->query("DROP TABLE IF EXISTS ".Donor::get_table_name());
-	$wpdb->query("DROP TABLE IF EXISTS ".Donation::get_table_name());
-	$wpdb->query("DROP TABLE IF EXISTS ".DonationReceipt::get_table_name());
-	$wpdb->query("DROP TABLE IF EXISTS ".DonationCategory::get_table_name());
+
+	$tableNames=donor_press_tables();
+	foreach($tableNames as $table){
+		$wpdb->query("DROP TABLE IF EXISTS ".$table::get_table_name());
+	}
+	
+	// $wpdb->query("DROP TABLE IF EXISTS ".Donor::get_table_name());
+	// $wpdb->query("DROP TABLE IF EXISTS ".Donation::get_table_name());
+	// $wpdb->query("DROP TABLE IF EXISTS ".DonationReceipt::get_table_name());
+	// $wpdb->query("DROP TABLE IF EXISTS ".DonationCategory::get_table_name());
 	donor_plugin_create_tables();
 }
 
 function donor_plugin_create_tables() {	
+	$tableNames=donor_press_tables();
+	foreach($tableNames as $table){
+		$table::create_table();
+	}
 	Donor::create_table();
 	Donation::create_table();
 	DonationReceipt::create_table();

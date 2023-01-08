@@ -86,12 +86,18 @@ class ModelLite{
 		}
 
 		if ($this->$keyField>0){
-			$wpdb->update($this->get_table(),$data,array($keyField=>$this->$keyField));
+			if (!$wpdb->update($this->get_table(),$data,array($keyField=>$this->$keyField))){
+				dump($data,"WHERE ".$keyField."=".$this->$keyField);
+				$wpdb->print_error();
+			}
 		}else{
 			if (defined (static::CREATED_AT) && !$data[static::CREATED_AT]){
 				$data[static::CREATED_AT]= $time;
 			}		 	
-			$result=$wpdb->insert($this->get_table(),$data);			
+			if (!$wpdb->insert($this->get_table(),$data)){
+				dump($data);
+				$wpdb->print_error();
+			}			
 			$this->$keyField=$wpdb->insert_id;
 			$insert=true;
 		}
@@ -453,6 +459,10 @@ class ModelLite{
 		return $active_tab;
 		
 	}
+
+	static public function upload_dir(){
+        return dn_plugin_base_dir()."/uploads/";
+    }
 
 	// public static function compare($old, $new){
 	// 	if (sizeof($old)==0){
