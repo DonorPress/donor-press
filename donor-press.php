@@ -45,7 +45,11 @@ function donor_header_check() {
 			CustomVariables::backup(true);
 			break;
 		break;
-	}	
+		case "YearEndReceiptPdf":
+			$donor=Donor::get_by_id($_REQUEST['DonorId']);
+			$donor->year_receipt_pdf($_REQUEST['Year'],stripslashes_deep($_REQUEST['customMessage']));
+			break;
+	}
 
 	if ($_GET['donorAutocomplete']){
 		Donor::autocomplete($_GET['query']);

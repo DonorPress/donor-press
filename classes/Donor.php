@@ -312,62 +312,6 @@ class Donor extends ModelLite {
         }elseif($_GET['f']=="summary_list" && $_GET['dt'] && $_GET['df']){            
             self::summary_list(array("Date BETWEEN '".$_GET['df']." 00:00:00' AND '".$_GET['dt']." 23:59:59'"),$_GET['Year']);
             return true;
-        }elseif($_GET['f']=="summary_list_year" && $_GET['Year']){
-            $year=$_GET['Year'];
-            $limit=$_REQUEST['limit'];
-            if (!$_REQUEST['limit']) $limit=1000;
-
-            if($_POST['Function']=='SendYearEndPdf'){
-                if (sizeof($_POST['pdf'])<$limit) $limit=sizeof($_POST['pdf']);
-                for($i=0;$i<$limit;$i++){
-                    $donorIds[]=$_POST['pdf'][$i];
-                }
-                if (sizeof($donorIds)>0){
-                    if (!class_exists("TCPDF")){
-                        self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
-                        return false;
-                    }
-                    $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
-                    $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-                    $pdf->SetFont('helvetica', '', 12);
-                    $pdf->setPrintHeader(false);
-                    $pdf->setPrintFooter(false); 
-                    $path=dn_plugin_base_dir()."/resources/YearEndReceipt".$year.".pdf"; //not acceptable on live server...
-                    foreach ($donorList as $donor){
-                        $donor->year_receipt_email($year);
-                        $pdf->AddPage();
-                        $pdf->writeHTML("<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body, true, false, true, false, '');
-                        if ($_REQUEST['blankBack'] && $pdf->PageNo()%2==1){ //add page number check
-                            $pdf->AddPage();
-                        }
-                    }                    
-                    $pdf->Output($path, 'F');
-                  
-                    self::display_notice("Outputed Year End PDF: <a target=\"pdf\" href=\"".$path."\">Download</a>");
-                }
-
-            }elseif($_POST['Function']=='SendYearEndEmail'){               
-                if (sizeof($_POST['emails'])<$limit) $limit=sizeof($_POST['emails']);
-                for($i=0;$i<$limit;$i++){
-                    $donorIds[]=$_POST['emails'][$i];
-                }
-                
-                if (sizeof($donorIds)>0){
-                    $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
-                    foreach ($donorList as $donor){                        
-                        $donor->year_receipt_email($year);
-                        //self::dd("I am before here");
-                        if (wp_mail($donor->Email, $donor->emailBuilder->subject, $donor->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){                            
-                            $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$donor->Email,"DateSent"=>date("Y-m-d H:i:s")));                            
-                            $dr->save();                     
-                        }                      
-                    }
-                }
-                self::display_notice("E-mailed Year End Receipts to  $limit of  ".sizeof($_POST['emails']));
-
-            }
-            self::summary_list_year($_GET['Year']);
-            return true;
         }elseif($_POST['Function']=='MergeConfirm'){ 
             $donorA=Donor::get_by_id($_POST['MergeFrom']);
             $donorB=Donor::get_by_id($_POST['MergedId']);
@@ -388,17 +332,10 @@ class Donor extends ModelLite {
                 $donorB->merge_form_compare($donorA);
             }
             return true;
-        }elseif ($_GET['DonorId']){	
-            if ($_POST['Function']=="year_receipt_pdf" && $_GET['Year']){
-                $donor=Donor::get_by_id($_REQUEST['DonorId']);
-                $file= $donor->year_receipt_pdf($_GET['Year']);  
-                $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$_GET['Year'],"Type"=>"m","Address"=>$donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s")));
-                $dr->save();             
-            }
-
+        }elseif ($_GET['DonorId']){
             if ($_GET['f']=="YearReceipt"){
                 $donor=Donor::get_by_id($_REQUEST['DonorId']);
-                print $donor->year_receipt_form($_GET['Year']);
+                $donor->year_receipt_form($_GET['Year']);
                 return true;
             }
             
@@ -471,6 +408,18 @@ class Donor extends ModelLite {
         }
     }
 
+    function mailing_address($seperator="<br>",$include_name=true){
+        $address="";
+        if ($this->Address1) $address.=$this->Address1.$seperator;
+        if ($this->Address2) $address.=$this->Address2.$seperator;
+        if ($this->City || $this->Region) $address.=$this->City." ".$this->Region." ".$this->PostalCode." ".$this->Country;
+        $nameLine=$this->name_combine();
+        if ($address&&$include_name){
+            $address=$nameLine.(trim($address)?$seperator.$address:"");
+        }
+        return trim($address);
+    }
+
     function name_check(){        
         return self::name_check_individual($this->Name).($this->Name2?" & ".self::name_check_individual($this->Name2):"");
     }
@@ -494,7 +443,7 @@ class Donor extends ModelLite {
     static function summary_list($where=[],$year=null){
         $total=0;
         $where[]="Status>=0";
-        $where[]="Type>=1";
+        $where[]="Type>=1";        
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE ".implode(" AND ",$where)." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY  SUM(Gross) DESC,COUNT(*) DESC";
         $results = self::db()->get_results($SQL);
         ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
@@ -526,10 +475,16 @@ class Donor extends ModelLite {
         foreach ($results as $r){
             $receipts[$r->DonorId][]=new DonationReceipt($r);
         }
-
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxExcempt=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
+        ## Find NOT Tax Deductible entries
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxDeductible>0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
         $results = self::db()->get_results($SQL);
-        ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
+        foreach ($results as $r){
+            $notTaxDeductible[$r->DonorId]=$r;
+        }
+
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxDeductible=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
+        $results = self::db()->get_results($SQL);
+        ?><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
         <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>
         <script>
             function toggleChecked(source,name){                
@@ -538,12 +493,14 @@ class Donor extends ModelLite {
                     checkboxes[i].checked = source.checked;
                 }                    
             }
-        </script> E-mail</th><th><input type="checkbox" checked onClick="toggleChecked(this,'pdf[]');")/> PDF</th><th>Sent</th></tr><?php
+        </script> E-mail</th><th><input type="checkbox" checked onClick="toggleChecked(this,'pdf[]');")/> PDF</th><th>Sent</th><th>Not Tax Deductible</th><th>Donor Total</th></tr><?php
         $total=0;
         foreach ($results as $r){
             $donor=new self($r);
+            $donorTotal=$r->Total;
             ?>
-            <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
+            <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td>
+            <td><?php print $donor->name_check()?></td>
             <td><?php print $donor->display_email()?></td>            
             <td><?php print $r->donation_count?></td>
             <td align=right><?php print number_format($r->Total,2)?></td><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
@@ -559,8 +516,16 @@ class Donor extends ModelLite {
             ?></td><td><?php
             //self::dump($receipts[$r->DonorId]);
             print DonationReceipt::displayReceipts($receipts[$r->DonorId]);
-            ?></td></tr><?php
-            $total+=$r->Total;
+            ?></td>
+            <td><?php 
+                 if($notTaxDeductible[$r->DonorId]){
+                    print "Count: ".$notTaxDeductible[$r->DonorId]->donation_count." Total: ".number_format($notTaxDeductible[$r->DonorId]->Total,2);
+                    $donorTotal+=$notTaxDeductible[$r->DonorId]->Total;
+                 }?>
+             </td>
+             <td align=right><?php print number_format($donorTotal,2);?></td>
+            </tr><?php
+            $total+=$donorTotal;
         }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td><td></td></table>
         Limit: <Input type="number" name="limit" value="<?php print $_REQUEST['limit']?>" style="width:50px;"/>
         <button type="submit" name="Function" value="SendYearEndEmail">Send Year End E-mails</button>
@@ -568,6 +533,35 @@ class Donor extends ModelLite {
         </form>
         <?php
         return;
+    }
+
+    function receipt_table_generate($donations){
+        if (sizeof($donations)==0) return "";
+        $total=0;
+        $ReceiptTable='<table border="1" cellpadding="4"><tr><th width="115">Date</th><th width="330">Subject</th><th width="100">Amount</th></tr>';
+        foreach($donations as $r){
+            $lastCurrency=$r->Currency;
+            $total+=$r->Gross; 
+            $ReceiptTable.="<tr><td>".date("F j, Y",strtotime($r->Date))."</td><td>";
+            switch($r->PaymentSource){
+                case 1:
+                    $ReceiptTable.="Check".(is_numeric($r->TransactionID)?" #".$r->TransactionID:"");$ReceiptTable.=$r->Subject?" ".$r->Subject:"";
+                    break;
+                case "5":
+                    $ReceiptTable.="Paypal".($r->Subject?": ".$r->Subject:"");
+                    break;
+                case "6": 
+                    $ReceiptTable.="ACH/Wire".($r->Subject?": ".$r->Subject:($r->TransactionID?" #".$r->TransactionID:""));
+                    break;
+                default:  $ReceiptTable.= $r->Subject;
+                break;                  
+            } 
+            if (!$r->Subject && $r->CategoryId) $ReceiptTable.=" ".$r->show_field("CategoryId",['showId'=>false]) ;
+                        
+            $ReceiptTable.="</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';            
+        }
+        $ReceiptTable.="<tr><td colspan=\"2\"><strong>Total:</strong></td><td align=\"right\"><strong>".trim(number_format($total,2)." ".$lastCurrency)."</strong></td></tr></table>";
+        return $ReceiptTable;
     }
 
     function year_receipt_email($year){
@@ -581,32 +575,29 @@ class Donor extends ModelLite {
         }
         $this->emailBuilder->pageID=$page->ID;
         $total=0;
-        $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'","NotTaxExcempt=0"),'Date');
-        if ($donations){
-            $ReceiptTable='<table border="1" cellpadding="4"><tr><th width="115">Date</th><th width="330">Subject</th><th width="100">Amount</th></tr>';
-            foreach($donations as $r){
-                $ReceiptTable.="<tr><td>".date("F j, Y",strtotime($r->Date))."</td><td>";
-                switch($r->PaymentSource){
-                    case 1:
-                        $ReceiptTable.="Check".(is_numeric($r->TransactionID)?" #".$r->TransactionID:"");$ReceiptTable.=$r->Subject?" ".$r->Subject:"";
-                        break;
-                    case "5":
-                        $ReceiptTable.="Paypal".($r->Subject?": ".$r->Subject:"");
-                        break;
-                    case "6": 
-                        $ReceiptTable.="ACH/Wire".($r->Subject?": ".$r->Subject:($r->TransactionID?" #".$r->TransactionID:""));
-                        break;
-                    default:  $ReceiptTable.= $r->Subject;
-                    break;                  
-                } 
-                if (!$r->Subject && $r->CategoryId) $ReceiptTable.=" ".$r->show_field("CategoryId",['showId'=>false]) ;
-                            
-                $ReceiptTable.="</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';
-                $total+=$r->Gross;
-                $lastCurrency=$r->Currency;
+        $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'"),'Date');
+        foreach($donations as $r){
+            if ($r->NotTaxDeductible==0){
+                $taxDeductible[]=$r;
+                $total+=$r->Gross;                
+            }else{
+                $notTaxDeductible[]=$r;
+                $nteTotal+=$r->Gross;
             }
-            $ReceiptTable.="<tr><td colspan=\"2\"><strong>Total:</strong></td><td align=\"right\"><strong>".trim(number_format($total,2)." ".$lastCurrency)."</strong></td></tr></table>";
-        }else{ $ReceiptTable="<div><em>No Donations found in ".$year."</div>";}
+        }
+        $ReceiptTable="";
+        if (sizeof($taxDeductible)>0){
+            $ReceiptTable.=$this->receipt_table_generate($taxDeductible);
+        }
+
+        if (sizeof($notTaxDeductible)>0){
+            $plural=sizeof($notTaxDeductible)==1?"":"s";
+            if ($ReceiptTable){
+                $ReceiptTable.="<p>Additionally the following gift".$plural."/grant".$plural." totaling <strong>$".number_format($nteTotal,2)."</strong> ".($plural=="s"?"were":"was")." given for which you may have already received a tax deduction. Consult a tax professional on whether these gifts can be claimed:</p>";
+            }
+            $ReceiptTable.=$this->receipt_table_generate($notTaxDeductible);
+        }
+        if ($ReceiptTable=="") $ReceiptTable="<div><em>No Donations found in ".$year."</div>";
         
         $organization=get_option( 'donation_Organization');
         if (!$organization) $organization=get_bloginfo('name');
@@ -620,7 +611,7 @@ class Donor extends ModelLite {
         $body=trim(str_replace("##ContactTitle##", get_option( 'donation_ContactTitle' ),$body)); 
         $body=trim(str_replace("##ContactEmail##", get_option( 'donation_ContactEmail' ),$body)); 
         ### generated variables
-        $body=str_replace("##Name##",$this->Name.($this->Name2?" & ".$this->Name2:""),$body);
+        $body=str_replace("##Name##",$this->name_combine(),$body);
         $body=str_replace("##Year##",$year,$body);
         $body=str_replace("##DonationTotal##","$".number_format($total,2),$body);
         $body=str_replace("<p>##ReceiptTable##</p>",$ReceiptTable,$body);
@@ -660,37 +651,49 @@ class Donor extends ModelLite {
         $this->year_receipt_email($year);  
         $form="";      
         if ($_POST['Function']=="SendYearReceipt" && $_POST['Email']){
-            if (wp_mail($_POST['Email'], $this->emailBuilder->subject, $this->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){ 
+            $html=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']) :$this->emailBuilder->body;
+            //
+            if (wp_mail($_POST['Email'], $this->emailBuilder->subject,$html,array('Content-Type: text/html; charset=UTF-8'))){ 
                 $form.="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$_POST['Email']."</div>";
-                $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$_POST['Email'],"DateSent"=>date("Y-m-d H:i:s")));
+                $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$_POST['Email'],"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
                 $dr->save();
+                self::display_notice($year." Year End Receipt Sent to: ".$_POST['Email']);
             }
-        }
-
-        $f=$this->receipt_file_info($year);
-        ### Form View
-        $form.='<div class="no-print"><hr><form method="post">Send Receipt to: <input type="email" name="Email" value="'.($_POST['Email']?$_POST['Email']:$this->Email).'"/><button type="submit" name="Function" value="SendYearReceipt">Send E-mail</button>
-        <button type="submit" name="Function" value="year_receipt_pdf">Generate PDF</button>';
-        if (file_exists($f['path'])){
-            $form.=' View <a target="pdf" href="'.$f['link'].'">'.$f['file'].'</a>';
-        }
+        }        
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","`KeyType`='YearEnd'","`KeyId`='".$year."'"));
-        $form.=DonationReceipt::show_results($receipts);
-        $form.='</form>';
+        $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
+        $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body;
 
-        $form.="<div><a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>Edit Template</a></div>";
-      
         $homeLinks="<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
-        return $homeLinks."<h2>".$this->emailBuilder->subject."</h2>".$this->emailBuilder->body.$form;
+        print $homeLinks;
+        print '<form method="post">';
+        print "<h2>".$this->emailBuilder->subject."</h2>";             
+       
+
+        wp_editor($bodyContent, 'customMessage',array("media_buttons" => false,"wpautop"=>false));
+
+        
+        ### Form View
+        print '<div class="no-print"><hr>Send Receipt to: <input type="email" name="Email" value="'.($_POST['Email']?$_POST['Email']:$this->Email).'"/><button type="submit" name="Function" value="SendYearReceipt">Send E-mail</button>
+        <button type="submit" name="Function" value="YearEndReceiptPdf">Generate PDF</button>';
+       
+        print DonationReceipt::show_results($receipts);
+        print '</form>';
+        if ($this->emailBuilder->pageID){
+            print "<div><a target='pdf' href='?page=donor-settings&tab=email&DonorTemplateId=".$this->emailBuilder->pageID."&edit=t'>Edit Template</a></div>";      
+        }
+
+        return true;
     }
-    function year_receipt_pdf($year){
+
+    function year_receipt_pdf($year,$customMessage=null){
         if (!class_exists("TCPDF")){
             self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
             return false;
         }
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         $this->year_receipt_email($year);
-        $html="<h2>".$this->emailBuilder->subject."</h2>".$this->emailBuilder->body;
+        $html="<h2>".$this->emailBuilder->subject."</h2>".$customMessage?$customMessage:$this->emailBuilder->body;
         $pdf->SetFont('helvetica', '', 10);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
@@ -699,8 +702,14 @@ class Donor extends ModelLite {
         $f=$this->receipt_file_info($year);
         $file=$f['file'];
         $path=$f['path'];
-        $pdf->Output($path, 'F');
-        return array('path'=>$path,'file'=>$file);
+
+        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$this->mailing_address(),"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
+		$dr->save();  
+        if ($pdf->Output($path, 'D')){
+            return true;
+        }else{
+            return false;
+        }
     }
     function receipt_file_info($year){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-'.$year.'.pdf';

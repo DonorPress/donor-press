@@ -1,5 +1,5 @@
 <?php
-$tabs=['uploads'=>'Recent Uploads/Syncs','stats'=>'Stats','reg'=>"Regression",'trends'=>'Trends'];
+$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','hist'=>'History','reg'=>"Regression"];
 $active_tab=Donor::show_tabs($tabs,$active_tab);
 ?>
 <div id="pluginwrap">
@@ -25,8 +25,11 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 		case "uploads":
 			Donation::donation_upload_groups();
 		break;
-		case "stats":
+		case "year":
 			year_end_summmaries();
+			break;
+		case "hist":
+			report_history();
 		break;
 		case "reg":
 			donor_regression();
@@ -46,32 +49,174 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 </div>
 <?php
 
-function year_end_summmaries(){?>	
+function year_end_summmaries(){ ?>	
 	<div><strong>Year End Tax Summaries:</strong> <?php
 	for($y=date("Y");$y>=date("Y")-4;$y--){
 		?><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&f=YearSummaryList&Year=<?php print $y?>"><?php print $y?></a> | <?php
-	}
-	
+	}	
 	?></div>
+	<?php
+
+	if($_GET['f']=="YearSummaryList" && $_GET['Year']){
+		$year=$_GET['Year'];
+		$limit=$_REQUEST['limit'];
+		if (!$_REQUEST['limit']) $limit=1000;
+
+		if($_POST['Function']=='SendYearEndPdf'){
+			if (sizeof($_POST['pdf'])<$limit) $limit=sizeof($_POST['pdf']);
+			for($i=0;$i<$limit;$i++){
+				$donorIds[]=$_POST['pdf'][$i];
+			}
+			if (sizeof($donorIds)>0){
+				if (!class_exists("TCPDF")){
+					Donation::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+					return false;
+				}
+				$donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
+				$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+				$pdf->SetFont('helvetica', '', 12);
+				$pdf->setPrintHeader(false);
+				$pdf->setPrintFooter(false); 
+				$path=dn_plugin_base_dir()."/resources/YearEndReceipt".$year.".pdf"; //not acceptable on live server...
+				foreach ($donorList as $donor){
+					$donor->year_receipt_email($year);
+					$pdf->AddPage();
+					$pdf->writeHTML("<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body, true, false, true, false, '');
+					if ($_REQUEST['blankBack'] && $pdf->PageNo()%2==1){ //add page number check
+						$pdf->AddPage();
+					}
+					$dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$donor->Email,"Content"=>"<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
+					$dr->save();
+				}                    
+				$pdf->Output($path, 'F');
+			  
+				Donation::display_notice("Outputed Year End PDF: <a target=\"pdf\" href=\"".$path."\">Download</a>");
+			}
+
+		}elseif($_POST['Function']=='SendYearEndEmail'){               
+			if (sizeof($_POST['emails'])<$limit) $limit=sizeof($_POST['emails']);
+			for($i=0;$i<$limit;$i++){
+				$donorIds[]=$_POST['emails'][$i];
+			}
+			
+			if (sizeof($donorIds)>0){
+				$donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
+				foreach ($donorList as $donor){                        
+					$donor->year_receipt_email($year);					
+					if (wp_mail($donor->Email, $donor->emailBuilder->subject, $donor->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){                            
+						$dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$donor->Email,"Content"=>$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
+						$dr->save();                     
+					}                      
+				}
+			}
+			Donation::display_notice("E-mailed Year End Receipts to  $limit of  ".sizeof($_POST['emails']));
+
+		}
+		Donor::summary_list_year($_GET['Year']);
+		return true;
+	}
+}
+
+function report_history(){ 
+	$top=is_int($_GET['top'])?$_GET['top']:1000;	
+	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';
+	
+	?>
 	<form method="get">
 		<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
 		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
-	Source: <select name="PaymentSource"><?php
-	$paymentSource=array(0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Paypal","6"=>"ACH/Bank Transfer");
-	foreach($paymentSource as $key=>$label){
-		?><option value="<?php print $key?>"><?php print $key." - ".$label?></option><?php
-	}
-	?></select>
-	Year: <select name="Year">
-	<?php for($y=date("Y");$y>=date("Y")-4;$y--){?>
-		?><option value="<?php print $y;?>"><?php print $y;?></option>
-	<?php }?>
-	</select>
-	
+        Top: <input type="number" name="top" value="<?php print $top?>"/>
+		Dates From <input type="date" name="df" value="<?php print $_GET['df']?>"/> to 
+		<input type="date" name="dt" value="<?php print $_GET['dt']?>"/> 
+		Date Field: <select name="dateField"><?php 
+		foreach (Donation::s()->dateFields as $field=>$label){?>
+			<option value="<?php print $field?>"<?php print $dateField==$field?" selected":""?>><?php print $label?> Date</option>
+		<?php } ?>
+        </select>
+		<br>
+		Amount:  <input type="number" increment=".01" name="af" value="<?php print $_GET['af']?>"/>
+		to <input type="number" increment=".01" name="at" value="<?php print $_GET['at']?>"/>
+		Category:
+		<?php print DonationCategory::select(['Name'=>'CategoryId']);?>
+		<br>
+		Source: 		<select name="PaymentSource">
+			<option value="_ALL">--All--</option>
+			<?php			
+			foreach(Donation::s()->tinyIntDescriptions["PaymentSource"] as $key=>$label){
+				?><option value="<?php print $key?>"<?php print !is_null($_GET['PaymentSource']) && $key==$_GET['PaymentSource']?" selected":""?>><?php print $key." - ".$label?></option><?php
+			}?>
+		</select>		
 
-	<button name="f" value="ViewPaymentSourceYearSummary">Go</button>
-	</form>	
-	<?php
+		Type:
+		<select name="Type">
+			<option value="_ALL">--All--</option>
+			<?php			
+			foreach(Donation::s()->tinyIntDescriptions["Type"] as $key=>$label){
+				?><option value="<?php print $key?>"<?php print !is_null($_GET['Type']) && $key==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
+			}?>
+		</select>
+		Tax Deductible:
+		<select name="NotTaxDeductible">
+			<option value="_ALL">--All--</option>
+			<option value="0"<?php print !is_null($_GET['NotTaxDeductible']) && $_GET['NotTaxDeductible']==0?" selected":""?>>Yes</option>
+			<option value="1"<?php print $_GET['NotTaxDeductible']==1?" selected":""?>>No - Grants/Donor Advised Funds, etc.</option>
+		</select>
+		<button name="f" value="Go">Go</button>
+	</form>	<?php
+	if($_GET['f']=="Go"){
+		$where=["DT.Status>0"];
+		if (isset($_GET['PaymentSource'])&& $_GET['PaymentSource']!="_ALL"){
+			$where[]="PaymentSource='".$_GET['PaymentSource']."'";			
+		}	
+		if (isset($_GET['Type'])&& $_GET['Type']!="_ALL"){
+			$where[]="PaymentSource='".$_GET['PaymentSource']."'";			
+		}
+		if (isset($_GET['NotTaxDeductible'])&& $_GET['NotTaxDeductible']!="_ALL"){
+			$where[]="NotTaxDeductible='".$_GET['NotTaxDeductible']."'";			
+		}
+		if ($_GET['df']){
+			$where[]="`$dateField`>='".$_GET['df'].($dateField=="Date"?"":" 00:00:00")."'";
+		}
+		if ($_GET['dt']){
+			$where[]="`$dateField`<='".$_GET['dt'].($dateField=="Date"?"":" 23:59:59")."'";
+		}
+		if ($_GET['CategoryId']){
+			$where[]="CategoryId='".$_GET['CategoryId']."'";
+		}
+
+		if ($_GET['af']){
+			$where[]="DT.Gross>='".$_GET['af']."'";
+		}
+		if ($_GET['at']){
+			$where[]="DT.Gross<='".$_GET['at']."'";
+		}
+
+		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId
+        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId LIMIT ".$top;      
+        $results = Donation::db()->get_results($SQL);
+        ?><table class="dp"><tr><th>DonationId</th><th>Name</th><th>Transaction</th><th>Amount</th><th>Date</th><th>Deposit Date</th><th>Tax Deductible</th><th>Category</th><th>Subject</th><th>Note</th></tr><?php
+        foreach ($results as $r){
+			$donation=new Donation($r);
+			$donor=new Donor($r);
+			?>
+            <tr>
+            <td><a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>"><?php print $r->DonationId?></a> | <a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>&edit=t">Edit</a></td>
+                <td><?php print $donor->name_combine()?></td>
+            <td><?php print ($donation->Source?$donation->Source." | ":"").$donation->show_field("PaymentSource")." - ".$r->TransactionID?></td>
+            <td align=right><?php print number_format($r->Gross,2)?></td>
+            <td><?php print $r->Date?></td>
+            <td><?php print $r->DateDeposited?></td>
+			<td><?php print $r->NotTaxDeductible?"No":"Yes"?></td>
+			<td><?php print $donation->show_field("CategoryId");?></td>
+			<td><?php print $r->Subject?></td>
+			<td><?php print $donation->show_field("Note");?></td>
+            </tr>
+			<?php
+        }
+        ?></table>
+		<?php
+	}
 }
 
 

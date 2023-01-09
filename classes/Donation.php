@@ -7,7 +7,7 @@ class Donation extends ModelLite
     protected $table = 'Donation';
 	protected $primaryKey = 'DonationId';
 	### Fields that can be passed //,"Time","TimeZone"
-    public $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxExcempt","QBOInvoiceId"];	 
+    public $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxDeductible","QBOInvoiceId"];	 
 
     public $flat_key = ["Date","Name","Gross","FromEmailAddress","TransactionID"];
     protected $duplicateCheck=["Date","Gross","FromEmailAddress","TransactionID"]; //check these fields before reinserting a matching entry.
@@ -18,10 +18,10 @@ class Donation extends ModelLite
         "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer","10"=>"Paypal"],
         "Type"=>[0=>"Other",1=>"Donation Payment",2=>"Website Payment",5=>"Subscription Payment",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
         "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"],
-        "NotTaxExcempt"=>["0"=>"Tax Exempt","1"=>"Not Tax Excempt (Donor Advised fund, etc)"]
+        "NotTaxDeductible"=>["0"=>"Tax Deductible","1"=>"Not Tax Deductible (Donor Advised fund, etc)"]
     ];
 
-    protected $dateFields=[
+    public $dateFields=[
         "CreatedAt"=>"Upload",
         "DateDeposited"=>"Deposit",
         "Date"=>"Donated"
@@ -74,7 +74,7 @@ class Donation extends ModelLite
         }
         //Fields we should drop:
         $donation->AddressStatus=$payer->address_status=="Y"?1:-1;    
-        $donation->NotTaxExcempt =0;
+        $donation->NotTaxDeductible =0;
 
         return $donation;
 
@@ -267,15 +267,19 @@ class Donation extends ModelLite
     }
 
     static public function donation_upload_groups(){
+        $limit=is_int($_GET['limit'])?$_GET['limit']:20;
         $wpdb=self::db();  
         $SQL="SELECT `CreatedAt`,MIN(`DateDeposited`) as DepositedMin, MAX(`DateDeposited`) as DepositedMax,COUNT(*) as C,Count(R.ReceiptId) as ReceiptSentCount
         FROM ".Donation::get_table_name()." D
         LEFT JOIN ".DonationReceipt::get_table_name()." R
         ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE 1
-        Group BY `CreatedAt` Order BY `CreatedAt` DESC LIMIT 20";
+        Group BY `CreatedAt` Order BY `CreatedAt` DESC LIMIT ".$limit;
          $results = $wpdb->get_results($SQL);
          ?><h2>Upload Groups</h2>
-         <form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+         <form method="get" action="">
+            <input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+            <input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
+            Limit: <input type="number" name="limit" value="<?php print $limit?>"/>
 			Summary From <input type="date" name="df" value="<?php print $_GET['df']?>"/> to <input type="date" name="dt" value="<?php print $_GET['dt']?>"/> Date Field: <select name="dateField">
             <?php foreach (self::s()->dateFields as $field=>$label){?>
                 <option value="<?php print $field?>"<?php print $_GET['dateField']==$field?" selected":""?>><?php print $label?> Date</option>
@@ -360,7 +364,8 @@ class Donation extends ModelLite
                 }
 
             }else{?>
-                <form method="post"><button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
+                <form method="post">
+                    <button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
                 <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th></tr><?php
                 foreach($donations as $r){
                     $donation=new Donation($r);
@@ -420,11 +425,6 @@ class Donation extends ModelLite
 
             $donation->edit_simple_form();           
             return true;
-        }elseif($_GET['f']=="ViewPaymentSourceYearSummary" && $_GET['Year']){
-            self::summary_by_payment_source($_GET['PaymentSource'],$_GET['Year']);
-            print "coming soon";
-            return true;
-            
         }elseif ($_POST['Function']=="Cancel" && $_POST['table']=="Donation"){
             $donor=Donor::get_by_id($_POST['DonorId']);
             $donor->view();
@@ -558,7 +558,7 @@ class Donation extends ModelLite
        ?></select></td></tr>
        <tr><td align="right">Subject</td><td><input type="text" name="Subject" value="<?php print $this->Subject?>"></td></tr>
         <tr><td align="right">Note</td><td><textarea name="Note"><?php print $this->Note?></textarea></td></tr>
-        <tr><td align="right">Tax Excempt</td><td><?php print $this->select_drop_down('NotTaxExcempt')?><div><em>Set to "Not Tax Exempt" if they have already been giving credit for the donation by donating through a donor advised fund.</div></td></tr>
+        <tr><td align="right">Tax Deductible</td><td><?php print $this->select_drop_down('NotTaxDeductible')?><div><em>Set to "Not Tax Deductible" if they have already been giving credit for the donation by donating through a donor advised fund.</div></td></tr>
         <tr></tr><tr><td colspan="2"><button type="submit" class="Primary" name="Function" value="Save">Save</button><button type="submit" name="Function" class="Secondary" value="Cancel" formnovalidate>Cancel</button>
         <?php 
         if ($this->DonationId){
@@ -575,7 +575,7 @@ class Donation extends ModelLite
         if ($this->emailBuilder) return;
         $this->emailBuilder=new stdClass();
         
-        if ($this->NotTaxExcempt==1){                   
+        if ($this->NotTaxDeductible==1){                   
             $page = DonorTemplate::get_by_name('no-tax-thank-you');  
             if (!$page){ ### Make the template page if it doesn't exist.
                 self::make_receipt_template_no_tax();
@@ -605,7 +605,7 @@ class Donation extends ModelLite
         $subject=$page->post_title;
         $body=$page->post_content;
         $body=trim(str_replace("##Organization##",$organization,$body));
-        $body=str_replace("##Name##",$this->Donor->Name.($this->Donor->Name2?" & ".$this->Donor->Name2:""),$body);
+        $body=str_replace("##Name##",$this->Donor->name_combine(),$body);
         //$body=str_replace("##Year##",$year,$body);
         $body=str_replace("##Gross##","$".number_format($this->Gross,2),$body);
        // $body=str_replace("<p>##ReceiptTable##</p>",$ReceiptTable,$body);
@@ -731,7 +731,7 @@ class Donation extends ModelLite
                 `PaymentSource` tinyint(4) DEFAULT NULL,
                 `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `NotTaxExcempt` tinyint(4) DEFAULT '0' COMMENT '0=TaxExempt 1=Not Tax Excempt',
+                `NotTaxDeductible` tinyint(4) DEFAULT '0' COMMENT '0=Tax Deductible 1=Not Tax Deductible',
                 QBOInvoiceId int(11) DEFAULT NULL,
                 PRIMARY KEY (`DonationId`)
                 )";               
@@ -739,29 +739,6 @@ class Donation extends ModelLite
     }
 
     
-
-    static public function summary_by_payment_source($paymentSource,$year){ 
-        $SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource       
-        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-        WHERE YEAR(Date)='".$year."' AND  Status>=0  AND PaymentSource='".$paymentSource."' Order BY DT.Date,DonationId";
-        //AND Type>=0
-        //print $SQL;
-        $results = self::db()->get_results($SQL);
-        //return;
-        ?><table class="dp"><tr><th>DonationId</th><th>Name</th><th>Transaction Id</th><th>Amount</th><th>Date</th><th>Deposit Date</th></tr><?php
-        foreach ($results as $r){?>
-            <tr>
-            <td><a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>"><?php print $r->DonationId?></a> | <a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>&edit=t">Edit</a></td>
-                <td><?php print $r->Name?></td>
-            <td><?php print $r->TransactionID?></td>
-            <td align=right><?php print number_format($r->Gross,2)?></td>
-            <td><?php print $r->Date?></td>
-            <td><?php print $r->DateDeposited?></td>
-            </tr><?php
-        }
-        ?></table><?php
-    }
-
     public function receipt_form(){  
             
         $this->receipt_email();            
@@ -773,7 +750,8 @@ class Donation extends ModelLite
         print "<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
         $file=$this->receipt_file_info();
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","KeyType='DonationId'","KeyId='".$this->DonationId."'"));
-        $bodyContent=$receipts[0]->Content?$receipts[0]->Content:$this->emailBuilder->body; //retrieve last saved custom message
+        $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
+        $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
         $bodyContent=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']):$bodyContent; //Post value overrides this though.
         if (CustomVariables::get_option('QuickbooksClientId',true) && !$this->QBOInvoiceId){
             print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';

@@ -284,24 +284,13 @@ class ModelLite{
 	public function phone_format($phone){
         return preg_replace('~.*(\d{3})[^\d]{0,7}(\d{3})[^\d]{0,7}(\d{4}).*~', '($1) $2-$3', $phone);
     }
-
-	function mailing_address($seperator="<br>",$include_name=true){
-        $address="";
-        if ($this->Address1) $address.=$this->Address1.$seperator;
-        if ($this->Address2) $address.=$this->Address2.$seperator;
-        if ($this->City || $this->Region) $address.=$this->City." ".$this->Region." ".$this->PostalCode." ".$this->Country;
-        $nameLine=$this->Name.($this->Name2?" & ".$this->Name2:"");
-        if ($include_name){
-            $address=$nameLine.(trim($address)?$seperator.$address:"");
-        }
-        return trim($address);
-    }
 	
 	public function show_field($fieldName,$settings=[]){
 		$v=$this->$fieldName;
 		switch($fieldName){
 			case "Address":
-				return $this->mailing_address(", ");
+				if (get_class($this)=='Donor') return $this->mailing_address(", ");
+				else return $this->Address;
 				break;
 			case "Phone":
 				return $this->phone_format($v);
@@ -312,7 +301,7 @@ class ModelLite{
 				return $v?number_format($v,2):"";
 			break;
 			case "Content":
-				return "<div><a href='#' onclick=\"toggleDisplay('message_".$this->ReceiptId."');return false;\">Show/Hide</a></div><div style='display:none;' id='message_".$this->ReceiptId."'>".$v."</div>";
+				return ($v?"<div><a href='#' onclick=\"toggleDisplay('message_".$this->ReceiptId."');return false;\">Show/Hide</a></div><div style='display:none;' id='message_".$this->ReceiptId."'>".$v."</div>":"<div><em>Standard Message</em></div>");
 				break;
 			case "QBOInvoiceId":
 				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a>';
