@@ -510,9 +510,9 @@ class Donor extends ModelLite {
              }
             ?></td>
             <td><?php
-             if ($r->Address1 && $r->City) {
-                ?><input name="pdf[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId]|| $r->donation_count<2?"":" checked")?>/><?php
-             }
+             //if ($r->Address1 && $r->City) {
+                ?><input name="pdf[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId]?"":" checked")?>/><?php
+             //}
             ?></td><td><?php
             //self::dump($receipts[$r->DonorId]);
             print DonationReceipt::displayReceipts($receipts[$r->DonorId]);
