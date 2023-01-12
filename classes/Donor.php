@@ -408,11 +408,14 @@ class Donor extends ModelLite {
         }
     }
 
-    function mailing_address($seperator="<br>",$include_name=true){
+    function mailing_address($seperator="<br>",$include_name=true,$settings=[]){
         $address="";
         if ($this->Address1) $address.=$this->Address1.$seperator;
         if ($this->Address2) $address.=$this->Address2.$seperator;
-        if ($this->City || $this->Region) $address.=$this->City." ".$this->Region." ".$this->PostalCode." ".$this->Country;
+        if ($this->City || $this->Region) $address.=$this->City." ".$this->Region." ".$this->PostalCode;
+      
+        if ($settings['DefaultCountry'] && $settings['DefaultCountry']==$this->Country){}
+        else $address.=" ".$this->Country;
         $nameLine=$this->name_combine();
         if ($address&&$include_name){
             $address=$nameLine.(trim($address)?$seperator.$address:"");
@@ -476,16 +479,16 @@ class Donor extends ModelLite {
             $receipts[$r->DonorId][]=new DonationReceipt($r);
         }
         ## Find NOT Tax Deductible entries
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxDeductible>0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxDeductible>0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){
             $notTaxDeductible[$r->DonorId]=$r;
         }
 
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxDeductible=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxDeductible=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country Order BY COUNT(*) DESC, SUM(Gross) DESC";
         $results = self::db()->get_results($SQL);
         ?><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
-        <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>
+        <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Mailing</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>
         <script>
             function toggleChecked(source,name){                
                 checkboxes = document.getElementsByName(name);
@@ -499,9 +502,11 @@ class Donor extends ModelLite {
             $donor=new self($r);
             $donorTotal=$r->Total;
             ?>
-            <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td>
+            <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> 
+            <a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&edit=t">edit</a></td>
             <td><?php print $donor->name_check()?></td>
-            <td><?php print $donor->display_email()?></td>            
+            <td><?php print $donor->display_email()?></td> 
+            <td><?php print $donor->mailing_address("<br>",false)?></td>             
             <td><?php print $r->donation_count?></td>
             <td align=right><?php print number_format($r->Total,2)?></td><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
             <td><?php
@@ -530,6 +535,11 @@ class Donor extends ModelLite {
         Limit: <Input type="number" name="limit" value="<?php print $_REQUEST['limit']?>" style="width:50px;"/>
         <button type="submit" name="Function" value="SendYearEndEmail">Send Year End E-mails</button>
         <button type="submit" name="Function" value="SendYearEndPdf">Send Year End Pdf</button> <label><input type="checkbox" name="blankBack" value="t"> Print Blank Back</label>
+        <div>
+            <button name="Function" value="ExportDonorList">Export Donor List</button>
+            <button name="Function" value="PrintYearEndLabels">Print Labels</button>
+            Labels Start At: <strong>Column:</strong> (1-3) &#8594; <input name="col" type="number" value="1"  min="1" max="3" /> &#8595; <strong>Row:</strong> (1-10)<input name="row" type="number" value="1" min="1" max="10"   />
+        <em>Designed for 1"x2.625" address label sheets -30 Labels total on 8.5"x11" Paper. When printing, make sure there is NO printer scaling.</div>
         </form>
         <?php
         return;
@@ -538,7 +548,7 @@ class Donor extends ModelLite {
     function receipt_table_generate($donations){
         if (sizeof($donations)==0) return "";
         $total=0;
-        $ReceiptTable='<table border="1" cellpadding="4"><tr><th width="115">Date</th><th width="330">Subject</th><th width="100">Amount</th></tr>';
+        $ReceiptTable='<table border="1" cellpadding="4"><tr><th width="115">Date</th><th width="330">Reference</th><th width="100">Amount</th></tr>';
         foreach($donations as $r){
             $lastCurrency=$r->Currency;
             $total+=$r->Gross; 
@@ -711,6 +721,91 @@ class Donor extends ModelLite {
             return false;
         }
     }
+
+    static function YearEndReceiptMultiple($year,$donorIdPost,$limit,$blankBlack=false){
+        if (!$limit) $limit=1000;
+        if (sizeof($donorIdPost)<$limit) $limit=sizeof($donorIdPost);
+        for($i=0;$i<$limit;$i++){
+            $donorIds[]=$donorIdPost[$i];
+        }
+        if (sizeof($donorIds)>0){
+            if (!class_exists("TCPDF")){
+                Donation::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+                return false;
+            }
+            $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            $pdf->SetFont('helvetica', '', 12);
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false); 				
+            foreach ($donorList as $donor){
+                $donor->year_receipt_email($year);
+                $pdf->AddPage();
+                $pdf->writeHTML("<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body, true, false, true, false, '');
+                if ($blankBlack && $pdf->PageNo()%2==1){ //add page number check
+                    $pdf->AddPage();
+                }
+                $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$donor->mailing_address(),"Content"=>"<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
+                $dr->save();
+            }                    
+            $pdf->Output('YearEndReceipts2022.pdf', 'D');
+            return true;
+        }
+    }
+
+    static function YearEndLabels($year,$donorIdPost,$row_start=1,$col_start=1,$limit=100000){
+        if (sizeof($donorIdPost)<$limit) $limit=sizeof($donorIdPost);
+        if (!class_exists("TCPDF")){
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+            return false;
+        }       
+
+        $donors=Donor::get(["DonorId IN ('".implode("','",$donorIdPost)."')"],"",['key'=>true]);        
+        $a=[];
+        $defaultCountry=CustomVariables::get_option("DefaultCountry");       
+        foreach($donorIdPost as $id){
+            if ($donors[$id]){
+                $address=$donors[$id]->mailing_address("\n",true,['DefaultCountry'=>$defaultCountry]);
+                if(!$address) $address=$donors[$id]->name_combine();
+                if ($address) $a[]=$address;
+            }
+        }
+
+        $dpi=72;	
+        $pad=10;
+        $margin['x']=13.5;// 3/16th x
+        $margin['y']=.5*$dpi;
+        $pdf = new TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false); 
+        $pdf->SetFont('helvetica', '', 12);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false); 	
+
+        $pdf->AddPage();
+         /// $pdf_tmp->AddPage();
+        // $pdf_tmp->SetCellPadding($pad);
+        $pdf->SetCellPadding($pad);
+        $pdf->SetAutoPageBreak(true);
+        $pdf->SetMargins($margin['x'],$margin['y'],$margin['x']);
+        // set document information
+        $pdf->SetCreator('Donor-Press Plugin');
+        $pdf->SetAuthor('Donor-Press');
+        $pdf->SetTitle($year.'Year End Labels');	
+        //$pdf->setCellHeightRatio(1.1);       
+        $starti=($col_start>0?($col_start-1)%3:0)+($row_start>0?3*floor($row_start-1):0);
+        $border=0; $j=0;
+        for ($i=$starti;$i<sizeof($a)+$starti;$i++){
+            $col=$i%3;
+            $row=floor($i/3)%10;
+            if ($i%30==0 && $j!=0){ $pdf->AddPage();}
+            //$h=shrinkletters(2.625*$dpi,$dpi,$a[$j],12); //size cell			
+            $pdf->MultiCell(2.625*$dpi,1*$dpi,$a[$j],$border,"L",0,0,$margin['x']+$col*2.75*$dpi,$margin['y']+$row*1*$dpi,true);
+            $j++;		
+        }	
+        $pdf->Output("DonorPressYearEndLabels".$year.".pdf", 'D');
+
+    }
+
+
     function receipt_file_info($year){
         $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-'.$year.'.pdf';
         $link=dn_plugin_base_dir()."/resources/".$file; //Not acceptable on live server... May need to scramble code name on file so it isn't guessale.
@@ -800,18 +895,22 @@ class Donor extends ModelLite {
         fclose($fp);
     }
 
-    static function get_mail_list(){
+    static function get_mail_list($where=[]){
         $SQL="Select D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-        WHERE D.Address1<>''      
-        Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY D.Name";
-        print "<pre>".$SQL."</pre>";
-        $results = self::db()->get_results($SQL);
-        $fp = fopen(dn_plugin_base_dir()."/resources/address_list.csv", 'w');
+        WHERE ".(sizeof($where)>0?implode(" AND ",$where):" 1 ")."    
+        Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY D.Name";   
+        $results = self::db()->get_results($SQL);        
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=Donors.csv');
+        $fp = fopen('php://memory', 'r+');
         fputcsv($fp, array_keys((array)$results[0]));//write first line with field names
         foreach ($results as $r){
             fputcsv($fp, (array)$r);
         }
-        fclose($fp);
+        rewind($fp);
+         $csv_line = stream_get_contents($fp);
+         print $csv_line;
+         exit();
     }
 }

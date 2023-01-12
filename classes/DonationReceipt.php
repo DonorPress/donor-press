@@ -30,6 +30,7 @@ class DonationReceipt extends ModelLite {
             `Type` varchar(1) NOT NULL COMMENT 'e=email p=postal mail',
             `Address` text NOT NULL COMMENT 'email or postal address',
             `DateSent` datetime NOT NULL,
+            `Content` text,
             PRIMARY KEY (`ReceiptId`)
             )"; 
           dbDelta( $sql );

@@ -56,44 +56,11 @@ function year_end_summmaries(){ ?>
 	}	
 	?></div>
 	<?php
-
 	if($_GET['f']=="YearSummaryList" && $_GET['Year']){
 		$year=$_GET['Year'];
 		$limit=$_REQUEST['limit'];
 		if (!$_REQUEST['limit']) $limit=1000;
-
-		if($_POST['Function']=='SendYearEndPdf'){
-			if (sizeof($_POST['pdf'])<$limit) $limit=sizeof($_POST['pdf']);
-			for($i=0;$i<$limit;$i++){
-				$donorIds[]=$_POST['pdf'][$i];
-			}
-			if (sizeof($donorIds)>0){
-				if (!class_exists("TCPDF")){
-					Donation::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
-					return false;
-				}
-				$donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
-				$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-				$pdf->SetFont('helvetica', '', 12);
-				$pdf->setPrintHeader(false);
-				$pdf->setPrintFooter(false); 
-				$path=dn_plugin_base_dir()."/resources/YearEndReceipt".$year.".pdf"; //not acceptable on live server...
-				foreach ($donorList as $donor){
-					$donor->year_receipt_email($year);
-					$pdf->AddPage();
-					$pdf->writeHTML("<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body, true, false, true, false, '');
-					if ($_REQUEST['blankBack'] && $pdf->PageNo()%2==1){ //add page number check
-						$pdf->AddPage();
-					}
-					$dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$donor->Email,"Content"=>"<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
-					$dr->save();
-				}                    
-				$pdf->Output($path, 'F');
-			  
-				Donation::display_notice("Outputed Year End PDF: <a target=\"pdf\" href=\"".$path."\">Download</a>");
-			}
-
-		}elseif($_POST['Function']=='SendYearEndEmail'){               
+		if($_POST['Function']=='SendYearEndEmail'){         
 			if (sizeof($_POST['emails'])<$limit) $limit=sizeof($_POST['emails']);
 			for($i=0;$i<$limit;$i++){
 				$donorIds[]=$_POST['emails'][$i];

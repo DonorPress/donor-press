@@ -49,6 +49,15 @@ function donor_header_check() {
 			$donor=Donor::get_by_id($_REQUEST['DonorId']);
 			$donor->year_receipt_pdf($_REQUEST['Year'],stripslashes_deep($_REQUEST['customMessage']));
 			break;
+		case 'SendYearEndPdf':
+			Donor::YearEndReceiptMultiple($_REQUEST['Year'],$_POST['pdf'],$_REQUEST['limit'],$_REQUEST['blankBack']);
+		break;
+		case 'PrintYearEndLabels':
+			Donor::YearEndLabels($_REQUEST['Year'],$_POST['pdf'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
+		break;
+		case 'ExportDonorList':
+			Donor::get_mail_list(["D.DonorId IN (".implode(",",$_POST['pdf']).")"]);
+		break;
 	}
 
 	if ($_GET['donorAutocomplete']){
