@@ -1,5 +1,5 @@
 <?php
-$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','hist'=>'History','reg'=>"Regression"];
+$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donations'=>'Donations','reg'=>"Regression"];
 $active_tab=Donor::show_tabs($tabs,$active_tab);
 ?>
 <div id="pluginwrap">
@@ -28,8 +28,8 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 		case "year":
 			year_end_summmaries();
 			break;
-		case "hist":
-			report_history();
+		case "donations":
+			report_donations();
 		break;
 		case "reg":
 			donor_regression();
@@ -84,12 +84,12 @@ function year_end_summmaries(){ ?>
 	}
 }
 
-function report_history(){ 
+function report_donations(){ 
 	$top=is_int($_GET['top'])?$_GET['top']:1000;	
 	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';
 	
 	?>
-	<form method="get">
+	<form method="get" style="font-size:90%;">
 		<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
 		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
         Top: <input type="number" name="top" value="<?php print $top?>"/>
@@ -101,45 +101,45 @@ function report_history(){
 		<?php } ?>
         </select>
 		<br>
-		Amount:  <input type="number" increment=".01" name="af" value="<?php print $_GET['af']?>"/>
-		to <input type="number" increment=".01" name="at" value="<?php print $_GET['at']?>"/>
+		Amount:  <input type="number" step=".01" name="af" value="<?php print $_GET['af']?>" style="width:120px;"/>
+		to <input type="number" step=".01" name="at" value="<?php print $_GET['at']?>" style="width:120px;"/>
 		Category:
 		<?php print DonationCategory::select(['Name'=>'CategoryId']);?>
 		<br>
 		Source: 		<select name="PaymentSource">
-			<option value="_ALL">--All--</option>
+			<option value="">--All--</option>
 			<?php			
 			foreach(Donation::s()->tinyIntDescriptions["PaymentSource"] as $key=>$label){
-				?><option value="<?php print $key?>"<?php print !is_null($_GET['PaymentSource']) && $key==$_GET['PaymentSource']?" selected":""?>><?php print $key." - ".$label?></option><?php
+				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['PaymentSource']?" selected":""?>><?php print $key." - ".$label?></option><?php
 			}?>
 		</select>		
 
 		Type:
 		<select name="Type">
-			<option value="_ALL">--All--</option>
+			<option value="">--All--</option>
 			<?php			
 			foreach(Donation::s()->tinyIntDescriptions["Type"] as $key=>$label){
-				?><option value="<?php print $key?>"<?php print !is_null($_GET['Type']) && $key==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
+				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
 			}?>
 		</select>
 		Tax Deductible:
 		<select name="NotTaxDeductible">
-			<option value="_ALL">--All--</option>
-			<option value="0"<?php print !is_null($_GET['NotTaxDeductible']) && $_GET['NotTaxDeductible']==0?" selected":""?>>Yes</option>
+			<option value="">--All--</option>
+			<option value="ZERO"<?php print $_GET['NotTaxDeductible']=='ZERO'?" selected":""?>>Yes</option>
 			<option value="1"<?php print $_GET['NotTaxDeductible']==1?" selected":""?>>No - Grants/Donor Advised Funds, etc.</option>
 		</select>
 		<button name="f" value="Go">Go</button>
 	</form>	<?php
 	if($_GET['f']=="Go"){
 		$where=["DT.Status>0"];
-		if (isset($_GET['PaymentSource'])&& $_GET['PaymentSource']!="_ALL"){
-			$where[]="PaymentSource='".$_GET['PaymentSource']."'";			
+		if ($_GET['PaymentSource']){
+			$where[]="PaymentSource='".($_GET['PaymentSource']=="ZERO"?0:$_GET['PaymentSource'])."'";		
 		}	
-		if (isset($_GET['Type'])&& $_GET['Type']!="_ALL"){
-			$where[]="PaymentSource='".$_GET['PaymentSource']."'";			
+		if ($_GET['Type']){
+			$where[]="`Type`='".($_GET['Type']=="ZERO"?0:$_GET['Type'])."'";			
 		}
-		if (isset($_GET['NotTaxDeductible'])&& $_GET['NotTaxDeductible']!="_ALL"){
-			$where[]="NotTaxDeductible='".$_GET['NotTaxDeductible']."'";			
+		if ($_GET['NotTaxDeductible']){
+			$where[]="NotTaxDeductible='".($_GET['NotTaxDeductible']=="ZERO"?0:$_GET['NotTaxDeductible'])."'";			
 		}
 		if ($_GET['df']){
 			$where[]="`$dateField`>='".$_GET['df'].($dateField=="Date"?"":" 00:00:00")."'";
@@ -148,14 +148,14 @@ function report_history(){
 			$where[]="`$dateField`<='".$_GET['dt'].($dateField=="Date"?"":" 23:59:59")."'";
 		}
 		if ($_GET['CategoryId']){
-			$where[]="CategoryId='".$_GET['CategoryId']."'";
+			$where[]="CategoryId='".($_GET['CategoryId']=="ZERO"?0:$_GET['CategoryId'])."'";
 		}
-
-		if ($_GET['af']){
-			$where[]="DT.Gross>='".$_GET['af']."'";
-		}
-		if ($_GET['at']){
-			$where[]="DT.Gross<='".$_GET['at']."'";
+		if ($_GET['af'] && $_GET['at']){
+			$where[]="DT.Gross BETWEEN '".$_GET['af']."' AND '".$_GET['af']."'";
+		}elseif ($_GET['af']){
+			$where[]="DT.Gross='".$_GET['af']."'";
+		}elseif ($_GET['at']){
+			$where[]="DT.Gross='".$_GET['at']."'";
 		}
 
 		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId
