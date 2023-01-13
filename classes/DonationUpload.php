@@ -10,6 +10,7 @@ class DonationUpload extends ModelLite
 
     const UPLOAD_PATTERN = [
         'Last, Name1 & Name2'=>'Name|Name2',
+        'Name1 & Name2 Last'=>'Name|Name2',
         'City, Region Postal Country'=>'City|Region|PostalCode|Country',
         'Category'=>'CategoryId'
     ];
@@ -99,6 +100,18 @@ class DonationUpload extends ModelLite
                 if (trim($v)=="") continue; //skip blanks    
                 if ($field=$post['column'.$c]){                    
                     switch($field){
+                        case 'Name1 & Name2 Last':
+                            $andSplit=explode("&",$v);
+                            $wordSplit=explode(" ",trim($v));
+                            $wordSplit2=explode(" ",trim($andSplit[1]));
+                            if (sizeof($andSplit)==2&&sizeof($wordSplit)==4 && sizeof($wordSplit2)==2){                           
+                                $donor->Name=trim($andSplit[0])." ".trim($wordSplit2[1]);
+                                $donor->Name2=trim($andSplit[2]);                               
+                            }else{
+                                $donor->Name=trim($v);
+                            }
+                            $donation->Name=trim($v);
+                            break;
                         case 'Last, Name1 & Name2':
                             $andSplit=explode("&",$v);
                             $commaSplit=explode(",",$andSplit[0]);
