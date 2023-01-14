@@ -46,7 +46,12 @@
 		OR UPPER(Email) LIKE '%".strtoupper($_GET['dsearch'])."%'
 		OR UPPER(Phone) LIKE '%".strtoupper($_GET['dsearch'])."%')","(MergedId =0 OR MergedId IS NULL)"));
 		//print "do lookup here...";
-		print Donor::show_results($list,"",['DonorId',"Name","Name2","Email","Phone","Address"]);		
+		if ($list){
+			print Donor::show_results($list,"",['DonorId',"Name","Name2","Email","Phone","Address"]);
+		}else{
+			Donor::display_error("No results found for: ".$_GET['dsearch']);
+		}
+				
 	}?>
 
 

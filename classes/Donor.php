@@ -349,8 +349,8 @@ class Donor extends ModelLite {
             $donor=Donor::get_by_id($_REQUEST['DonorId']);	
             ?>
             <div>
-                <div><a href="?page=<?php print $_GET['page']?>">Return to Donor Lookup</a></div>
-                <h1>Donor Profile #<?php print $_REQUEST['DonorId']?> <?php print $donor->Name?></h1><?php 
+               <?php 
+                $donor->donor_header();
                 if ($_REQUEST['edit']){
                     $donor->edit_form();
                 }else{             
@@ -385,7 +385,16 @@ class Donor extends ModelLite {
             return false;
         }
     }
-
+    function donor_header(){?>
+        <form method="get">
+        <input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
+        <div><a href="?page=<?php print $_GET['page']?>">Home</a> 
+        <?php if ($_REQUEST['edit']){?> | <a href="?page=donor-index&DonorId=<?php print $this->DonorId?>">View Donor</a> <?php }?>
+         | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>        
+    </form>                
+    <h1>Donor Profile #<?php print $_REQUEST['DonorId']?> <?php print $this->Name?></h1>
+    <?php
+    }
     function name_combine(){
         if (trim($this->Name2)){
             $name1=explode(" ",trim($this->Name));
@@ -415,9 +424,9 @@ class Donor extends ModelLite {
         if ($this->City || $this->Region) $address.=$this->City." ".$this->Region." ".$this->PostalCode;
       
         if ($settings['DefaultCountry'] && $settings['DefaultCountry']==$this->Country){}
-        else $address.=" ".$this->Country;
-        $nameLine=$this->name_combine();
+        elseif($address) $address.=" ".$this->Country;   
         if ($address&&$include_name){
+            $nameLine=$this->name_combine();
             $address=$nameLine.(trim($address)?$seperator.$address:"");
         }
         return trim($address);
@@ -585,6 +594,8 @@ class Donor extends ModelLite {
         }
         $this->emailBuilder->pageID=$page->ID;
         $total=0;
+        $taxDeductible=[];
+        $notTaxDeductible=[];
         $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'"),'Date');
         foreach($donations as $r){
             if ($r->NotTaxDeductible==0){
@@ -602,9 +613,9 @@ class Donor extends ModelLite {
 
         if (sizeof($notTaxDeductible)>0){
             $plural=sizeof($notTaxDeductible)==1?"":"s";
-            if ($ReceiptTable){
-                $ReceiptTable.="<p>Additionally the following gift".$plural."/grant".$plural." totaling <strong>$".number_format($nteTotal,2)."</strong> ".($plural=="s"?"were":"was")." given for which you may have already received a tax deduction. Consult a tax professional on whether these gifts can be claimed:</p>";
-            }
+            
+            $ReceiptTable.="<p>Additionally the following gift".$plural."/grant".$plural." totaling <strong>$".number_format($nteTotal,2)."</strong> ".($plural=="s"?"were":"was")." given for which you may have already received a tax deduction. Consult a tax professional on whether these gifts can be claimed:</p>";
+            
             $ReceiptTable.=$this->receipt_table_generate($notTaxDeductible);
         }
         if ($ReceiptTable=="") $ReceiptTable="<div><em>No Donations found in ".$year."</div>";

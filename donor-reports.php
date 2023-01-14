@@ -217,27 +217,30 @@ function report_top($top=20){
 	$dateFrom=$_GET['topDf'];
 	$dateTo=$_GET['topDt'];
 
-	?><form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-			<h3>Top <input type="number" name="topL" value="<?php print ($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/>Donor Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> 
-			<select name='category[]' multiple>
-				<?php
-				$selectedCatagories=$_GET['category']?$_GET['category']:array();
-				$donationCategory=DonationCategory::get(array('(ParentId=0 OR ParentId IS NULL)'),'Category');
-				foreach($donationCategory as $cat){
-					?><option value="<?php print $cat->CategoryId?>"<?php print in_array($cat->CategoryId,$selectedCatagories)?" selected":""?>><?php print $cat->Category?></option><?php
-				}
-				?>
-			</select>
-			<button type="submit">Go</button></h3>
-			<div><?php
-			for($y=date("Y");$y>=date("Y")-4;$y--){
-				?><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?php
+	?><form method="get" action="">
+		<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
+		<h3>Top <input type="number" name="topL" value="<?php print ($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/>Donor Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> 
+		<select name='category[]' multiple>
+			<?php
+			$selectedCatagories=$_GET['category']?$_GET['category']:array();
+			$donationCategory=DonationCategory::get(array('(ParentId=0 OR ParentId IS NULL)'),'Category');
+			foreach($donationCategory as $cat){
+				?><option value="<?php print $cat->CategoryId?>"<?php print in_array($cat->CategoryId,$selectedCatagories)?" selected":""?>><?php print $cat->Category?></option><?php
 			}
 			?>
+		</select>
+		<button type="submit">Go</button></h3>
+		<div><?php
+		for($y=date("Y");$y>=date("Y")-4;$y--){
+			?><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?php
+		}
+		?>
 
-			| <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&f=SummaryList&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
-			| <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&SummaryView=t&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">Donation Report</a>
-			</div><?php
+		| <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&f=SummaryList&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
+		| <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&SummaryView=t&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">Donation Report</a>
+		</div>
+	</form><?php
 
 	$where=array("Type>0");
 
@@ -266,7 +269,7 @@ function report_top($top=20){
 			</tr>
 			<?php
 		}
-		?></table></form><?php
+		?></table><?php
 	}
 }
 
@@ -529,7 +532,7 @@ function reportMonthly(){
 				<option value="Gross"<?php print ($countField=="Gross"?" selected":"")?>>Gross</option>	
 				<option value="Count"<?php print ($countField=="Count"?" selected":"")?>>Count</option>
 					
-</select>
+			</select>
 			<button type="submit">Go</button></h3>
 			<div id="MonthlyDonationsChart" style="width: 1200px; height: 500px;"></div>
 			<div id="Weekday" style="width: 1200px; height: 500px;"></div>
@@ -544,7 +547,8 @@ function reportMonthly(){
 		
 			}
 		}
-		?></table></form>	
+		?></table>
+		</form>	
 		
 		<?php
 	}

@@ -413,14 +413,21 @@ class Donation extends ModelLite
             if ($_GET['DonorId']){
                $donor=Donor::get_by_id($_GET['DonorId']);
                $donorText=" for Donor #".$donor->DonorId." ".$donor->Name;
+               ### copy settings from the last donation...
+               $lastDonation=Donation::first(['DonorId ='.$donor->DonorId],"DonationId DESC",
+               ['select'=>'DonorId,Name,FromEmailAddress,CategoryId,PaymentSource,NotTaxDeductible']);
+               if ($lastDonation) $donation=$lastDonation;               
             }
             print "<h2>Add donation".$donorText."</h2>";
             $donation->DonorId=$donor->DonorId;
-            $donation->Name=$donor->Name;
-            $donation->FromEmailAddress=$donor->Email;
-            $donation->ContactPhoneNumber=$donor->Phone;
-            $donation->PaymentSource=1;
-            $donation->Type=1; 
+            ### Donor Settings override whatever is autopopulated from previous donation
+            if ($donor->Name) $donation->Name=$donor->Name;
+            if ($donor->Email) $donation->FromEmailAddress=$donor->Email;
+            if ($donor->Phone) $donation->ContactPhoneNumber=$donor->Phone;
+            ### Defaults set IF prevous donation not pulled.
+            $donation->PaymentSource=$donation->PaymentSource?$donation->PaymentSource:1;
+            $donation->Type=$donation->Type?$donation->Type:1;
+
             $donation->Status=9;
 
             $donation->edit_simple_form();           
@@ -495,19 +502,24 @@ class Donation extends ModelLite
         }
     }
 
-    public function full_view(){
-        ?>
-            <div>
-                <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
-                <h1>Donation #<?php print $this->DonationId?></h1><?php 
-                if ($_REQUEST['edit']){
-                    $this->edit_form();
-                }else{
-                    ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t">Edit Donation</a></div><?php
-                    $this->view();
-                    $this->receipt_form();                   
-                }
-            ?></div><?php
+    public function full_view(){?>
+        <div>
+            <form method="get">
+                <input type="hidden" name="page" value="donor-index"/>
+                <div><a href="?page=<?php print $_GET['page']?>">Home</a> |
+                <a href="?page=donor-index&DonorId=<?php print $this->DonorId?>">View Donor</a> | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>
+            </form>
+            <h1>Donation #<?php print $this->DonationId?></h1><?php
+            if ($_REQUEST['edit']){
+                if ($_REQUEST['raw']) $this->edit_form();
+                else{ $this->edit_simple_form(); }
+            }else{
+                ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t">Edit Donation</a></div><?php
+                $this->view();
+                $this->receipt_form();
+            }?>
+            
+        </div><?php
     }
 
     public function select_drop_down($field,$showKey=true,$allowBlank=false){
@@ -521,17 +533,33 @@ class Donation extends ModelLite
         ?></select><?php
     }
     public function edit_simple_form(){  
-        $hiddenFields=['DonationId','Fee','Net','ToEmailAddress','ReceiptID','AddressStatus']; //these fields more helpful when using paypal import, but are redudant/not necessary when manually entering a transaction
-        ?>
-        <form method="post" action="?page=donor-reports&DonationId=">
+        $hiddenFields=['DonationId','ToEmailAddress','ReceiptID','AddressStatus']; //these fields more helpful when using paypal import, but are redudant/not necessary when manually entering a transaction
+        //?page=donor-index&DonationId=4458&edit=t
+        if ($this->DonationId){
+            ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t&raw=t">Edit Raw</a></div><?php
+        }?>
+        
+        <form method="post" action="?page=donor-reports&DonationId=<?php print $this->DonationId?>" style="border: 1px solid #999; padding:20px; width:90%;">
         <input type="hidden" name="table" value="Donation">
         <?php foreach ($hiddenFields as $field){?>
 		    <input type="hidden" name="<?php print $field?>" value="<?php print $this->$field?>"/>
         <?php } ?>
+        <script>
+            function calculateNet(){
+                var net= document.getElementById('donation_gross').value-document.getElementById('donation_fee').value;
+                document.getElementById('donation_net').value=net;
+                document.getElementById('donation_net_show').innerHTML=net;
+            }
+        </script> 
         <table><tbody>
-        <tr><td align="right">Total Amount</td><td><input required type="number" step=".01" name="Gross" value="<?php print $this->Gross?>"><?php $this->select_drop_down('Currency',false);?></td></tr> 
-        <tr><td align="right">Check #/Transaction ID</td><td><input type="txt" name="TransactionID" value=""></td></tr>
-        <tr><td align="right">Check/Sent Date</td><td><input type="date" name="Date" value="<?php print ($this->Date?$this->Date:date("Y-m-d"))?>"></td></tr>
+        <tr>
+            <td align="right">Total Amount</td>
+            <td><input id="donation_gross" style="text-align:right;" onchange="calculateNet();" required type="number" step=".01" name="Gross" value="<?php print $this->Gross?>"> <?php $this->select_drop_down('Currency',false);?></td></tr>
+        <tr>
+            <td align="right">Fee</td>
+            <td><input id="donation_fee" style="text-align:right;"  onchange="calculateNet();" type="number" step=".01" name="Fee" value="<?php print $this->Fee?$this->Fee:0?>"> <strong>Net:</strong> <input id="donation_net" type="hidden" name="Net" value="<?php print $this->Net?$this->Net:0?>"/>$<span id="donation_net_show"><?php print number_format($this->Net?$this->Net:0,2)?></span></td></tr> 
+        <tr><td align="right">Check #/Transaction ID</td><td><input type="txt" name="TransactionID" value="<?php print $this->TransactionID?>"></td></tr>
+        <tr><td align="right">Check/Sent Date</td><td><input type="date" name="Date" value="<?php print ($this->Date?date("Y-m-d",strtotime($this->Date)):date("Y-m-d"))?>"></td></tr>
         <tr><td align="right">Date Deposited</td><td><input type="date" name="DateDeposited" value="<?php print ($this->DateDeposited?$this->DateDeposited:date("Y-m-d"))?>"></td></tr>
         
         <tr><td align="right">DonorId</td><td><?php

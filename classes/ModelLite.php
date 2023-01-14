@@ -81,7 +81,7 @@ class ModelLite{
 				$data[$field]=$this->$field;
 			}
 		}		
-		if (defined (static::UPDATED_AT)){
+		if (static::UPDATED_AT){
 			$data[static::UPDATED_AT]= $time;
 		}
 
@@ -91,7 +91,7 @@ class ModelLite{
 				$wpdb->print_error();
 			}
 		}else{
-			if (defined (static::CREATED_AT) && !$data[static::CREATED_AT]){
+			if (static::CREATED_AT && !$data[static::CREATED_AT]){
 				$data[static::CREATED_AT]= $time;
 			}		 	
 			if (!$wpdb->insert($this->get_table(),$data)){
@@ -207,18 +207,23 @@ class ModelLite{
 		exit();
 	}
 
-	public static function get_by_id($id,$settings=false){
-		$wpdb=self::db();  
+	public static function get_by_id($id,$settings=false){		
 		$where[]=self::s()->primaryKey."='".$id."'";
 		$SQL="SELECT * FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"");			
-		return  new static((array)$wpdb->get_row($SQL));
+		return  new static((array) self::db()->get_row($SQL));
+	}
+
+	public static function first($where=array(),$orderby,$settings=[]){
+		$settings['limit']=1;
+		$first=self::get($where,$orderby,$settings);
+		if (sizeof($first)>0) return $first[key($first)];
+		else return false;
 	}
 	
-	public static function get($where=array(),$orderby="",$settings=false){
-		$wpdb=self::db();  
-		$SQL="SELECT ".($settings['select']?$settings['select']:"*")." FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"");
-		//print $SQL;
-		$all=$wpdb->get_results($SQL);
+	public static function get($where=array(),$orderby="",$settings=false){		 
+		$SQL="SELECT ".($settings['select']?$settings['select']:"*")." FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"").($settings['limit']?" LIMIT ".$settings['limit']:"");
+		//print $SQL."<hr>";
+		$all=self::db()->get_results($SQL);
 		foreach($all as $r){
 			$obj=new static($r,$settings);
 			if ($settings['key']){
@@ -289,7 +294,7 @@ class ModelLite{
 		$v=$this->$fieldName;
 		switch($fieldName){
 			case "Address":
-				if (get_class($this)=='Donor') return $this->mailing_address(", ");
+				if (get_class($this)=='Donor') return $this->mailing_address(", ",false);
 				else return $this->Address;
 				break;
 			case "Phone":
