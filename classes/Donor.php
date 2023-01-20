@@ -544,6 +544,7 @@ class Donor extends ModelLite {
         Limit: <Input type="number" name="limit" value="<?php print $_REQUEST['limit']?>" style="width:50px;"/>
         <button type="submit" name="Function" value="SendYearEndEmail">Send Year End E-mails</button>
         <button type="submit" name="Function" value="SendYearEndPdf">Send Year End Pdf</button> <label><input type="checkbox" name="blankBack" value="t"> Print Blank Back</label>
+        <label><input type="checkbox" name="preview" value="t"> Preview Only - Don't mark .pdf as sent</label>
         <div>
             <button name="Function" value="ExportDonorList">Export Donor List</button>
             <button name="Function" value="PrintYearEndLabels">Print Labels</button>
@@ -590,7 +591,7 @@ class Donor extends ModelLite {
         if (!$page){ ### Make the template page if it doesn't exist.
             self::make_receipt_year_template();
             $page = DonorTemplate::get_by_name('donor-receiptyear');  
-            self::display_notice("Page /donor-receiptyear created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
+            self::display_notice("Page /donor-receiptyear created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
         $total=0;
@@ -664,7 +665,7 @@ class Donor extends ModelLite {
             $c++;
         }
         if (sizeof($variableNotFilledOut)>0){
-            self::display_error("The Following Variables need manually changed:<ul><li>##".implode("##</li><li>##",array_keys($variableNotFilledOut))."##</li></ul> Please <a target='pdf' href='post.php?post=".$this->emailBuilder->pageID."&action=edit'>correct template</a>.");
+            self::display_error("The Following Variables need manually changed:<ul><li>##".implode("##</li><li>##",array_keys($variableNotFilledOut))."##</li></ul> Please <a target='pdf' href='?page=donor-settings&tab=email&DonorTemplateId=".$this->emailBuilder->pageID."&edit=t'>correct template</a>.");
         }
     }
 
@@ -682,11 +683,22 @@ class Donor extends ModelLite {
             }
         }        
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","`KeyType`='YearEnd'","`KeyId`='".$year."'"));
-        $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
-        $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body;
+        $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;        
+        
+        
+        $homeLinks="<a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a>";
 
-        $homeLinks="<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
-        print $homeLinks;
+        if ($_REQUEST['reset']){
+            $bodyContent=$this->emailBuilder->body;
+        }else{
+            $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body;
+            if ($receipts &&$bodyContent!=$this->emailBuilder->body){
+                $homeLinks.= "| <a href='?page=donor-index&DonorId=".$_REQUEST['DonorId']."&f=YearReceipt&Year=".$_REQUEST['Year']."&reset=t'>Update/Reset Letter with latest information</a>";
+            }
+        }
+
+
+        print "<div class='no-print'>".$homeLinks."</div>";
         print '<form method="post">';
         print "<h2>".$this->emailBuilder->subject."</h2>";             
        
@@ -733,7 +745,7 @@ class Donor extends ModelLite {
         }
     }
 
-    static function YearEndReceiptMultiple($year,$donorIdPost,$limit,$blankBlack=false){
+    static function YearEndReceiptMultiple($year,$donorIdPost,$limit,$blankBlack=false,$logReceipt=true){
         if (!$limit) $limit=1000;
         if (sizeof($donorIdPost)<$limit) $limit=sizeof($donorIdPost);
         for($i=0;$i<$limit;$i++){
@@ -756,8 +768,10 @@ class Donor extends ModelLite {
                 if ($blankBlack && $pdf->PageNo()%2==1){ //add page number check
                     $pdf->AddPage();
                 }
-                $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$donor->mailing_address(),"Content"=>"<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
-                $dr->save();
+                if ($logReceipt){
+                    $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$donor->mailing_address(),"Content"=>"<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
+                    $dr->save();
+                }
             }                    
             $pdf->Output('YearEndReceipts2022.pdf', 'D');
             return true;

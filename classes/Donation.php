@@ -608,21 +608,21 @@ class Donation extends ModelLite
             if (!$page){ ### Make the template page if it doesn't exist.
                 self::make_receipt_template_no_tax();
                 $page = DonorTemplate::get_by_name('no-tax-thank-you');  
-                self::display_notice("Page /no-tax-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
+                self::display_notice("Page /no-tax-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
             }
         }else{
             $page = DonorTemplate::get_by_name('receipt-thank-you');  
             if (!$page){ ### Make the template page if it doesn't exist.
                 self::make_receipt_template_thank_you();
                 $page = DonorTemplate::get_by_name('receipt-thank-you');  
-                self::display_notice("Page /receipt-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
+                self::display_notice("Page /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
             }
         }
          
         if (!$page){ ### Make the template page if it doesn't exist.
             self::make_receipt_template_thank_you();
             $page = DonorTemplate::get_by_name('receipt-thank-you');  
-            self::display_notice("Page /receipt-thank-you created. <a target='edit' href='post.php?post=".$page->ID."&action=edit'>Edit Template</a>");
+            self::display_notice("Page /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
         $organization=get_option( 'donation_Organization');
@@ -797,7 +797,7 @@ class Donation extends ModelLite
                 <button type="submit" name="Function" value="SendDonationReceipt">Send E-mail Receipt</button> 
                 <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>                  
             </div>
-            <div><a target='pdf' href='post.php?post=<?php print $this->emailBuilder->pageID?>&action=edit'>Edit Template</a></div>
+            <div><a target='pdf' href='?page=donor-settings&tab=email&DonorTemplateId=<?php print $this->emailBuilder->pageID?>&edit=t'>Edit Template</a></div>
             <div style="font-size:18px;"><strong>Email Subject:</strong> <input style="font-size:18px; width:500px;" name="EmailSubject" value="<?php print $_POST['EmailSubject']?stripslashes_deep($_POST['EmailSubject']):$this->emailBuilder->subject?>"/>
             <?php wp_editor($bodyContent, 'customMessage',array("media_buttons" => false,"wpautop"=>false)); ?>
         </form>
