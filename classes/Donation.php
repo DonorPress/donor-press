@@ -275,6 +275,7 @@ class Donation extends ModelLite
         ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE 1
         Group BY `CreatedAt` Order BY `CreatedAt` DESC LIMIT ".$limit;
          $results = $wpdb->get_results($SQL);
+         $linkBase="?page=".$_GET['page']."&tab=".$_GET['tab']."&limit=".$limit."&dateField=CreatedAt&SummaryView=t";
          ?><h2>Upload Groups</h2>
          <form method="get" action="">
             <input type="hidden" name="page" value="<?php print $_GET['page']?>" />
@@ -286,6 +287,12 @@ class Donation extends ModelLite
             <?php } ?>
             </select>
              <button type="submit" name="SummaryView" value="t">View Summary</button></form>
+             <div> 
+                <a href="<?php print $linkBase."&df=".date("Y-m-d")?>">Today</a> | 
+                <a href="<?php print $linkBase."&df=".date("Y-m-d",strtotime("-7 days"))?>">Last 7 Days</a> | 
+                <a href="<?php print $linkBase."&df=".date("Y-m-d",strtotime("-30 days"))?>">Last 30 Days</a>
+            </div>
+
          <table class="dp"><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?php
          foreach ($results as $r){?>
              <tr><td><?php print $r->CreatedAt?></td><td align=right><?php print $r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?php print $r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?php print $_GET['page']?>&UploadDate=<?php print urlencode($r->CreatedAt)?>">View All</a> <?php print ($r->ReceiptSentCount<$r->C?" | <a href='?page=".$_GET['page']."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&UploadDate=<?php print urlencode($r->CreatedAt)?>">View Summary</a></td></tr><?php
@@ -366,6 +373,11 @@ class Donation extends ModelLite
             }else{?>
                 <form method="post">
                     <button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
+                    <button type="submit" name="Function" value="PdfDonationReceipts" disabled>Generate Pdf Receipts</button>
+                    |
+                    <button type="submit" name="Function" value="PdfLabelDonationReceipts" disabled>Generate Labels</button>
+                    Labels Start At: <strong>Column:</strong> (1-3) &#8594; <input name="col" type="number" value="1"  min="1" max="3" /> &#8595; <strong>Row:</strong> (1-10)<input name="row" type="number" value="1" min="1" max="10"   />
+
                 <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th></tr><?php
                 foreach($donations as $r){
                     $donation=new Donation($r);
@@ -483,10 +495,10 @@ class Donation extends ModelLite
                     }
                     $dateField=(self::s()->dateFields[$_GET['dateField']]?$_GET['dateField']:key(self::s()->dateFields));
                     if ($_GET['df']){
-                        $where[]="`$dateField`>='".$_GET['df']."'";
+                        $where[]="DATE(`$dateField`)>='".$_GET['df']."'";
                     }
                     if ($_GET['dt']){
-                        $where[]="`$dateField`<='".$_GET['dt']."'";
+                        $where[]="DATE(`$dateField`)<='".$_GET['dt']."'";
                     }                    
                     self::view_donations($where,
                         array(

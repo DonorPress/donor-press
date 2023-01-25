@@ -224,7 +224,7 @@ class DonationUpload extends ModelLite
         }
         
 
-        if (!$timeNow) $timeNow=time();
+        if (!$timeNow) $timeNow=date("Y-m-d H:i:s");
         $csv=self::csv_file_to_array($csvFile,$firstLineColumns);
         $selectDonation=Donation::s()->fillable; 
         $selectDonor=Donor::s()->fillable; 
@@ -353,7 +353,7 @@ class DonationUpload extends ModelLite
     }
 
     static public function csv_read_file($csvFile,$firstLineColumns=true,$timeNow=""){//2019-2020-05-23.CSV
-        if (!$timeNow) $timeNow=time();
+        if (!$timeNow) $timeNow=date("Y-m-d H:i:s");
         $dbHeaders=Donation::s()->fillable; 
         $dbHeaders[]="ItemTitle";        
         $headerRow=DonationUpload::s()->paypal; 
@@ -461,7 +461,7 @@ class DonationUpload extends ModelLite
 
 
     static public function csv_upload_check(){
-        $timeNow=time();
+        $timeNow=date("Y-m-d H:i:s");
         if(isset($_FILES['fileToUpload'])){
             $originalFile=basename($_FILES["fileToUpload"]["name"]);
            // $target_file = $tmpfname = tempnam(sys_get_temp_dir(), 'CSV');            

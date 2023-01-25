@@ -526,7 +526,9 @@ function reportMonthly(){
 
 	}
 	</script>
-<form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+<form method="get">
+	<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+	<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
 			<h3>Monthly Donations Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> 
 			Show: <select name="s">
 				<option value="Gross"<?php print ($countField=="Gross"?" selected":"")?>>Gross</option>	

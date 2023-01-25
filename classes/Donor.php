@@ -778,7 +778,7 @@ class Donor extends ModelLite {
         }
     }
 
-    static function YearEndLabels($year,$donorIdPost,$row_start=1,$col_start=1,$limit=100000){
+    static function YearEndLabels($year,$donorIdPost,$col_start=1,$row_start=1,$limit=100000){
         if (sizeof($donorIdPost)<$limit) $limit=sizeof($donorIdPost);
         if (!class_exists("TCPDF")){
             self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
