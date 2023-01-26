@@ -18,7 +18,7 @@ class Donation extends ModelLite
         "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer","10"=>"Paypal"],
         "Type"=>[0=>"Other",1=>"Donation Payment",2=>"Website Payment",5=>"Subscription Payment",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
         "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"],
-        "NotTaxDeductible"=>["0"=>"Tax Deductible","1"=>"Not Tax Deductible (Donor Advised fund, etc)"]
+        "NotTaxDeductible"=>["0"=>"Tax Deductible","1"=>"Not Tax Deductible (Donor Advised fund, etc)","2"=>"Service (Not Tax Deductible)"]
     ];
 
     public $dateFields=[
@@ -598,7 +598,7 @@ class Donation extends ModelLite
        ?></select></td></tr>
        <tr><td align="right">Subject</td><td><input type="text" name="Subject" value="<?php print $this->Subject?>"></td></tr>
         <tr><td align="right">Note</td><td><textarea name="Note"><?php print $this->Note?></textarea></td></tr>
-        <tr><td align="right">Tax Deductible</td><td><?php print $this->select_drop_down('NotTaxDeductible')?><div><em>Set to "Not Tax Deductible" if they have already been giving credit for the donation by donating through a donor advised fund.</div></td></tr>
+        <tr><td align="right">Tax Deductible</td><td><?php print $this->select_drop_down('NotTaxDeductible')?><div><em>Set to "Not Tax Deductible" if they have already been giving credit for the donation by donating through a donor advised fund, or if this is a payment for a service.</div></td></tr>
         <tr></tr><tr><td colspan="2"><button type="submit" class="Primary" name="Function" value="Save">Save</button><button type="submit" name="Function" class="Secondary" value="Cancel" formnovalidate>Cancel</button>
         <?php 
         if ($this->DonationId){

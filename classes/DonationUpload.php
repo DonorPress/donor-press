@@ -135,7 +135,7 @@ class DonationUpload extends ModelLite
                             //print "pattern $field set to $v on Index $c. <br>";
                         break;
                         case "Category":
-                            $donation->CategoryId==DonationCategory::get_category_id($v);
+                            $donation->CategoryId=DonationCategory::get_category_id($v);
                             break;
                         case "Date":
                         case "DateDeposited":                            
@@ -145,7 +145,7 @@ class DonationUpload extends ModelLite
                         case "Gross":
                         case "Fee":
                         case "Net":
-                            $donation->$field=trim(str_replace(",","",$v));
+                            $donation->$field=floatval(trim(preg_replace('/[\$,]/', '',$v)));
                             break;
                         default:
                             if (in_array($field,$selectDonor)){
@@ -161,6 +161,9 @@ class DonationUpload extends ModelLite
                 
                 }               
             }
+            if (!$donation->DateDeposited)  $donation->DateDeposited=$donation->Date;
+            
+            if (!$donation->Gross) $donation->Gross=0;
             if (!$donation->Fee) $donation->Fee=0;
             if (!$donation->Net) $donation->Net=$donation->Gross + $donation->Fee;
             //dd($donor,$post,$r);
