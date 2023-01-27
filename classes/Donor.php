@@ -939,4 +939,63 @@ class Donor extends ModelLite {
          print $csv_line;
          exit();
     }
+
+    static function merge_suggestions(){ //similar to find duplicates to merge... probably can consolidate
+        $matchField=['Name','Name2','Email','Phone','Address1'];
+        $SQL="Select D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId, COUNT(*) as donation_count
+        FROM ".Donor::get_table_name()." D LEFT JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId
+        Group BY D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId Order BY  D.DonorId";
+        $results = self::db()->get_results($SQL); 
+        //dd($results);
+        $show=false;
+        $merge=[];
+        foreach ($results as $r){
+            $donors[$r->DonorId]=$r;
+            if ($r->MergedId>0 && $r->donation_count){
+                $merge[$r->DonorId]=$r->MergedId;
+            }elseif($r->MergedId==0){
+                foreach($matchField as $field){
+                    if (trim($r->$field)){
+                        $val=preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($r->$field));
+                        $cache[$val][]=$r->DonorId;
+                        if (sizeof($cache[$val])>1) $show=true;
+                        if ($field=="Name"){
+                            $nameParts=explode(" ",strtolower(trim(str_replace(" &","",$r->Name))));
+                            if (sizeof($nameParts)>2){                                
+                                $val=preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($nameParts[0].$nameParts[sizeof($nameParts)-1]));
+                                $cache[$val][]=$r->DonorId;
+                                $val=preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($nameParts[1].$nameParts[sizeof($nameParts)-1]));
+                                $cache[$val][]=$r->DonorId;
+                            }
+                            
+                        }
+                    }
+                }              
+            }            
+        }
+        //dd( $cache);
+        if (sizeof($merge)>0) $show=true;
+        if ($show){
+            ?><h2>Entries Found to Merge</h2>
+            <table border=1><th>Donor</th><th>Merge To</th></tr><?php
+            foreach($merge as $from=>$to){
+                print '<tr><td>';              
+                print "<div>".$donors[$from]->Name.' <a target="Donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$from]->DonorId.'&MergedId='.$donors[$to]->DonorId.'">Merge To -></a></div>';   
+                          
+                print "</td><td>".$donors[$to]->Name."</td></tr>";
+            }
+            foreach($cache as $key=>$a){
+                if (sizeof($a)>1){
+                    print '<tr><td>';
+                    for($i=1;$i<sizeof($a);$i++){
+                        print "<div>".$donors[$a[$i]]->Name.' <a target="Donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$a[$i]]->DonorId.'&MergedId='.$donors[$a[0]]->DonorId.'">Merge To -></a></div>';   
+                    }                 
+                    print "</td><td>".$donors[$a[0]]->Name."</td></tr>";
+                }
+            }
+        }
+    }
+
+   
+
 }

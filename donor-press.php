@@ -150,12 +150,6 @@ function donor_plugin_create_tables() {
 }
 
 
-function generate_email_list(){
-	print "I am here"; exit();
-	Donor::get_email_list();
-}
-
-
 
 
 ## Search record

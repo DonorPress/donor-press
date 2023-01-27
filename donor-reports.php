@@ -88,8 +88,9 @@ function year_end_summmaries(){ ?>
 }
 
 function report_donors(){
+	Donor::merge_suggestions();
 	?><form method="post"><button name="Function" value="ExportAllDonors">Export All Donors</button></form>
-	<?php
+	<?php	
 	Donor::summary_list([],"",['orderBy'=>'D.Name, D.Name2']);
 	//print "survived";
 }
