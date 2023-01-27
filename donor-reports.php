@@ -1,5 +1,5 @@
 <?php
-$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donations'=>'Donations','reg'=>"Regression"];
+$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','donations'=>'Donations','reg'=>"Regression"];
 $active_tab=Donor::show_tabs($tabs,$active_tab);
 ?>
 <div id="pluginwrap">
@@ -28,6 +28,9 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 		case "year":
 			year_end_summmaries();
 			break;
+		case "donors":
+			report_donors();
+		break;	
 		case "donations":
 			report_donations();
 		break;
@@ -82,6 +85,13 @@ function year_end_summmaries(){ ?>
 		Donor::summary_list_year($_GET['Year']);
 		return true;
 	}
+}
+
+function report_donors(){
+	?><form method="post"><button name="Function" value="ExportAllDonors">Export All Donors</button></form>
+	<?php
+	Donor::summary_list([],"",['orderBy'=>'D.Name, D.Name2']);
+	//print "survived";
 }
 
 function report_donations(){ 

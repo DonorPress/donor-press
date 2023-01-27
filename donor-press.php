@@ -55,6 +55,9 @@ function donor_header_check() {
 		case 'PrintYearEndLabels':
 			Donor::YearEndLabels($_REQUEST['Year'],$_POST['pdf'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
 		break;
+		case 'ExportAllDonors':
+			Donor::get_mail_list();
+		break;
 		case 'ExportDonorList':
 			Donor::get_mail_list(["D.DonorId IN (".implode(",",$_POST['pdf']).")"]);
 		break;

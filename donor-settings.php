@@ -34,6 +34,14 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
                 <h2>Nuke Site</h2>
                 <button name="Function" value="NukeDonorPress">Clear Out Donor Press Files</button> - Useful for uninstalls or during testing.
             </form><?php
+            $files = glob(Donor::upload_dir()."DonorPressBackup*.json");
+            if (sizeof($files)>0){
+                ?><h2>Backups</h2><?php
+                foreach($files as $file){
+                    print '<div><a href="'.plugins_url('donor-press/uploads/'.basename($file)).'">'.basename($file).'</a> '.filesize_formatted($file).' - '.date ("F d Y H:i", filemtime($file)).'</div>';                
+                }
+            }
+            //dd($files);
             break;
         case "cv":  
         default:
@@ -42,3 +50,10 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
     }
     ?>		
 </div>
+<?php
+function filesize_formatted($path){
+    $size = filesize($path);
+    $units = array( 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
+    $power = $size > 0 ? floor(log($size, 1024)) : 0;
+    return number_format($size / pow(1024, $power), 2, '.', ',') . ' ' . $units[$power];
+}
