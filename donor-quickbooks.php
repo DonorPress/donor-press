@@ -9,8 +9,8 @@ $qb=new Quickbooks();
     if (!$clientId || !$clientSecret){
         $qb->missing_api_error();
     }else{ 
-        if ($qb->request_handler()){ print "</div>"; return;}     
-        $qb->show();
+        if ($qb->request_handler()){ }     
+        else $qb->show();
     }
 ?>
 </div>

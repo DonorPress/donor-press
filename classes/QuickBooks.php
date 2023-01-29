@@ -86,8 +86,7 @@ class QuickBooks extends ModelLite
         ### assume we have a good access token.
         if ($this->session(self::SESSION_PREFIX."accessToken")){
             return true;  
-        }
-
+        }       
         ### No Access Token, but we have a code and realmId returned 
         if ($this->session(self::SESSION_PREFIX."code") && $this->session(self::SESSION_PREFIX."realmId")){
             try {
@@ -158,8 +157,8 @@ class QuickBooks extends ModelLite
         return $changedFields;
     }
 
-    public function request_handler(){ 
-        if ($this->authenticate()){ 
+    public function request_handler(){      
+        if ($this->authenticate()){
             if ($_GET['syncDonorId']){
                 $this->donor_to_customer_check($_GET['syncDonorId'],$_GET['QuickBooksId']);
                 return true;
@@ -176,7 +175,10 @@ class QuickBooks extends ModelLite
                 }
             
             }
+        }else{
+            return true; //if not authenticated, then stop at the Quickbokos API Login Link
         }
+        return false;
     }
 
     public function check_dateService_error(){
@@ -418,7 +420,7 @@ class QuickBooks extends ModelLite
         return new Donor($array);
     }
 
-    public function show(){       
+    public function show(){
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");
             $tables=['Customer'=>'DisplayName','Invoice'=>'Balance','Vendor'=>'DisplayName','Employee'=>'DisplayName','Item'=>'Name','Account'=>'Name','Bill'=>'VendorRef','BillPayment'=>'VendorRef','CompanyInfo'=>'CompanyName','CreditMemo'=>'TotalAmt'

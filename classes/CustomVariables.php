@@ -37,7 +37,7 @@ class CustomVariables extends ModelLite
                             ?>
                             <label><input type="radio" name="<?php print $var?>" value="Production"<?php print $vals->$fullVal->option_value=="Production"?" checked":""?>> Production </label>
                             <label><input type="radio" name="<?php print $var?>" value="Development"<?php print $vals->$fullVal->option_value!="Production"?" checked":""?>> Development </label>
-                            <?
+                            <?php
                             break;
                         default:?>
                             <input name="<?php print $var?>" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/>
