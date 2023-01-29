@@ -36,7 +36,7 @@ class QuickBooks extends ModelLite
                 return false;
             }
             $quickbooks_base=CustomVariables::get_option('QuickbooksBase');
-            if (!$quickbooks_base!="Production") $quickbooks_base="Development";
+            if ($quickbooks_base!="Production") $quickbooks_base="Development";
             $this->dataService = DataService::Configure(array(
                 'auth_mode' => 'oauth2',
                 'ClientID' => $clientId,
@@ -470,7 +470,7 @@ class QuickBooks extends ModelLite
             }else{ 
                 $companyInfo = $this->dataService->getCompanyInfo();               
                 ?>
-                <h2>Company: <?php print $companyInfo->LegalName?></h2>             
+                <h2>Company: <?php print $companyInfo->LegalName?> | <?php print CustomVariables::get_option('QuickbooksBase');?></h2>             
                 <h3>View</h3>
                  <?php foreach ($tables as $tbl=>$key){ ?>
                     <div><a href="?page=donor-quickbooks&table=<?php print $tbl?>"><?php print $tbl?></a></div>
