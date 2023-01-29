@@ -36,7 +36,7 @@ function donor_header_check() {
 		$qb->check_redirects($_GET['redirect']);
 	}
 	## download functions before page is loaded
-	switch($_POST['Function']){
+	switch($_REQUEST['Function']){
 		case "DonationReceiptPdf":
 			$donation=Donation::get_by_id($_REQUEST['DonationId']);	
 			$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));
