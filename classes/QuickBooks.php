@@ -35,13 +35,15 @@ class QuickBooks extends ModelLite
                 $this->missing_api_error();
                 return false;
             }
+            $quickbooks_base=CustomVariables::get_option('QuickbooksBase');
+            if (!$quickbooks_base!="Production") $quickbooks_base="Development";
             $this->dataService = DataService::Configure(array(
                 'auth_mode' => 'oauth2',
                 'ClientID' => $clientId,
                 'ClientSecret' =>  $clientSecret,
                 'RedirectURI' => self::redirect_url(),
                 'scope' => "com.intuit.quickbooks.accounting",
-                'baseUrl' => "Development", ///Production
+                'baseUrl' => $quickbooks_base, ///Production
                 'accessTokenKey' => $this->session(self::SESSION_PREFIX."accessToken"),
                 'refreshTokenKey' => $this->session(self::SESSION_PREFIX."refreshToken"),
                 'QBORealmID' => $this->session(self::SESSION_PREFIX."realmId")

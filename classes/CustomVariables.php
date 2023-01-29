@@ -8,7 +8,7 @@
 class CustomVariables extends ModelLite
 {  
     const base = 'donation';
-    const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","DefaultCountry"];	
+    const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","DefaultCountry","QuickbooksBase"];	
     const variables_protected = ["PaypalClientId","PaypalSecret","QuickbooksClientId","QuickbooksSecret"];
     const partialTables = [
         ['TABLE'=>'posts','WHERE'=>"post_type='donortemplate'",'COLUMN_IGNORE'=>'ID'],
@@ -28,11 +28,28 @@ class CustomVariables extends ModelLite
                     $fullVal=self::base."_".$var;
                     //$c->$var=get_option($fullVal);
                     ?>
-                    <tr><td><input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/><?php print $var?></td><td><input name="<?php print $var?>" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/>
-                    <input type="hidden" name="<?php print $var?>_was" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/></td></tr>
+                    <tr><td><input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/><?php print $var?></td>
+                    <td>
+                    <?php 
+                    switch($var){
+                        case "QuickbooksBase":?>
+                            <label><input type="radio" name="<?php print $var?>" value="Production"<?php print $vals->$fullVal=="Production"?" checked":""?>> Production </label>
+                            <label><input type="radio" name="<?php print $var?>" value="Development"<?php print $vals->$fullVal!="Production"?" checked":""?>> Development </label>
+                            <?
+                            break;
+                        default:?>
+                            <input name="<?php print $var?>" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/>
+                        <?php
+                        }
+                        ?>
+                        <input type="hidden" name="<?php print $var?>_was" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/>
+                    </td></tr>
                     <?php
                 }
                 ?>
+                 <tr><td><input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/><?php print $var?></td><td><input name="<?php print $var?>" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/>
+                    <input type="hidden" name="<?php print $var?>_was" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/></td></tr>
+                <tr><td>Quickbooks Enviroment</td><td><label>
                 </table>
                 <h3>Protected Variables (encoded)</h3>
                 <div>By entering a value, it will override what is currently there. Values are encrypted on the database.</div>
@@ -48,7 +65,9 @@ class CustomVariables extends ModelLite
                   <?php
                 } 
                 ?>
-            </table>
+                
+            </table>           
+            
             <button type="submit" class="primary" name="Function" value="Save">Save</button>
         </form>
         <?php
