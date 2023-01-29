@@ -32,9 +32,11 @@ class CustomVariables extends ModelLite
                     <td>
                     <?php 
                     switch($var){
-                        case "QuickbooksBase":?>
-                            <label><input type="radio" name="<?php print $var?>" value="Production"<?php print $vals->$fullVal=="Production"?" checked":""?>> Production </label>
-                            <label><input type="radio" name="<?php print $var?>" value="Development"<?php print $vals->$fullVal!="Production"?" checked":""?>> Development </label>
+                        case "QuickbooksBase":
+                            if (!$vals->$fullVal) $vals->$fullVal=new stdClass();
+                            ?>
+                            <label><input type="radio" name="<?php print $var?>" value="Production"<?php print $vals->$fullVal->option_value=="Production"?" checked":""?>> Production </label>
+                            <label><input type="radio" name="<?php print $var?>" value="Development"<?php print $vals->$fullVal->option_value!="Production"?" checked":""?>> Development </label>
                             <?
                             break;
                         default:?>

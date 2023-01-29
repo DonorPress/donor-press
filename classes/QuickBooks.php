@@ -420,7 +420,7 @@ class QuickBooks extends ModelLite
 
     public function show(){       
         if ($this->authenticate()){
-            self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds</div>");
+            self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");
             $tables=['Customer'=>'DisplayName','Invoice'=>'Balance','Vendor'=>'DisplayName','Employee'=>'DisplayName','Item'=>'Name','Account'=>'Name','Bill'=>'VendorRef','BillPayment'=>'VendorRef','CompanyInfo'=>'CompanyName','CreditMemo'=>'TotalAmt'
             ,'Deposit'=>'CashBack.Memo','JournalEntry'=>'PrivateNote','SalesReceipt'=>'DocNumber']; //,'Department',,'Budget'
             if ($_GET['table']){      

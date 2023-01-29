@@ -61,6 +61,11 @@ function donor_header_check() {
 		case 'ExportDonorList':
 			Donor::get_mail_list(["D.DonorId IN (".implode(",",$_POST['pdf']).")"]);
 		break;
+		case 'QuickbookSessionKill';
+			$qb=new QuickBooks();
+			$qb->clearSession();
+			return header("Location: ?page=donor-quickbooks");
+		break;
 	}
 
 	if ($_GET['donorAutocomplete']){
