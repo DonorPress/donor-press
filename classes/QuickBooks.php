@@ -358,6 +358,26 @@ class QuickBooks extends ModelLite
         }
     }
 
+    public function item_list($where=""){       
+        if ($this->authenticate()){            
+            $entities =$this->dataService->Query("SELECT * FROM Item".($where?" WHERE ".$where." ":" ")." Orderby FullyQualifiedName");
+            if($this->check_dateService_error()){
+                return $entities; 
+            }  
+        }else {
+            print "Must connect to Quickbooks before editing Categories.";
+            die();
+        }          
+    }
+
+    static function is_setup(){ 
+        if (CustomVariables::get_option('QuickbooksClientId') && CustomVariables::get_option('QuickbooksSecret')){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
     public function donation_to_invoice($donation,$donor){
         $item=$this->item_donation();
         if (!$item){

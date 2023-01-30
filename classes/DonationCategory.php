@@ -7,7 +7,7 @@ class DonationCategory extends ModelLite
     protected $table = 'donation_category';
 	protected $primaryKey = 'CategoryId';
 	### Fields that can be passed 
-    protected $fillable = ["Category","Description","ParentId","TemplateId"];	 
+    protected $fillable = ["Category","Description","ParentId","TemplateId","QBItemId"];	 
   	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';  
     //NOte: TemplateId links to table posts -> ID, but uses post_type='donortemplate' 
@@ -82,6 +82,32 @@ class DonationCategory extends ModelLite
                 print '<option value="'.$t->ID.'"'.($t->ID==$this->TemplateId?" selected":"").'>'.$t->post_name.'</option>';
             }
             ?></select></td></tr>
+            <?php            
+            if (Quickbooks::is_setup()){?>
+                <tr>
+                    <td>Default QuickBook Item:</td>
+                    <td><?php
+                    $qb=new QuickBooks();
+                    $items=$qb->item_list();
+                    if (sizeof($items)>0){?>                        
+                    <select name="QBItemId"><option value="">-not set-</option><?php                    
+                    foreach($items as $item){
+                        print '<option value="'.$item->Id.'"'.($item->Id==$this->QBItemId?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
+                    }
+                    ?></select> 
+                    <?php 
+                    }else{?>
+                    <div>No Item Found in Quickbooks. Please create a non-stock item in Quickbooks first.</div>
+                    <input type="hidden" name="QBItemId" value="<?php print $this->QBItemId?>"/>
+                    <?php } ?>
+                    <em>When syncing to Quickbooks, this is how the default item on an invoice is logged. Items on Quickbooks determine which sales account gets used.</em></td>
+                </tr>
+                <?php
+            }else{
+                ?><input type="hidden" name="QBItemId" value="<?php print $this->QBItemId?>"/><?php
+            }
+          
+            ?>
             <tr><td colspan="2">
                 <button type="submit" class="primary" name="Function" value="Save">Save</button>
                 <button type="submit" name="Function" class="secondary" value="Cancel" formnovalidate="">Cancel</button>
@@ -232,6 +258,7 @@ class DonationCategory extends ModelLite
             `Description` varchar(250) DEFAULT NULL,
             `ParentId` int(11) DEFAULT NULL,
             `TemplateId` int(11) DEFAULT NULL,
+            `QBItemId` int(11) DEFAULT NULL,
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`CategoryId`),
