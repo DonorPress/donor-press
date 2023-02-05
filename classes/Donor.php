@@ -452,15 +452,98 @@ class Donor extends ModelLite {
         return $this->phone_format($this->Phone);
     }
     
+    static function year_list($settings=[]){       
+        if (!$settings['orderBy']) $settings['orderBy']="D.Name, D.Name2, YEAR(DT.Date)";
+        $total=0;
+        if (!$settings['where']) $settings['where']=[];
+        $settings['where'][]="Status>=0";
+        $settings['where'][]="Type>=1";        
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, COUNT(*) as donation_count, SUM(Gross)  as Total ,YEAR(DT.Date) as Year
+        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        WHERE ".implode(" AND ",$settings['where'])
+        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` "
+        .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
+        ." Order BY ".$settings['orderBy'];
+        $results = self::db()->get_results($SQL);
+        $q=[];
+        foreach($results as $r){
+            $q['yearList'][$r->DonorId][$r->Year]+=$r->Total;
+            if (!$q['donors'][$r->DonorId]) $q['donors'][$r->DonorId]=new Donor($r);
+            $q['year'][$r->Year]+=$r->Total;
+        }
+        ksort($q['year']);
+        ?><table class="dp">
+            <thead>
+                <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th>
+            <?php
+            foreach($q['year'] as $y=>$total){
+                print "<th>".$y."</th>";
+            }
+            ?></tr>
+            </thead>
+            <tbody>
+            <?php
+            foreach($q['donors'] as $id=>$years){
+                $donor=$q['donors'][$id];
+                ### code filter if amount is given, if amount given in any year then show this row.
+                if ($settings['amount']){
+                    $pass=false;
+                    foreach($q['yearList'][$id] as $amount){
+                        if ($amount>=$settings['amount']){
+                            $pass=true;
+                            break;
+                        }
+                    }
+                }else{
+                    $pass=true;
+                }
+                if ($pass){                   
+                    ?>  
+                    <tr>
+                        <td><?php print $donor->show_field('DonorId')?></td>
+                        <td><?php print $donor->name_check()?></td>
+                        <td><?php print $donor->display_email()?></td>    
+                        <td><?php print $donor->phone()?></td> 
+                        <td><?php print $donor->mailing_address(', ',false)?></td> 
+                        <?php
+                        foreach($q['year'] as $y=>$total){
+                            $q['total'][$y]+=$total;
+                            print "<td style='text-align:right;'>".($q['yearList'][$id][$y]?number_format($q['yearList'][$id][$y],2):"")."</td>";
+                        }
+                        ?></tr>        
+                    </tr><?php
+                }
+           
+            }?>
+            </tbody>
+            <tfoot><tr><td></td><td></td><td></td><td></td><td>Totals:</td><?php
+            foreach($q['year'] as $y=>$total){
+                print "<td style='text-align:right;'>".($q['total'][$y]?number_format($q['total'][$y],2):"")."</td>";
+            }
+            ?></tr></tfoot>
+        </table>
+        <?php       
+    }
+
     static function summary_list($where=[],$year=null,$settings=[]){
         if (!$settings['orderBy']) $settings['orderBy']="SUM(Gross) DESC,COUNT(*) DESC";
         $total=0;
         $where[]="Status>=0";
         $where[]="Type>=1";        
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE ".implode(" AND ",$where)." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY ".$settings['orderBy'];
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest 
+        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        WHERE ".implode(" AND ",$where)
+        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` "
+        .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
+        ." Order BY ".$settings['orderBy'];
+
         $results = self::db()->get_results($SQL);
         ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
-        <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr><?php
+        <table class="dp">
+            <thead>
+                <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr>
+            </thead>
+            <tbody><?php
         foreach ($results as $r){
             $donor=new self($r);
             ?>
@@ -475,7 +558,12 @@ class Donor extends ModelLite {
                 <td><?php print $r->DateLatest?></td>
             </tr><?php
             $total+=$r->Total;
-        }?><tr><td></td><td></td><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td></tr></table>
+        }?>
+        </tbody>
+        <tfoot>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td></tr>
+        </tfoot>
+        </table>
                   
         <?php
         return;
@@ -942,30 +1030,33 @@ class Donor extends ModelLite {
 
     static function merge_suggestions(){ //similar to find duplicates to merge... probably can consolidate
         $matchField=['Name','Name2','Email','Phone','Address1'];
-        $SQL="Select D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId, COUNT(*) as donation_count
+        $SQL="Select D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId, COUNT(DT.DonationId) as donation_count
         FROM ".Donor::get_table_name()." D LEFT JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId
         Group BY D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId Order BY  D.DonorId";
         $results = self::db()->get_results($SQL); 
-        //dd($results);
+       // dd($results);
         $show=false;
         $merge=[];
+        $cache=[];
         foreach ($results as $r){
             $donors[$r->DonorId]=$r;
-            if ($r->MergedId>0 && $r->donation_count){
-                $merge[$r->DonorId]=$r->MergedId;
-            }elseif($r->MergedId==0){
+            if ($r->MergedId>0){
+                if ($r->donation_count>0){ 
+                    $merge[$r->DonorId]=$r->MergedId;                   
+                }
+            }elseif(!$r->MergedId){
                 foreach($matchField as $field){
                     if (trim($r->$field)){
                         $val=preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($r->$field));
-                        $cache[$val][]=$r->DonorId;
-                        if (sizeof($cache[$val])>1) $show=true;
+                        if (!$cache[$val] || !in_array($r->DonorId,$cache[$val])) $cache[$val][]=$r->DonorId;
+                        if ($cache[$val] && sizeof($cache[$val])>1) $show=true;
                         if ($field=="Name"){
                             $nameParts=explode(" ",strtolower(trim(str_replace(" &","",$r->Name))));
                             if (sizeof($nameParts)>2){                                
                                 $val=preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($nameParts[0].$nameParts[sizeof($nameParts)-1]));
-                                $cache[$val][]=$r->DonorId;
+                                if (!$cache[$val] || !in_array($r->DonorId,$cache[$val])) $cache[$val][]=$r->DonorId;
                                 $val=preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($nameParts[1].$nameParts[sizeof($nameParts)-1]));
-                                $cache[$val][]=$r->DonorId;
+                                if (!$cache[$val] || !in_array($r->DonorId,$cache[$val])) $cache[$val][]=$r->DonorId;
                             }
                             
                         }
@@ -980,17 +1071,17 @@ class Donor extends ModelLite {
             <table border=1><th>Donor</th><th>Merge To</th></tr><?php
             foreach($merge as $from=>$to){
                 print '<tr><td>';              
-                print "<div>".$donors[$from]->Name.' <a target="Donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$from]->DonorId.'&MergedId='.$donors[$to]->DonorId.'">Merge To -></a></div>';   
+                print '<div><a target="Donor" href="?page=donor-index&DonorId='.$donors[$from]->DonorId.'">'.$donors[$from]->DonorId.'</a> '.$donors[$from]->Name.' (merged id: '.$donors[$from]->MergedId.') <a target="Donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$from]->DonorId.'&MergedId='.$donors[$to]->DonorId.'">Merge To -></a></div>';   
                           
-                print "</td><td>".$donors[$to]->Name."</td></tr>";
+                print '</td><td><a target="Donor" href="?page=donor-index&DonorId='.$donors[$to]->DonorId.'">'.$donors[$to]->DonorId.'</a> '.$donors[$to]->Name."</td></tr>";
             }
             foreach($cache as $key=>$a){
-                if (sizeof($a)>1){
+                if (sizeof($a)>1){                  
                     print '<tr><td>';
                     for($i=1;$i<sizeof($a);$i++){
-                        print "<div>".$donors[$a[$i]]->Name.' <a target="Donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$a[$i]]->DonorId.'&MergedId='.$donors[$a[0]]->DonorId.'">Merge To -></a></div>';   
+                        print '<div><a target="Donor" href="?page=donor-index&DonorId='.$donors[$a[$i]]->DonorId.'">'.$donors[$a[$i]]->DonorId.'</a> '.$donors[$a[$i]]->Name.($donors[$a[$i]]->Name2?" & ".$donors[$a[$i]]->Name2:"").' <a target="Donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$a[$i]]->DonorId.'&MergedId='.$donors[$a[0]]->DonorId.'">Merge To -></a></div>';   
                     }                 
-                    print "</td><td>".$donors[$a[0]]->Name."</td></tr>";
+                    print '</td><td><a target="Donor" href="?page=donor-index&DonorId='.$donors[$a[0]]->DonorId.'">'.$donors[$a[0]]->DonorId.'</a> '.$donors[$a[0]]->Name.($donors[$a[0]]->Name2?" & ".$donors[$a[0]]->Name2:"")."</td></tr>";
                 }
             }
         }
