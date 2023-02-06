@@ -458,10 +458,10 @@ class Donor extends ModelLite {
         if (!$settings['where']) $settings['where']=[];
         $settings['where'][]="Status>=0";
         $settings['where'][]="Type>=1";        
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, COUNT(*) as donation_count, SUM(Gross)  as Total ,YEAR(DT.Date) as Year
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,YEAR(DT.Date) as Year, COUNT(*) as donation_count, SUM(Gross)  as Total 
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$settings['where'])
-        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` "
+        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,YEAR(DT.Date) "
         .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
         ." Order BY ".$settings['orderBy'];
         $results = self::db()->get_results($SQL);
@@ -501,7 +501,7 @@ class Donor extends ModelLite {
                     ?>  
                     <tr>
                         <td><?php print $donor->show_field('DonorId')?></td>
-                        <td><?php print $donor->name_check()?></td>
+                        <td><?php print $donor->name_combine()?></td>
                         <td><?php print $donor->display_email()?></td>    
                         <td><?php print $donor->phone()?></td> 
                         <td><?php print $donor->mailing_address(', ',false)?></td> 
