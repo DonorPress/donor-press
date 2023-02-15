@@ -1,5 +1,5 @@
 <?php
-$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','donations'=>'Donations','reg'=>"Regression"];
+$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression"];
 $active_tab=Donor::show_tabs($tabs,$active_tab);
 ?>
 <div id="pluginwrap">
@@ -30,7 +30,10 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 			break;
 		case "donors":
 			report_donors();
-		break;	
+		break;
+		case "merge":
+			Donor::merge_suggestions();
+		break;
 		case "donations":
 			report_donations();
 		break;
@@ -43,11 +46,6 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 			reportMonthly();
 		break;
 	}
-
-
-
-	
-
 	?>	
 </div>
 <?php
@@ -87,19 +85,58 @@ function year_end_summmaries(){ ?>
 	}
 }
 
-function report_donors(){
-	Donor::merge_suggestions();
-	?><form method="post"><button name="Function" value="ExportAllDonors">Export All Donors</button></form>
-	<?php	
-	Donor::summary_list([],"",['orderBy'=>'D.Name, D.Name2']);
+function report_donors(){	
+	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';
+	?><form method="post">
+		<button name="Function" value="ExportAllDonors">Export All Donors</button>
+	</form>
+	
+	<form method="get" style="font-size:90%;">
+	<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+	<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
+	Top: <input type="number" name="top" value="<?php print $top?>"/>
+	Dates From <input type="date" name="df" value="<?php print $_GET['df']?>"/> to 
+	<input type="date" name="dt" value="<?php print $_GET['dt']?>"/> 
+	Date Field: <select name="dateField"><?php 
+	foreach (Donation::s()->dateFields as $field=>$label){?>
+		<option value="<?php print $field?>"<?php print $dateField==$field?" selected":""?>><?php print $label?> Date</option>
+	<?php } ?>
+	</select>
+	<br>
+	Amount >=  <input type="number" step=".01" name="af" value="<?php print $_GET['af']?>" style="width:120px;"/>
+		<label><input type="checkbox" name="yearView" value="t" <?=$_GET['yearView']=="t"?" checked":""?>/> Year Trends</label>
+		<button name="f" value="Go">Go</button>
+	</form>
+	<?php
+	$where=[];$having=[];
+	if ($_GET['df']){
+		$where[]="`$dateField`>='".$_GET['df'].($dateField=="Date"?"":" 00:00:00")."'";
+	}
+	if ($_GET['dt']){
+		$where[]="`$dateField`<='".$_GET['dt'].($dateField=="Date"?"":" 23:59:59")."'";
+	}
+	
+	if($_GET['f']=="Go"){
+		if($_GET['yearView']=="t"){
+			//print "year view comming soon.";
+
+			Donor::year_list(['where'=>$where,'orderBy'=>'D.Name, D.Name2','having'=>$having,'amount'=>$_GET['af']]);
+		}else{
+			if ($_GET['af']){
+				$having[]="SUM(Gross)>='".$_GET['af']."'";
+			}
+			Donor::summary_list($where,"",['orderBy'=>'D.Name, D.Name2','having'=>$having]);
+		}
+	}
+	
 	//print "survived";
 }
 
 function report_donations(){ 
 	$top=is_int($_GET['top'])?$_GET['top']:1000;	
-	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';
-	
-	?>
+	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';		?>
+
+
 	<form method="get" style="font-size:90%;">
 		<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
 		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
@@ -162,7 +199,7 @@ function report_donations(){
 			$where[]="CategoryId='".($_GET['CategoryId']=="ZERO"?0:$_GET['CategoryId'])."'";
 		}
 		if ($_GET['af'] && $_GET['at']){
-			$where[]="DT.Gross BETWEEN '".$_GET['af']."' AND '".$_GET['af']."'";
+			$where[]="DT.Gross BETWEEN '".$_GET['af']."' AND '".$_GET['at']."'";
 		}elseif ($_GET['af']){
 			$where[]="DT.Gross='".$_GET['af']."'";
 		}elseif ($_GET['at']){

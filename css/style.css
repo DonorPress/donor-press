@@ -21,7 +21,7 @@ table.dp {
 	border-collapse: collapse;	
 }
 
-table.dp tr th{
+table.dp tr th, table.dp tfoot tr td{
 	background-color:#CCCCCC;
 }
 
@@ -36,6 +36,10 @@ table.dp tbody tr{
 }
 table.dp tbody tr:nth-child(odd){
 	background-color: #EEEEEE;	
+}
+
+table.dp tfoot tr td{
+	font-weight: bold;
 }
 
 .dp-tab-links{
