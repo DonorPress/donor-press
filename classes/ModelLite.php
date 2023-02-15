@@ -320,6 +320,9 @@ class ModelLite{
 			case "DonorId":
 				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>'.($settings['donationlink']?' <a href="?page=donor-index&DonorId='.$v.'&f=AddDonation">+ Donation</a>':"");
 			break;
+			case "Date":
+					return str_replace(" 00:00:00","",$v);
+				break;
 			case "FromEmailAddress":
 			case "ToEmailAddress":
 			case "Email":

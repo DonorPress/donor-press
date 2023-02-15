@@ -52,6 +52,9 @@ function donor_header_check() {
 		case 'SendYearEndPdf':
 			Donor::YearEndReceiptMultiple($_REQUEST['Year'],$_POST['pdf'],$_REQUEST['limit'],$_REQUEST['blankBack'],$_REQUEST['preview']?false:true);
 		break;
+		case 'PdfLabelDonationReceipts':			
+			Donation::label_by_id($_POST['EmailDonationId'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
+		break;
 		case 'PrintYearEndLabels':
 			Donor::YearEndLabels($_REQUEST['Year'],$_POST['pdf'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
 		break;

@@ -275,7 +275,7 @@ class Donation extends ModelLite
         ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE 1
         Group BY `CreatedAt` Order BY `CreatedAt` DESC LIMIT ".$limit;
          $results = $wpdb->get_results($SQL);
-         $linkBase="?page=".$_GET['page']."&tab=".$_GET['tab']."&limit=".$limit."&dateField=CreatedAt&SummaryView=t";
+         $linkBase="?page=".$_GET['page']."&tab=".$_GET['tab']."&limit=".$limit."&dateField=CreatedAt&SummaryView=f";
          ?><h2>Upload Groups</h2>
          <form method="get" action="">
             <input type="hidden" name="page" value="<?php print $_GET['page']?>" />
@@ -357,7 +357,7 @@ class Donation extends ModelLite
                                 $donation=new Donation($r);
                                 print "<tr>";
                             } 
-                           ?><td><?php print $donation->Date?></td><td align=right><?php print $donation->show_field('Gross')?> <?php print $donation->Currency?></td><td><?php
+                           ?><td><?php print $donation->show_field('Date')?></td><td align=right><?php print $donation->show_field('Gross')?> <?php print $donation->Currency?></td><td><?php
                             if ($donation->CategoryId) print $donation->show_field("CategoryId");
                             else print $donation->Subject;
                             ?></td><td><?php print $donation->show_field("Note")?></td>  
@@ -375,7 +375,7 @@ class Donation extends ModelLite
                     <button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
                     <button type="submit" name="Function" value="PdfDonationReceipts" disabled>Generate Pdf Receipts</button>
                     |
-                    <button type="submit" name="Function" value="PdfLabelDonationReceipts" disabled>Generate Labels</button>
+                    <button type="submit" name="Function" value="PdfLabelDonationReceipts">Generate Labels</button>
                     Labels Start At: <strong>Column:</strong> (1-3) &#8594; <input name="col" type="number" value="1"  min="1" max="3" /> &#8595; <strong>Row:</strong> (1-10)<input name="row" type="number" value="1" min="1" max="10"   />
 
                 <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th></tr><?php
@@ -814,5 +814,62 @@ class Donation extends ModelLite
             <?php wp_editor($bodyContent, 'customMessage',array("media_buttons" => false,"wpautop"=>false)); ?>
         </form>
         <?php    
+    }
+
+    static function label_by_id($donationIds,$col_start=1,$row_start=1,$limit=100000){
+        if (sizeof($donationIds)<$limit) $limit=sizeof($donationIds);
+        if (!class_exists("TCPDF")){
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+            return false;
+        }      
+        $SQL="Select DT.DonationId,DR.*
+        FROM ".Donation::get_table_name()." DT
+        INNER JOIN ".Donor::get_table_name()." DR ON DT.DonorId=DR.DonorId 
+        WHERE DT.DonationId IN (".implode(",",$donationIds).")";      
+        
+        $donations = self::db()->get_results($SQL);
+        
+        foreach ($donations as $r){
+            $donationList[$r->DonationId]=new Donor($r);
+           
+        }
+        $a=[];
+
+        $defaultCountry=CustomVariables::get_option("DefaultCountry");       
+        foreach($donationIds as $id){
+            if ($donationList[$id]){
+                $address=$donationList[$id]->mailing_address("\n",true,['DefaultCountry'=>$defaultCountry]);
+                if(!$address) $address=$donationList[$id]->name_combine();
+                if ($address) $a[]=$address;
+            }
+        }
+
+        $dpi=72;	
+        $pad=10;
+        $margin['x']=13.5;// 3/16th x
+        $margin['y']=.5*$dpi;
+        $pdf = new TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false); 
+        $pdf->SetFont('helvetica', '', 12);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false); 	
+
+        $pdf->AddPage();
+        $pdf->SetCellPadding($pad);
+        $pdf->SetAutoPageBreak(true);
+        $pdf->SetMargins($margin['x'],$margin['y'],$margin['x']);
+        $pdf->SetCreator('Donor-Press Plugin');
+        $pdf->SetAuthor('Donor-Press');
+        $pdf->SetTitle($year.'Year End Labels');	 
+        $starti=($col_start>0?($col_start-1)%3:0)+($row_start>0?3*floor($row_start-1):0);
+        $border=0; $j=0;
+        for ($i=$starti;$i<sizeof($a)+$starti;$i++){
+            $col=$i%3;
+            $row=floor($i/3)%10;
+            if ($i%30==0 && $j!=0){ $pdf->AddPage();}	
+            $pdf->MultiCell(2.625*$dpi,1*$dpi,$a[$j],$border,"L",0,0,$margin['x']+$col*2.75*$dpi,$margin['y']+$row*1*$dpi,true);
+            $j++;		
+        }	
+        $pdf->Output("DonorPressDonationLabels.pdf", 'D');
+
     }
 }
