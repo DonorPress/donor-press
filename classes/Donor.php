@@ -577,10 +577,10 @@ class Donor extends ModelLite {
             $receipts[$r->DonorId][]=new DonationReceipt($r);
         }
         ## Find NOT Tax Deductible entries
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType>0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=1 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){
-            $TransactionType[$r->DonorId]=$r;
+            $NotTaxDeductible[$r->DonorId]=$r;
         }
 
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country Order BY COUNT(*) DESC, SUM(Gross) DESC";
@@ -621,9 +621,9 @@ class Donor extends ModelLite {
             print DonationReceipt::displayReceipts($receipts[$r->DonorId]);
             ?></td>
             <td><?php 
-                 if($TransactionType[$r->DonorId]){
-                    print "Count: ".$TransactionType[$r->DonorId]->donation_count." Total: ".number_format($TransactionType[$r->DonorId]->Total,2);
-                    $donorTotal+=$TransactionType[$r->DonorId]->Total;
+                 if($NotTaxDeductible[$r->DonorId]){
+                    print "Count: ".$NotTaxDeductible[$r->DonorId]->donation_count." Total: ".number_format($NotTaxDeductible[$r->DonorId]->Total,2);
+                    $donorTotal+=$NotTaxDeductible[$r->DonorId]->Total;
                  }?>
              </td>
              <td align=right><?php print number_format($donorTotal,2);?></td>
@@ -685,14 +685,14 @@ class Donor extends ModelLite {
         $this->emailBuilder->pageID=$page->ID;
         $total=0;
         $taxDeductible=[];
-        $TransactionType=[];
+        $NotTaxDeductible=[];
         $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'"),'Date');
         foreach($donations as $r){
             if ($r->TransactionType==0){
                 $taxDeductible[]=$r;
                 $total+=$r->Gross;                
-            }else{
-                $TransactionType[]=$r;
+            }elseif($r->TransactionType==1){
+                $NotTaxDeductible[]=$r;
                 $nteTotal+=$r->Gross;
             }
         }
@@ -701,12 +701,12 @@ class Donor extends ModelLite {
             $ReceiptTable.=$this->receipt_table_generate($taxDeductible);
         }
 
-        if (sizeof($TransactionType)>0){
-            $plural=sizeof($TransactionType)==1?"":"s";
+        if (sizeof($NotTaxDeductible)>0){
+            $plural=sizeof($NotTaxDeductible)==1?"":"s";
             
             $ReceiptTable.="<p>Additionally the following gift".$plural."/grant".$plural." totaling <strong>$".number_format($nteTotal,2)."</strong> ".($plural=="s"?"were":"was")." given for which you may have already received a tax deduction. Consult a tax professional on whether these gifts can be claimed:</p>";
             
-            $ReceiptTable.=$this->receipt_table_generate($TransactionType);
+            $ReceiptTable.=$this->receipt_table_generate($NotTaxDeductible);
         }
         if ($ReceiptTable=="") $ReceiptTable="<div><em>No Donations found in ".$year."</div>";
         

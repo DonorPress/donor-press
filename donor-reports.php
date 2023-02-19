@@ -170,11 +170,13 @@ function report_donations(){
 				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
 			}?>
 		</select>
-		Tax Deductible:
+		Transaction Type:
 		<select name="TransactionType">
 			<option value="">--All--</option>
-			<option value="ZERO"<?php print $_GET['TransactionType']=='ZERO'?" selected":""?>>Yes</option>
-			<option value="1"<?php print $_GET['TransactionType']==1?" selected":""?>>No - Grants/Donor Advised Funds, etc.</option>
+			<?php
+			foreach(Donation::s()->tinyIntDescriptions["TransactionType"] as $key=>$label){
+				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
+			}?>
 		</select>
 		<button name="f" value="Go">Go</button>
 	</form>	<?php
