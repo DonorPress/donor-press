@@ -4,8 +4,9 @@
 	if (Donation::request_handler()) { print "</div>"; return;} //important to do this first
 	if (Donor::request_handler())  { print "</div>"; return;}
 	if (DonationCategory::request_handler()) { print "</div>"; return;}
+	global $donor_press_db_version;
 	?>
-	<h2>Donor Tracker</h2>
+	<h1>Donor Manager <span style="font-size:60%">Version: <?php print $donor_press_db_version;?></span></h1>
 	<form method="get">
 	<input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
 	<!-- <div class="auto-search-wrapper">
