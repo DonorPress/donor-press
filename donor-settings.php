@@ -11,24 +11,29 @@
 }
 </style>
 <?php
-$tabs=['cv'=>'Site Variables','email'=>'Email Templates','cat'=>'Donation Categories','bak'=>'Backup/Restore'];
+$tabs=['cv'=>'Site Variables','email'=>'Email Templates','cat'=>'Donation Categories','type'=>'Donor Types','bak'=>'Backup/Restore'];
 $active_tab=Donor::show_tabs($tabs,$active_tab);
 
 ?>
 <div id="pluginwrap">
 	<?php
     if (DonationCategory::request_handler()) { print "</div>"; return;}	
+    if (DonorType::request_handler()) { print "</div>"; return;}	
     if (DonorTemplate::request_handler()) { print "</div>"; return;}  
     if (CustomVariables::request_handler()) { print "</div>"; return;}    
     ?>
     <h1>Settings: <?php print $tabs[$active_tab]?></h1><?php
-    switch($active_tab){       
+    switch($active_tab){  
+        case "type":  DonorType::list(); break;     
         case "cat":  DonationCategory::list(); break;
         case "email": DonorTemplate::list(); break;
         case "bak":
             ?><form method="post">
                 <button name="Function" value="BackupDonorPress">Backup Donor Press Tables/Settings</button>
-                <br>Note: Restore Feature doesn't exist yet. Contact Plugin Author to write this.
+                
+                <div>
+                <input type="file" name="fileToUpload" id="fileToUpload" accept=".json">     
+                <button name="Function" value="RestoreDonorPress">Restore from File</button> <em>Caution - will remove current Donor Press Data</em>
 
                 <hr>
                 <h2>Nuke Site</h2>

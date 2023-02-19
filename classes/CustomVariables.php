@@ -200,16 +200,26 @@ class CustomVariables extends ModelLite
 
 
     static public function request_handler(){        
-        //$wpdb=self::db();  
-        if ($_POST['Function']=="NukeIt"){
-            self::nuke_it($_POST);
-        }
-        if ($_POST['Function'] == 'BackupDonorPress'){
-            self::backup();
-        }elseif($_POST['Function'] == 'NukeDonorPress'){
-            self::nuke_confirm();
-            return true;
-        }
+        //$wpdb=self::db(); 
+        
+        switch($_POST['Function']){
+            case 'BackupDonorPress': 
+                self::backup();
+                break;
+            case 'RestoreDonorPress':
+                self::backup(); //backup current first.
+                // get file -> run restore here..
+                if(isset($_FILES['fileToUpload'])){
+                    $originalFile=basename($_FILES["fileToUpload"]["name"]);
+                }
+                break;
+            case 'NukeDonorPress':
+                self::nuke_confirm();
+                return true;
+                break;            
+        }		
+
+		
         if ($_POST['Function'] == 'Save' && $_POST['table']=="CustomVariables"){
             foreach(self::variables as $var){
                 if ($_POST[$var]!=$_POST[$var.'_was']){

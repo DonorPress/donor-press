@@ -357,6 +357,17 @@ class QuickBooks extends ModelLite
             }
         }
     }
+    public function account_list($where=""){       
+        if ($this->authenticate()){            
+            $entities =$this->dataService->Query("SELECT * FROM Account".($where?" WHERE ".$where." ":" ")." Orderby Name");
+            if($this->check_dateService_error()){
+                return $entities; 
+            }  
+        }else {
+            print "Must connect to Quickbooks before viewing accounts.";
+            die();
+        }          
+    }
 
     public function item_list($where=""){       
         if ($this->authenticate()){            

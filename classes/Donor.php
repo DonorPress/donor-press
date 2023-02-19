@@ -8,7 +8,7 @@ class Donor extends ModelLite {
     protected $table = 'Donor';
 	protected $primaryKey = 'DonorId';
 	### Fields that can be passed 
-    public $fillable = ["Source","SourceId","Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TaxReporting","MergedId","QuickBooksId"];	    
+    public $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TypeId","TaxReporting","MergedId","Source","SourceId","QuickBooksId"];	    
 	
     public $flat_key = ["Name","Name2","Email","Phone","City","Region"];
     ### Default Values
@@ -577,13 +577,13 @@ class Donor extends ModelLite {
             $receipts[$r->DonorId][]=new DonationReceipt($r);
         }
         ## Find NOT Tax Deductible entries
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxDeductible>0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType>0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){
-            $notTaxDeductible[$r->DonorId]=$r;
+            $TransactionType[$r->DonorId]=$r;
         }
 
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.NotTaxDeductible=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country Order BY COUNT(*) DESC, SUM(Gross) DESC";
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country Order BY COUNT(*) DESC, SUM(Gross) DESC";
         $results = self::db()->get_results($SQL);
         ?><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
         <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Mailing</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>
@@ -621,9 +621,9 @@ class Donor extends ModelLite {
             print DonationReceipt::displayReceipts($receipts[$r->DonorId]);
             ?></td>
             <td><?php 
-                 if($notTaxDeductible[$r->DonorId]){
-                    print "Count: ".$notTaxDeductible[$r->DonorId]->donation_count." Total: ".number_format($notTaxDeductible[$r->DonorId]->Total,2);
-                    $donorTotal+=$notTaxDeductible[$r->DonorId]->Total;
+                 if($TransactionType[$r->DonorId]){
+                    print "Count: ".$TransactionType[$r->DonorId]->donation_count." Total: ".number_format($TransactionType[$r->DonorId]->Total,2);
+                    $donorTotal+=$TransactionType[$r->DonorId]->Total;
                  }?>
              </td>
              <td align=right><?php print number_format($donorTotal,2);?></td>
@@ -685,14 +685,14 @@ class Donor extends ModelLite {
         $this->emailBuilder->pageID=$page->ID;
         $total=0;
         $taxDeductible=[];
-        $notTaxDeductible=[];
+        $TransactionType=[];
         $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'"),'Date');
         foreach($donations as $r){
-            if ($r->NotTaxDeductible==0){
+            if ($r->TransactionType==0){
                 $taxDeductible[]=$r;
                 $total+=$r->Gross;                
             }else{
-                $notTaxDeductible[]=$r;
+                $TransactionType[]=$r;
                 $nteTotal+=$r->Gross;
             }
         }
@@ -701,12 +701,12 @@ class Donor extends ModelLite {
             $ReceiptTable.=$this->receipt_table_generate($taxDeductible);
         }
 
-        if (sizeof($notTaxDeductible)>0){
-            $plural=sizeof($notTaxDeductible)==1?"":"s";
+        if (sizeof($TransactionType)>0){
+            $plural=sizeof($TransactionType)==1?"":"s";
             
             $ReceiptTable.="<p>Additionally the following gift".$plural."/grant".$plural." totaling <strong>$".number_format($nteTotal,2)."</strong> ".($plural=="s"?"were":"was")." given for which you may have already received a tax deduction. Consult a tax professional on whether these gifts can be claimed:</p>";
             
-            $ReceiptTable.=$this->receipt_table_generate($notTaxDeductible);
+            $ReceiptTable.=$this->receipt_table_generate($TransactionType);
         }
         if ($ReceiptTable=="") $ReceiptTable="<div><em>No Donations found in ".$year."</div>";
         

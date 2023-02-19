@@ -171,10 +171,10 @@ function report_donations(){
 			}?>
 		</select>
 		Tax Deductible:
-		<select name="NotTaxDeductible">
+		<select name="TransactionType">
 			<option value="">--All--</option>
-			<option value="ZERO"<?php print $_GET['NotTaxDeductible']=='ZERO'?" selected":""?>>Yes</option>
-			<option value="1"<?php print $_GET['NotTaxDeductible']==1?" selected":""?>>No - Grants/Donor Advised Funds, etc.</option>
+			<option value="ZERO"<?php print $_GET['TransactionType']=='ZERO'?" selected":""?>>Yes</option>
+			<option value="1"<?php print $_GET['TransactionType']==1?" selected":""?>>No - Grants/Donor Advised Funds, etc.</option>
 		</select>
 		<button name="f" value="Go">Go</button>
 	</form>	<?php
@@ -186,8 +186,8 @@ function report_donations(){
 		if ($_GET['Type']){
 			$where[]="`Type`='".($_GET['Type']=="ZERO"?0:$_GET['Type'])."'";			
 		}
-		if ($_GET['NotTaxDeductible']){
-			$where[]="NotTaxDeductible='".($_GET['NotTaxDeductible']=="ZERO"?0:$_GET['NotTaxDeductible'])."'";			
+		if ($_GET['TransactionType']){
+			$where[]="TransactionType='".($_GET['TransactionType']=="ZERO"?0:$_GET['TransactionType'])."'";			
 		}
 		if ($_GET['df']){
 			$where[]="`$dateField`>='".$_GET['df'].($dateField=="Date"?"":" 00:00:00")."'";
@@ -206,11 +206,11 @@ function report_donations(){
 			$where[]="DT.Gross='".$_GET['at']."'";
 		}
 
-		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId
+		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId LIMIT ".$top;      
         $results = Donation::db()->get_results($SQL);
-        ?><table class="dp"><tr><th>DonationId</th><th>Name</th><th>Transaction</th><th>Amount</th><th>Date</th><th>Deposit Date</th><th>Tax Deductible</th><th>Category</th><th>Subject</th><th>Note</th></tr><?php
+        ?><table class="dp"><tr><th>DonationId</th><th>Name</th><th>Transaction</th><th>Amount</th><th>Date</th><th>Deposit Date</th><th>Transaction Type</th><th>Category</th><th>Subject</th><th>Note</th></tr><?php
         foreach ($results as $r){
 			$donation=new Donation($r);
 			$donor=new Donor($r);
@@ -222,7 +222,7 @@ function report_donations(){
             <td align=right><?php print number_format($r->Gross,2)?></td>
             <td><?php print $r->Date?></td>
             <td><?php print $r->DateDeposited?></td>
-			<td><?php print $r->NotTaxDeductible?"No":"Yes"?></td>
+			<td><?php print $donation->show_field("TransactionType");?></td>
 			<td><?php print $donation->show_field("CategoryId");?></td>
 			<td><?php print $r->Subject?></td>
 			<td><?php print $donation->show_field("Note");?></td>

@@ -7,7 +7,7 @@ class Donation extends ModelLite
     protected $table = 'Donation';
 	protected $primaryKey = 'DonationId';
 	### Fields that can be passed //,"Time","TimeZone"
-    public $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","NotTaxDeductible","QBOInvoiceId"];	 
+    public $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","TransactionType","QBOInvoiceId"];	 
 
     public $flat_key = ["Date","Name","Gross","FromEmailAddress","TransactionID"];
     protected $duplicateCheck=["Date","Gross","FromEmailAddress","TransactionID"]; //check these fields before reinserting a matching entry.
@@ -18,7 +18,7 @@ class Donation extends ModelLite
         "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer","10"=>"Paypal"],
         "Type"=>[0=>"Other",1=>"Donation Payment",2=>"Website Payment",5=>"Subscription Payment",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
         "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"],
-        "NotTaxDeductible"=>["0"=>"Tax Deductible","1"=>"Not Tax Deductible (Donor Advised fund, etc)","2"=>"Service (Not Tax Deductible)"]
+        "TransactionType"=>["0"=>"Tax Deductible","1"=>"Not Tax Deductible (Donor Advised fund, etc)","2"=>"Service (Not Tax Deductible)","-1"=>"Expense"]
     ];
 
     public $dateFields=[
@@ -74,7 +74,7 @@ class Donation extends ModelLite
         }
         //Fields we should drop:
         $donation->AddressStatus=$payer->address_status=="Y"?1:-1;    
-        $donation->NotTaxDeductible =0;
+        $donation->TransactionType =0;
 
         return $donation;
 
@@ -427,7 +427,7 @@ class Donation extends ModelLite
                $donorText=" for Donor #".$donor->DonorId." ".$donor->Name;
                ### copy settings from the last donation...
                $lastDonation=Donation::first(['DonorId ='.$donor->DonorId],"DonationId DESC",
-               ['select'=>'DonorId,Name,FromEmailAddress,CategoryId,PaymentSource,NotTaxDeductible']);
+               ['select'=>'DonorId,Name,FromEmailAddress,CategoryId,PaymentSource,TransactionType']);
                if ($lastDonation) $donation=$lastDonation;               
             }
             print "<h2>Add donation".$donorText."</h2>";
@@ -598,7 +598,7 @@ class Donation extends ModelLite
        ?></select></td></tr>
        <tr><td align="right">Subject</td><td><input type="text" name="Subject" value="<?php print $this->Subject?>"></td></tr>
         <tr><td align="right">Note</td><td><textarea name="Note"><?php print $this->Note?></textarea></td></tr>
-        <tr><td align="right">Tax Deductible</td><td><?php print $this->select_drop_down('NotTaxDeductible')?><div><em>Set to "Not Tax Deductible" if they have already been giving credit for the donation by donating through a donor advised fund, or if this is a payment for a service.</div></td></tr>
+        <tr><td align="right">Transaction Type</td><td><?php print $this->select_drop_down('TransactionType')?><div><em>Set to "Not Tax Deductible" if they have already been giving credit for the donation by donating through a donor advised fund, or if this is a payment for a service.</div></td></tr>
         <tr></tr><tr><td colspan="2"><button type="submit" class="Primary" name="Function" value="Save">Save</button><button type="submit" name="Function" class="Secondary" value="Cancel" formnovalidate>Cancel</button>
         <?php 
         if ($this->DonationId){
@@ -615,7 +615,7 @@ class Donation extends ModelLite
         if ($this->emailBuilder) return;
         $this->emailBuilder=new stdClass();
         
-        if ($this->NotTaxDeductible==1){                   
+        if ($this->TransactionType==1){                   
             $page = DonorTemplate::get_by_name('no-tax-thank-you');  
             if (!$page){ ### Make the template page if it doesn't exist.
                 self::make_receipt_template_no_tax();
@@ -771,7 +771,7 @@ class Donation extends ModelLite
                 `PaymentSource` tinyint(4) DEFAULT NULL,
                 `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `NotTaxDeductible` tinyint(4) DEFAULT '0' COMMENT '0=Tax Deductible 1=Not Tax Deductible',
+                `TransactionType` tinyint(4) DEFAULT '0' COMMENT '0=Tax Deductible 1=Not Tax Deductible, 2=Service, -1=Expense',
                 QBOInvoiceId int(11) DEFAULT NULL,
                 PRIMARY KEY (`DonationId`)
                 )";               

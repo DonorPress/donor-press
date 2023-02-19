@@ -7,12 +7,16 @@
     Author URI: https://denversteiner.com/donorpress/
     Version: 0.0.2
 */
+global $donor_press_db_version;
+$donor_press_db_version='0.0.3';
+
 ### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
 if (file_exists(__DIR__ . '/vendor/autoload.php')){
 	require_once __DIR__ . '/vendor/autoload.php';
 }
 require_once 'classes/Donation.php';
 require_once 'classes/Donor.php';
+require_once 'classes/DonorType.php';
 require_once 'classes/DonationCategory.php';
 require_once 'classes/DonationUpload.php';
 require_once 'classes/DonorTemplate.php';
@@ -30,7 +34,12 @@ register_activation_hook( __FILE__, 'donor_plugin_create_tables' );
 
 
 function donor_header_check() {
-	if (!session_id()) session_start();	
+	global $donor_press_db_version;
+	if (!session_id()) session_start();		
+	if (get_option( "donor_press_db_version")!=$donor_press_db_version){
+		donor_press_upgrade();
+	}
+
 	if ($_GET['redirect']){
 		$qb=new Quickbooks();
 		$qb->check_redirects($_GET['redirect']);
@@ -40,7 +49,7 @@ function donor_header_check() {
 		case "DonationReceiptPdf":
 			$donation=Donation::get_by_id($_REQUEST['DonationId']);	
 			$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));
-		break;
+		break;	
 		case 'BackupDonorPress':		
 			CustomVariables::backup(true);
 			break;
@@ -83,6 +92,38 @@ function donor_header_check() {
 
 //wp_register_style( 'donorPressPluginStylesheet', plugins_url( '/css/style.css', __FILE__ ) );
 add_action( 'admin_init', 'donor_header_check',1);
+
+
+function donor_press_upgrade(){
+	global $donor_press_db_version;
+	$current_db_version=get_option( "donor_press_db_version");
+	
+	if (!$current_db_version || $current_db_version<'0.0.3'){
+		donor_press_upgrade_003();
+	}
+	
+	if ($current_db_version>'0.0.3'){ //future upgrade
+
+	}
+
+	if ($current_db_version){
+		update_option( "donor_press_db_version", $donor_press_db_version );
+	}else{
+		add_option( "donor_press_db_version", $donor_press_db_version );
+	}
+	Donor::display_notice("Donor Press Database Upgraded from ".$current_db_version." to ".$donor_press_db_version);
+
+}
+
+function donor_press_upgrade_003(){
+	DonorType::create_table();
+	$wpdb=Donor::db();
+	$aSQL="ALTER TABLE `".Donor::get_table_name()."` ADD `TypeId` INT NOT NULL AFTER `Country`;";
+	$wpdb->query( $aSQL );
+	$aSQL="ALTER TABLE `".Donation::get_table_name()."` CHANGE `TransactionType` `TransactionType` INT NULL DEFAULT '0' COMMENT '0=TaxExempt 1=NotTaxExcempt 2=Service -1=Expense';";
+	$wpdb->query(  $aSQL );
+}
+
 
 
 
@@ -128,13 +169,12 @@ function dn_plugin_base_dir(){
 	return str_replace("\\","/",dirname(__FILE__));
 }
 
-function load_initial_data(){
-	Donation::db()->query("TRUNCATE ".Donation::get_table_name());	
+function load_initial_data(){	
 	Donor::make_receipt_year_template();
 }
 
 function donor_press_tables(){
-	return ["Donor","Donation","DonationReceipt","DonationCategory"];
+	return ["Donor","Donation","DonationReceipt","DonationCategory","DonorType"];
 }
 
 
@@ -151,10 +191,12 @@ function nuke(){
 }
 
 function donor_plugin_create_tables() {	
+	global $donor_press_db_version;
 	$tableNames=donor_press_tables();
 	foreach($tableNames as $table){
 		$table::create_table();
-	}	
+	}
+	add_option( "donor_press_db_version", $donor_press_db_version );
 }
 
 

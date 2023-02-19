@@ -220,15 +220,14 @@ class ModelLite{
 		else return false;
 	}
 	
-	public static function get($where=array(),$orderby="",$settings=false){		 
+	public static function get($where=array(),$orderby="",$settings=false){	
 		$SQL="SELECT ".($settings['select']?$settings['select']:"*")." FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"").($settings['limit']?" LIMIT ".$settings['limit']:"");
-		//print $SQL."<hr>";
 		$all=self::db()->get_results($SQL);
 		foreach($all as $r){
 			$obj=new static($r,$settings);
 			if ($settings['key']){
 				$primaryField=$obj->primaryKey;
-				$return[$r->$primaryField]=$obj; //untested, but conceptial.
+				$return[$r->$primaryField]=$obj;
 			}else{
 				$return[]=$obj;
 			}
@@ -347,6 +346,10 @@ class ModelLite{
 				}
 				return ($settings['idShow']?'<a href="?page='.$_GET['page'].'&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
 			break;
+			// case "TransactionType":
+			// 	if (!$v) $v=0;
+			// 	return Donation::s()->tinyIntDescriptions['TransactionType'][$v];
+			// 	break;
 			default:
 				if ($this->tinyIntDescriptions[$fieldName]){
 					$label=self::s()->tinyIntDescriptions[$fieldName][$v];								
@@ -403,12 +406,21 @@ class ModelLite{
 			}
 			if ($field=="Date") $this->Date=substr($this->$field,0,10); //$type="datetime-local";
 			?><tr><td align=right><?php print $field?></td><td><?php
-			if ($this->tinyIntDescriptions[$field]){
+
+			$select=false;
+			if ($this->tinyIntDescriptions[$field]) $select=$this->tinyIntDescriptions[$field];
+			switch ($field){
+				case "TypeId":
+					$select=DonorType::list_array();
+					break;
+			}
+
+			if ($select){
 				?><select name="<?php print $field?>"><?php
-					foreach($this->tinyIntDescriptions[$field] as $key=>$label){
+					foreach($select as $key=>$label){
 						?><option value="<?php print $key?>"<?php print $key==$this->$field?" selected":""?>><?php print $key." - ".$label?></option><?php
 					}
-					if (!$this->tinyIntDescriptions[$field][$this->$field]){
+					if (!$select[$this->$field]){
 						?><option value="<?php print $this->$field?>" selected><?php print $this->$field." - Not Set"?></option><?php
 					}
 					?></select><?php
