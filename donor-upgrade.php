@@ -25,6 +25,6 @@ function donor_press_upgrade_003(){
 	$wpdb=Donor::db();
 	$aSQL="ALTER TABLE `".Donor::get_table_name()."` ADD `TypeId` INT NOT NULL AFTER `Country`;";
 	$wpdb->query( $aSQL );
-	$aSQL="ALTER TABLE `".Donation::get_table_name()."` CHANGE `TransactionType` `TransactionType` INT NULL DEFAULT '0' COMMENT '0=TaxExempt 1=NotTaxExcempt 2=Service -1=Expense';";
+	$aSQL="ALTER TABLE `".Donation::get_table_name()."` CHANGE `NotTaxDeductible` `TransactionType` INT NULL DEFAULT '0' COMMENT '0=TaxExempt 1=NotTaxExcempt 2=Service -1=Expense';";
 	$wpdb->query(  $aSQL );
 }
