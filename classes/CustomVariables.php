@@ -106,12 +106,33 @@ class CustomVariables extends ModelLite
         return $c;
     }
 
-    static function backup($download=false){
-        //Backups up all donor related tables and partial tables on posts and options
-        global $wpdb;
+    static function restore($file){
+        $version="";
+        if ($lines = file($file)){                   
+            foreach($lines as $line){
+                $json=json_decode($line);
+                if ($json->PLUGIN && $json->VERSION){
+                    $version=$json->VERSION;
+                }elseif ($json->TABLE && sizeof($json->RECORDS)>0){
+                    print "<div>Restoring to ".$wpdb->prefix.$json->TABLE." ".sizeof($json->RECORDS)." records.</div>";
+                    foreach($json->RECORDS as $data){
+                        //todo in the future check $version against upgrade table, and shift fields if necessary.
+                        $wpdb->insert($wpdb->prefix.$json->TABLE,$data);
+                    }
+                }                          
+            }
+        }
+    }
+
+    static function backup($download=false){               
+        //Backups up all donor related tables and partial tables on posts and options   
+        global $wpdb;    
+        global $donor_press_db_version;
         $fileName="DonorPressBackup".date("YmdHis").".json";
         $filePath=Donor::upload_dir().$fileName;
         $file = fopen($filePath, "w");
+
+        fwrite($file, json_encode(["PLUGIN"=>"DonorPress","VERSION"=>$donor_press_db_version])."\n");
         foreach(donor_press_tables() as $table){
             $records=[];           
             $SQL="Select * FROM ".$table::get_table_name();
@@ -132,10 +153,14 @@ class CustomVariables extends ModelLite
        
         foreach(self::partialTables as $a){
             $records=[];
-            $SQL="Select * FROM ".$wpdb->prefix.$a['TABLE']." WHERE ".($a['TABLE']?$a['TABLE']:1);
+            $SQL="Select * FROM ".$wpdb->prefix.$a['TABLE']." WHERE ".($a['WHERE']?$a['WHERE']:1);
             if(!$download)print "Backing up QUERY: ". $SQL."<br>";
             $results=$wpdb->get_results($SQL);
             foreach ($results as $r){
+                if ($a['COLUMN_IGNORE']){
+                    $colIgnore=$a['COLUMN_IGNORE'];
+                    unset($r->$colIgnore);
+                }
                 $records[]=$r;
             } 
             $a['RECORDS']=$records;           
@@ -200,17 +225,16 @@ class CustomVariables extends ModelLite
 
 
     static public function request_handler(){        
-        //$wpdb=self::db(); 
-        
+        $wpdb=self::db();         
         switch($_POST['Function']){
             case 'BackupDonorPress': 
                 self::backup();
                 break;
             case 'RestoreDonorPress':
-                self::backup(); //backup current first.
-                // get file -> run restore here..
-                if(isset($_FILES['fileToUpload'])){
-                    $originalFile=basename($_FILES["fileToUpload"]["name"]);
+                if ($_FILES["fileToUpload"]["tmp_name"]){
+                    self::backup(); //backup current first.                    
+                    nuke(); //clear out current files
+                    self::restore($_FILES["fileToUpload"]["tmp_name"]);  
                 }
                 break;
             case 'NukeDonorPress':
