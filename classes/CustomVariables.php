@@ -107,6 +107,7 @@ class CustomVariables extends ModelLite
     }
 
     static function restore($file){
+        global $wpdb; 
         $version="";
         if ($lines = file($file)){                   
             foreach($lines as $line){
@@ -117,7 +118,7 @@ class CustomVariables extends ModelLite
                     print "<div>Restoring to ".$wpdb->prefix.$json->TABLE." ".sizeof($json->RECORDS)." records.</div>";
                     foreach($json->RECORDS as $data){
                         //todo in the future check $version against upgrade table, and shift fields if necessary.
-                        $wpdb->insert($wpdb->prefix.$json->TABLE,$data);
+                        $wpdb->insert($wpdb->prefix.$json->TABLE,(array)$data);
                     }
                 }                          
             }
@@ -136,7 +137,7 @@ class CustomVariables extends ModelLite
         foreach(donor_press_tables() as $table){
             $records=[];           
             $SQL="Select * FROM ".$table::get_table_name();
-            if(!$download) print "Backing up TABLE: ".$table::get_table_name()."<br>";
+            if(!$download) print "Backing up TABLE: ".$table::get_table_name()."<br>";           
             $results=$wpdb->get_results($SQL);
             foreach ($results as $r){ 
                 $c=clone($r); 
@@ -148,7 +149,7 @@ class CustomVariables extends ModelLite
                 }              
                 $records[]=$r;
             }
-            fwrite($file, json_encode(["TABLE"=>$table,'RECORDS'=>$records])."\n");
+            fwrite($file, json_encode(["TABLE"=>$table::get_base_table(),'RECORDS'=>$records])."\n");
         }    
        
         foreach(self::partialTables as $a){

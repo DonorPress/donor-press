@@ -57,6 +57,11 @@ class ModelLite{
 		$wpdb=self::db();       
         return $wpdb->prefix.strtolower(($this->table ?? class_basename($this)));
 	}
+
+	static public function get_base_table(){
+		$wpdb=self::db();
+		return substr(self::get_table_name(),strlen($wpdb->prefix));
+	}
 	
 	static public function get_table_name(){	
         return self::s()->get_table();
