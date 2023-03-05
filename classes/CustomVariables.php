@@ -106,7 +106,8 @@ class CustomVariables extends ModelLite
         return $c;
     }
 
-    static function restore($file){
+    static function restore($file,$chunksize=500){
+        global $wpdb;
         $version="";
         if ($lines = file($file)){                   
             foreach($lines as $line){
@@ -115,14 +116,30 @@ class CustomVariables extends ModelLite
                     $version=$json->VERSION;
                 }elseif ($json->TABLE && sizeof($json->RECORDS)>0){
                     print "<div>Restoring to ".$wpdb->prefix.$json->TABLE." ".sizeof($json->RECORDS)." records.</div>";
-                    foreach($json->RECORDS as $data){
-                        //todo in the future check $version against upgrade table, and shift fields if necessary.
-                        $wpdb->insert($wpdb->prefix.$json->TABLE,$data);
+                    
+                    $chunk=array_chunk($json->RECORDS,$chunksize); //insert 500 rows at a time                    
+                    foreach($chunk as $rows){
+                         //todo in the future check $version against upgrade table, and shift columns/fields if necessary.
+                        $iSQL="INSERT INTO ".$wpdb->prefix.$json->TABLE." (".implode(",",$json->COLUMNS).") VALUES \r\n";
+                        $r=0;
+                        foreach($rows as $row){
+                            $c=0;
+                            if ($r>0) $iSQL.=",\r\n";                            
+                            $iSQL.="(";
+                            foreach($row as $col){
+                                if ($c>0) $iSQL.=", ";
+                                $iSQL.="'".self::mysql_escape_mimic($col)."'";
+                                $c++;
+                            }
+                            $iSQL.=")";
+                            $r++;
+                        }
+                        print "<h3>Chunk size: ".sizeof($chunk)."</h3><pre>".$iSQL."</pre>";
                     }
                 }                          
             }
         }
-    }
+    }    
 
     static function backup($download=false){               
         //Backups up all donor related tables and partial tables on posts and options   
@@ -139,16 +156,11 @@ class CustomVariables extends ModelLite
             if(!$download) print "Backing up TABLE: ".$table::get_table_name()."<br>";
             $results=$wpdb->get_results($SQL);
             foreach ($results as $r){ 
-                $c=clone($r); 
-                ### cleanup backup to not add "null" or blank values               
-                foreach($c as $field=>$value){
-                    if (!$value){
-                        unset($r->$field);
-                    }
-                }              
-                $records[]=$r;
+                $c=(array)$r;                
+                $cols=array_keys($c);               
+                $records[]=array_values($c) ;  
             }
-            fwrite($file, json_encode(["TABLE"=>$table,'RECORDS'=>$records])."\n");
+            fwrite($file, json_encode(["TABLE"=>$table,'COLUMNS'=>$cols,'RECORDS'=>$records])."\n");
         }    
        
         foreach(self::partialTables as $a){
@@ -157,13 +169,13 @@ class CustomVariables extends ModelLite
             if(!$download)print "Backing up QUERY: ". $SQL."<br>";
             $results=$wpdb->get_results($SQL);
             foreach ($results as $r){
-                if ($a['COLUMN_IGNORE']){
-                    $colIgnore=$a['COLUMN_IGNORE'];
-                    unset($r->$colIgnore);
+                $c=(array)$r;
+                if ($a['COLUMN_IGNORE']){                    
+                    unset($c[$a['COLUMN_IGNORE']]); //currently only used for id field, but can be modified if multiple fields need supported.
                 }
-                $records[]=$r;
-            } 
-            $a['RECORDS']=$records;           
+                $a['COLUMNS']=array_keys($c);
+                $a['RECORDS'][]=array_values($c);
+            }                      
             fwrite($file, json_encode($a)."\n");
         }
         fclose($file);
@@ -182,6 +194,14 @@ class CustomVariables extends ModelLite
             self::display_notice($fileName." backup created");
         }
         
+    }
+
+    static function mysql_escape_mimic($inp) { //https://www.php.net/manual/en/function.mysql-real-escape-string.php
+        if(is_array($inp)) return array_map(__METHOD__, $inp);   
+         if(!empty($inp) && is_string($inp)) {
+            return str_replace(array('\\', "\0", "\n", "\r", "'", '"', "\x1a"), array('\\\\', '\\0', '\\n', '\\r', "\\'", '\\"', '\\Z'), $inp);    
+        }    
+        return $inp;    
     }
 
     static public function nuke_confirm(){
