@@ -132,13 +132,7 @@ class Paypal extends ModelLite{
         return false;
     }
 
-    public function process_response($response,$dateEnd){    
-        
-        $date_from=CustomVariables::get_option('PaypalLastSyncDate');
-        if (!$this->error){
-        }
-               
-
+    public function process_response($response,$dateEnd=""){
         $process=$donations=$donors=$donorEmails=array();
         $process['time']=date("Y-m-d H:i:s");
         $donationSkip=0;
@@ -162,12 +156,12 @@ class Paypal extends ModelLite{
         foreach($results as $r){
             $donorOriginal[$r->DonorId]=$r;          
             $account_id=$donors[$r->SourceId]?$r->SourceId:$donorEmails[$r->Email];
-            $donor_id=$r->MergeId>0?$r->MergeId:$r->DonorId;
+            $donor_id=$r->MergedId>0?$r->MergedId:$r->DonorId;
             if ($donors[$account_id]){
                 $donors[$account_id]->DonorId=$donor_id;
                 $process['DonorsMatched'][$account_id]=$donor_id;
             }           
-        }
+        }       
         Donor::donor_update_suggestion($donorOriginal,$donors,$process['time']);
         //self::dd($donors,$donorOriginal);
 
@@ -214,6 +208,11 @@ class Paypal extends ModelLite{
                 }
             }
         }
+        ### Set last Sync Date
+        if ($dateEnd && $process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0){
+            CustomVariables::set_option('PaypalLastSyncDate',$dateEnd);
+        }
+
         return $process;
     }
 }

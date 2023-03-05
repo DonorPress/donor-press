@@ -14,12 +14,12 @@ $clientSecret=CustomVariables::get_option('PaypalSecret');
     }elseif($_POST['Function']=="PaypalDateSync"){
         $response=$paypal->get_transactions_date_range($_POST['date_from'],$_POST['date_to']);
         $process=$paypal->process_response($response,$_POST['date_to']); 
-        if (sizeof($response)>0){
+        if ($response){
             Paypal::display_notice(
                 sizeof($response->transaction_details)." records retrieved. <ul>".
-                "<li>".sizeof($process['DonorsAdded'])." New Donor Entries Created.</li>".
-                (sizeof($process['DonationsMatched'])>0?"<li>".sizeof($process['DonationsMatched'])." donations already created.</li>":"").
-                (sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",$process['time']))."'>View These Donations/Send Acknowledgements</a></li>":"").
+                "<li>".($process['DonorsAdded']?sizeof($process['DonorsAdded']):"0")." New Donor Entries Created.</li>".
+                ($process['DonationsMatched'] && sizeof($process['DonationsMatched'])>0?"<li>".sizeof($process['DonationsMatched'])." donations already created.</li>":"").
+                ($process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",$process['time']))."'>View These Donations/Send Acknowledgements</a></li>":"").
                 "</ul>"
             );
         }
