@@ -153,7 +153,7 @@ class CustomVariables extends ModelLite
         foreach(donor_press_tables() as $table){
             $records=[];           
             $SQL="Select * FROM ".$table::get_table_name();
-            if(!$download) print "Backing up TABLE: ".$table::get_table_name()."<br>";
+            if(!$download) print "Backing up TABLE: ".$table::get_table_name()."<br>";           
             $results=$wpdb->get_results($SQL);
             foreach ($results as $r){ 
                 $c=(array)$r;                
