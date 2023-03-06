@@ -5,7 +5,7 @@ require_once 'Donation.php';
 require_once 'DonationReceipt.php';
 
 class Donor extends ModelLite {
-    protected $table = 'Donor';
+    protected $table = 'donor';
 	protected $primaryKey = 'DonorId';
 	### Fields that can be passed 
     public $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TypeId","TaxReporting","MergedId","Source","SourceId","QuickBooksId"];	    
@@ -24,6 +24,10 @@ class Donor extends ModelLite {
 	//public $incrementing = true;
 	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';
+    /*
+    ALTER TABLE `wordpress`.`dwp_donor` 
+ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
+*/
    
     static public function create_table(){
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -42,6 +46,7 @@ class Donor extends ModelLite {
             `Region` varchar(20)  NULL,
             `PostalCode` varchar(20)  NULL,
             `Country` varchar(2)  NULL,
+            `TypeId` int(11) NOT NULL DEFAULT '0',
             `MergedId` int(11) NOT NULL DEFAULT '0',
             `QuickBooksId` int(11) DEFAULT NULL,
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
