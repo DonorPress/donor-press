@@ -15,6 +15,27 @@ class CustomVariables extends ModelLite
         ['TABLE'=>'options','WHERE'=>"option_name LIKE 'donation_%'",'COLUMN_IGNORE'=>'option_id']
     ];
 
+    static function get_option($option,$decode=false){
+        $result=get_option(self::base."_".$option);
+        if($decode){
+            return self::decode($result);
+        }else{
+            return $result;
+        }
+    }
+
+    static function set_option($var,$value,$encode=false){
+        update_option(self::base."_".$var, $encode? self::encode($value):$value, true);       
+    }
+
+    static function encode($value){
+        return base64_encode($value);
+    }
+
+    static function decode($value){
+        return base64_decode($value);
+    }
+
     static public function form(){
         $wpdb=self::db();  
         $vals=self::get_custom_variables();      
@@ -74,27 +95,7 @@ class CustomVariables extends ModelLite
             self::display_notice("Allow Redirect access in the <a target='quickbooks' href='https://developer.intuit.com/app/developer/dashboard'>QuickBook API</a> for: ".QuickBooks::redirect_url());
         }
     }
-    static function get_option($option,$decode=false){
-        $result=get_option(self::base."_".$option);
-        if($decode){
-            return self::decode($result);
-        }else{
-            return $result;
-        }
-    }
-
-    static function set_option($var,$value,$encode=false){
-        update_option(self::base."_".$var, $encode? self::encode($value):$value, true);       
-    }
-
-    static function encode($value){
-        return base64_encode($value);
-    }
-
-    static function decode($value){
-        return base64_decode($value);
-    }
-
+    
     static function get_custom_variables(){
         $wpdb=self::db();  
         $results=$wpdb->get_results("SELECT `option_id`, `option_name`, `option_value`, `autoload` FROM `".$wpdb->prefix."options` WHERE `option_name` LIKE '".self::base."_%'");
@@ -106,16 +107,17 @@ class CustomVariables extends ModelLite
         return $c;
     }
 
-    static function restore($file,$chunksize=500){
+    static function restore($file,$chunksize=500){ 
         global $wpdb;
         $version="";
         if ($lines = file($file)){                   
             foreach($lines as $line){
                 $json=json_decode($line);
+                $json->TABLE=strtolower($json->TABLE);
                 if ($json->PLUGIN && $json->VERSION){
                     $version=$json->VERSION;
                 }elseif ($json->TABLE && sizeof($json->RECORDS)>0){
-                    print "<div>Restoring to ".$wpdb->prefix.$json->TABLE." ".sizeof($json->RECORDS)." records.</div>";
+                    print "<h2>Restoring to ".$wpdb->prefix.$json->TABLE." ".sizeof($json->RECORDS)." records.</h2>";
                     
                     $chunk=array_chunk($json->RECORDS,$chunksize); //insert 500 rows at a time                    
                     foreach($chunk as $rows){
@@ -134,22 +136,31 @@ class CustomVariables extends ModelLite
                             $iSQL.=")";
                             $r++;
                         }
-                        print "<h3>Chunk size: ".sizeof($chunk)."</h3><pre>".$iSQL."</pre>";
+                        print "<div>Table: ".$wpdb->prefix.$json->TABLE." - Chunk size: ".sizeof($rows)."</div>";//<pre>".$iSQL."</pre>";
+                        $wpdb->query($iSQL);
+
                     }
                 }                          
             }
         }
-    }    
+    }
+    
+    static function get_org(){
+        $org=self::get_option('Organization');
+        if (!$org) $org=get_bloginfo('name');
+        return $org;
+    }
 
     static function backup($download=false){               
         //Backups up all donor related tables and partial tables on posts and options   
         global $wpdb;    
         global $donor_press_db_version;
-        $fileName="DonorPressBackup".date("YmdHis").".json";
+        $org= mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', self::get_org());
+        $fileName="DonorPressBackup-".str_replace(" ","_",$org).date("YmdHis").".json";
         $filePath=Donor::upload_dir().$fileName;
         $file = fopen($filePath, "w");
 
-        fwrite($file, json_encode(["PLUGIN"=>"DonorPress","VERSION"=>$donor_press_db_version])."\n");
+        fwrite($file, json_encode(["PLUGIN"=>"DonorPress","VERSION"=>$donor_press_db_version,"ORG"=>self::get_org(),"URL"=>get_bloginfo('url')])."\n");
         foreach(donor_press_tables() as $table){
             $records=[];           
             $SQL="Select * FROM ".$table::get_table_name();
@@ -160,7 +171,7 @@ class CustomVariables extends ModelLite
                 $cols=array_keys($c);               
                 $records[]=array_values($c) ;  
             }
-            fwrite($file, json_encode(["TABLE"=>$table,'COLUMNS'=>$cols,'RECORDS'=>$records])."\n");
+            fwrite($file, json_encode(["TABLE"=>$table::get_table_name(),'COLUMNS'=>$cols,'RECORDS'=>$records])."\n");
         }    
        
         foreach(self::partialTables as $a){
@@ -230,7 +241,7 @@ class CustomVariables extends ModelLite
         }
         if($post['dropfields']){
             foreach(self::partialTables as $a){   
-                $SQL="DELETE FROM ".$wpdb->prefix.$a['TABLE']." WHERE ".($a['TABLE']?$a['TABLE']:1); 
+                $SQL="DELETE FROM ".self::db()->prefix.$a['TABLE']." WHERE ".($a['WHERE']?$a['WHERE']:1);
                 print $SQL."<br>";       
                 self::db()->query($SQL);
             }
@@ -244,23 +255,32 @@ class CustomVariables extends ModelLite
     }
 
 
-    static public function request_handler(){        
+    static public function request_handler(){
         $wpdb=self::db();         
         switch($_POST['Function']){
             case 'BackupDonorPress': 
                 self::backup();
                 break;
             case 'RestoreDonorPress':
+                //dd($_POST,$_FILES);
                 if ($_FILES["fileToUpload"]["tmp_name"]){
-                    self::backup(); //backup current first.                    
+                    //self::backup(); //backup current first.                    
                     nuke(); //clear out current files
                     self::restore($_FILES["fileToUpload"]["tmp_name"]);  
+                    print self::display_notice("Restore Complete");
+                    return true;
+                    break;
+                }elseif($_FILES["fileToUpload"]["error"]){                    
+                    self::display_error("Error on file upload. If the file is over ".ini_get("upload_max_filesize")." then you will have to update your server upload limit.");
                 }
                 break;
             case 'NukeDonorPress':
                 self::nuke_confirm();
                 return true;
-                break;            
+                break;
+            case 'NukeIt':
+               self::nuke_it($_POST);
+                break;              
         }		
 
 		

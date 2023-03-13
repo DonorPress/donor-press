@@ -4,7 +4,7 @@ require_once 'DonationCategory.php';
 require_once 'DonorTemplate.php';
 class Donation extends ModelLite
 {
-    protected $table = 'Donation';
+    protected $table = 'donation';
 	protected $primaryKey = 'DonationId';
 	### Fields that can be passed //,"Time","TimeZone"
     public $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","TransactionType","QBOInvoiceId"];	 

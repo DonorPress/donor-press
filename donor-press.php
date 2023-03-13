@@ -43,47 +43,49 @@ function donor_header_check() {
 		donor_press_upgrade();
 	}
 
-	if ($_GET['redirect']){
+	if (isset($_GET['redirect'])){
 		$qb=new Quickbooks();
 		$qb->check_redirects($_GET['redirect']);
 	}
 	## download functions before page is loaded
-	switch($_REQUEST['Function']){
-		case "DonationReceiptPdf":
-			$donation=Donation::get_by_id($_REQUEST['DonationId']);	
-			$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));
-		break;	
-		case 'BackupDonorPress':		
-			CustomVariables::backup(true);
+	if (isset($_REQUEST['Function'])){
+		switch($_REQUEST['Function']){
+			case "DonationReceiptPdf":
+				$donation=Donation::get_by_id($_REQUEST['DonationId']);	
+				$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));
+			break;	
+			case 'BackupDonorPress':		
+				CustomVariables::backup(true);
+				break;
 			break;
-		break;
-		case "YearEndReceiptPdf":
-			$donor=Donor::get_by_id($_REQUEST['DonorId']);
-			$donor->year_receipt_pdf($_REQUEST['Year'],stripslashes_deep($_REQUEST['customMessage']));
+			case "YearEndReceiptPdf":
+				$donor=Donor::get_by_id($_REQUEST['DonorId']);
+				$donor->year_receipt_pdf($_REQUEST['Year'],stripslashes_deep($_REQUEST['customMessage']));
+				break;
+			case 'SendYearEndPdf':
+				Donor::YearEndReceiptMultiple($_REQUEST['Year'],$_POST['pdf'],$_REQUEST['limit'],$_REQUEST['blankBack'],$_REQUEST['preview']?false:true);
 			break;
-		case 'SendYearEndPdf':
-			Donor::YearEndReceiptMultiple($_REQUEST['Year'],$_POST['pdf'],$_REQUEST['limit'],$_REQUEST['blankBack'],$_REQUEST['preview']?false:true);
-		break;
-		case 'PdfLabelDonationReceipts':			
-			Donation::label_by_id($_POST['EmailDonationId'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
-		break;
-		case 'PrintYearEndLabels':
-			Donor::YearEndLabels($_REQUEST['Year'],$_POST['pdf'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
-		break;
-		case 'ExportAllDonors':
-			Donor::get_mail_list();
-		break;
-		case 'ExportDonorList':
-			Donor::get_mail_list(["D.DonorId IN (".implode(",",$_POST['pdf']).")"]);
-		break;
-		case 'QuickbookSessionKill';
-			$qb=new QuickBooks();
-			$qb->clearSession();
-			return header("Location: ?page=donor-quickbooks");
-		break;
+			case 'PdfLabelDonationReceipts':			
+				Donation::label_by_id($_POST['EmailDonationId'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
+			break;
+			case 'PrintYearEndLabels':
+				Donor::YearEndLabels($_REQUEST['Year'],$_POST['pdf'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
+			break;
+			case 'ExportAllDonors':
+				Donor::get_mail_list();
+			break;
+			case 'ExportDonorList':
+				Donor::get_mail_list(["D.DonorId IN (".implode(",",$_POST['pdf']).")"]);
+			break;
+			case 'QuickbookSessionKill';
+				$qb=new QuickBooks();
+				$qb->clearSession();
+				return header("Location: ?page=donor-quickbooks");
+			break;
+		}
 	}
 
-	if ($_GET['donorAutocomplete']){
+	if (isset($_GET['donorAutocomplete'])){
 		Donor::autocomplete($_GET['query']);
 		exit();
 	}
@@ -148,15 +150,7 @@ function donor_press_tables(){
 
 
 function nuke(){
-	### used in testing to wipe out everything and recreate blank
-	global $wpdb;
-	$wpdb->show_errors();
-
-	$tableNames=donor_press_tables();
-	foreach($tableNames as $table){
-		$wpdb->query("DROP TABLE IF EXISTS ".$table::get_table_name());
-	}
-	donor_plugin_create_tables();
+	CustomVariables::nuke_it(['droptable'=>"t",'dropfields'=>"t",'rebuild'=>"t"]);
 }
 
 function donor_plugin_create_tables() {	
