@@ -53,18 +53,21 @@ class ModelLite{
 		return $fields;
 	}
 
-	public function get_table(){
-		$wpdb=self::db();       
-        return $wpdb->prefix.strtolower(($this->table ?? class_basename($this)));
+	public function get_table($type="full"){
+		$wpdb=self::db(); 
+		$base=strtolower(($this->table ?? class_basename($this)));
+		if($type=="base"){
+			return $base;
+		}      
+        return $wpdb->prefix.$base;
 	}
 
 	static public function get_base_table(){
-		$wpdb=self::db();
-		return substr(self::get_table_name(),strlen($wpdb->prefix));
+		return self::s()->get_table('base');
 	}
 	
-	static public function get_table_name(){	
-        return self::s()->get_table();
+	static public function get_table_name($type="full"){	
+        return self::s()->get_table($type);
     }
 	static public function get_fillable(){
 		return self::s()->fillable;

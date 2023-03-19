@@ -160,7 +160,7 @@ class CustomVariables extends ModelLite
         $filePath=Donor::upload_dir().$fileName;
         $file = fopen($filePath, "w");
 
-        fwrite($file, json_encode(["PLUGIN"=>"DonorPress","VERSION"=>$donor_press_db_version,"ORG"=>self::get_org(),"URL"=>get_bloginfo('url')])."\n");
+        fwrite($file, json_encode(["PLUGIN"=>"DonorPress","DBPREFIX"=>$wpdb->prefix,"VERSION"=>$donor_press_db_version,"ORG"=>self::get_org(),"URL"=>get_bloginfo('url')])."\n");
         foreach(donor_press_tables() as $table){
             $records=[];           
             $SQL="Select * FROM ".$table::get_table_name();
@@ -171,7 +171,7 @@ class CustomVariables extends ModelLite
                 $cols=array_keys($c);               
                 $records[]=array_values($c) ;  
             }
-            fwrite($file, json_encode(["TABLE"=>$table::get_table_name(),'COLUMNS'=>$cols,'RECORDS'=>$records])."\n");
+            fwrite($file, json_encode(["TABLE"=>$table::get_base_table(),"TABLE_SRC"=>$table::get_table_name(),'COLUMNS'=>$cols,'RECORDS'=>$records])."\n");
         }    
        
         foreach(self::partialTables as $a){
