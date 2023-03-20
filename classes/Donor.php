@@ -261,7 +261,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     static public function request_handler(){      
-        if ($_POST['table']=='Donor' && $_POST['DonorId'] && $_POST['Function']=="Delete"){
+        if ($_POST['table']=='donor' && $_POST['DonorId'] && $_POST['Function']=="Delete"){
             //check if any donations connected to this account or merged ids..
             $donations=Donation::get(array('DonorId='.$_POST['DonorId']));
             if (sizeof($donations)>0){
@@ -344,7 +344,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 return true;
             }
             
-            if ($_POST['Function']=="Save" && $_POST['table']=="Donor"){
+            if ($_POST['Function']=="Save" && $_POST['table']=="donor"){
                 $donor=new Donor($_POST);
                 if ($donor->save()){			
                     self::display_notice("Donor #".$donor->show_field("DonorId")." saved.");
@@ -363,7 +363,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 }
             ?></div><?php            
             return true;
-        }elseif ($_POST['Function']=="Save" && $_POST['table']=="Donor"){
+        }elseif ($_POST['Function']=="Save" && $_POST['table']=="donor"){
             $donor=new Donor($_POST);
             if ($donor->save()){			
                 self::display_notice("Donor #".$donor->show_field("DonorId")." saved.");
@@ -553,7 +553,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $donor=new self($r);
             ?>
             <tr>
-                <td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
+                <td><a target="donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
                 <td><?php print $donor->display_email()?></td>    
                 <td><?php print $donor->phone()?></td> 
                 <td><?php print $donor->mailing_address(', ',false)?></td>          
@@ -605,13 +605,13 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $donor=new self($r);
             $donorTotal=$r->Total;
             ?>
-            <tr><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> 
-            <a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&edit=t">edit</a></td>
+            <tr><td><a target="donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> 
+            <a target="donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&edit=t">edit</a></td>
             <td><?php print $donor->name_check()?></td>
             <td><?php print $donor->display_email()?></td> 
             <td><?php print $donor->mailing_address("<br>",false)?></td>             
             <td><?php print $r->donation_count?></td>
-            <td align=right><?php print number_format($r->Total,2)?></td><td><a target="Donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
+            <td align=right><?php print number_format($r->Total,2)?></td><td><a target="donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
             <td><?php
              if (filter_var($r->Email, FILTER_VALIDATE_EMAIL) && $r->EmailStatus>=0) {
                 ?><input name="emails[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId] ?"":" checked")?>/><?php
@@ -1076,17 +1076,17 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             <table border=1><th>Donor</th><th>Merge To</th></tr><?php
             foreach($merge as $from=>$to){
                 print '<tr><td>';              
-                print '<div><a target="Donor" href="?page=donor-index&DonorId='.$donors[$from]->DonorId.'">'.$donors[$from]->DonorId.'</a> '.$donors[$from]->Name.' (merged id: '.$donors[$from]->MergedId.') <a target="Donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$from]->DonorId.'&MergedId='.$donors[$to]->DonorId.'">Merge To -></a></div>';   
+                print '<div><a target="donor" href="?page=donor-index&DonorId='.$donors[$from]->DonorId.'">'.$donors[$from]->DonorId.'</a> '.$donors[$from]->Name.' (merged id: '.$donors[$from]->MergedId.') <a target="donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$from]->DonorId.'&MergedId='.$donors[$to]->DonorId.'">Merge To -></a></div>';   
                           
-                print '</td><td><a target="Donor" href="?page=donor-index&DonorId='.$donors[$to]->DonorId.'">'.$donors[$to]->DonorId.'</a> '.$donors[$to]->Name."</td></tr>";
+                print '</td><td><a target="donor" href="?page=donor-index&DonorId='.$donors[$to]->DonorId.'">'.$donors[$to]->DonorId.'</a> '.$donors[$to]->Name."</td></tr>";
             }
             foreach($cache as $key=>$a){
                 if (sizeof($a)>1){                  
                     print '<tr><td>';
                     for($i=1;$i<sizeof($a);$i++){
-                        print '<div><a target="Donor" href="?page=donor-index&DonorId='.$donors[$a[$i]]->DonorId.'">'.$donors[$a[$i]]->DonorId.'</a> '.$donors[$a[$i]]->Name.($donors[$a[$i]]->Name2?" & ".$donors[$a[$i]]->Name2:"").' <a target="Donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$a[$i]]->DonorId.'&MergedId='.$donors[$a[0]]->DonorId.'">Merge To -></a></div>';   
+                        print '<div><a target="donor" href="?page=donor-index&DonorId='.$donors[$a[$i]]->DonorId.'">'.$donors[$a[$i]]->DonorId.'</a> '.$donors[$a[$i]]->Name.($donors[$a[$i]]->Name2?" & ".$donors[$a[$i]]->Name2:"").' <a target="donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$a[$i]]->DonorId.'&MergedId='.$donors[$a[0]]->DonorId.'">Merge To -></a></div>';   
                     }                 
-                    print '</td><td><a target="Donor" href="?page=donor-index&DonorId='.$donors[$a[0]]->DonorId.'">'.$donors[$a[0]]->DonorId.'</a> '.$donors[$a[0]]->Name.($donors[$a[0]]->Name2?" & ".$donors[$a[0]]->Name2:"")."</td></tr>";
+                    print '</td><td><a target="donor" href="?page=donor-index&DonorId='.$donors[$a[0]]->DonorId.'">'.$donors[$a[0]]->DonorId.'</a> '.$donors[$a[0]]->Name.($donors[$a[0]]->Name2?" & ".$donors[$a[0]]->Name2:"")."</td></tr>";
                 }
             }
         }

@@ -224,7 +224,7 @@ class ModelLite{
 	public static function first($where=array(),$orderby,$settings=[]){
 		$settings['limit']=1;
 		$first=self::get($where,$orderby,$settings);
-		if (sizeof($first)>0) return $first[key($first)];
+		if (is_array($first) && sizeof($first)>0) return $first[key($first)];
 		else return false;
 	}
 	

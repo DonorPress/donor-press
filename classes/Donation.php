@@ -444,12 +444,12 @@ class Donation extends ModelLite
 
             $donation->edit_simple_form();           
             return true;
-        }elseif ($_POST['Function']=="Cancel" && $_POST['table']=="Donation"){
+        }elseif ($_POST['Function']=="Cancel" && $_POST['table']=="donation"){
             $donor=Donor::get_by_id($_POST['DonorId']);
             $donor->view();
             return true;
         }elseif ($_REQUEST['DonationId']){	
-            if ($_POST['Function']=="Delete" && $_POST['table']=="Donation"){
+            if ($_POST['Function']=="Delete" && $_POST['table']=="donation"){
                 $donation=new Donation($_POST);
                 if ($donation->delete()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." for $".$donation->Gross." from ".$donation->Name." on ".$donation->Date." deleted");
@@ -457,7 +457,7 @@ class Donation extends ModelLite
                     return true;
                 }
             }
-            if ($_POST['Function']=="Save" && $_POST['table']=="Donation"){
+            if ($_POST['Function']=="Save" && $_POST['table']=="donation"){
                 $donation=new Donation($_POST);
                 if ($donation->save()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
@@ -468,7 +468,7 @@ class Donation extends ModelLite
             $donation=Donation::get_by_id($_REQUEST['DonationId']);	
             $donation->full_view();
             return true;
-        }elseif ($_POST['Function']=="Save" && $_POST['table']=="Donation"){
+        }elseif ($_POST['Function']=="Save" && $_POST['table']=="donation"){
             $donation=new Donation($_POST);            
             if ($donation->save()){
                 self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
@@ -552,7 +552,7 @@ class Donation extends ModelLite
         }?>
         
         <form method="post" action="?page=donor-reports&DonationId=<?php print $this->DonationId?>" style="border: 1px solid #999; padding:20px; width:90%;">
-        <input type="hidden" name="table" value="Donation">
+        <input type="hidden" name="table" value="donation">
         <?php foreach ($hiddenFields as $field){?>
 		    <input type="hidden" name="<?php print $field?>" value="<?php print $this->$field?>"/>
         <?php } ?>
