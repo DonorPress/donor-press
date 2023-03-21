@@ -10,6 +10,8 @@ class CustomVariables extends ModelLite
     const base = 'donation';
     const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","DefaultCountry","QuickbooksBase"];	
     const variables_protected = ["PaypalClientId","PaypalSecret","QuickbooksClientId","QuickbooksSecret"];
+
+    const variables_manual=["DefaultQBItemId"];
     const partialTables = [
         ['TABLE'=>'posts','WHERE'=>"post_type='donortemplate'",'COLUMN_IGNORE'=>'ID'],
         ['TABLE'=>'options','WHERE'=>"option_name LIKE 'donation_%'",'COLUMN_IGNORE'=>'option_id']
@@ -38,7 +40,8 @@ class CustomVariables extends ModelLite
 
     static public function form(){
         $wpdb=self::db();  
-        $vals=self::get_custom_variables();      
+        $vals=self::get_custom_variables(); 
+        //dump($vals);     
         ?>
         <h2>Edit Donor Variables</h2>
         <form method="post">
@@ -83,8 +86,27 @@ class CustomVariables extends ModelLite
                     <?php print $vals->$fullVal?"<span style='color:green;'> - set</span> ":" <span style='color:red;'>- not set</span>";
                     ?></td></tr>
                   <?php
-                } 
-                ?>
+                }                
+                if (Quickbooks::is_setup()){                
+                    $qb=new QuickBooks();
+                    $items=$qb->item_list(); 
+                    $var="DefaultQBItemId";
+                    $fullVal=self::base."_".$var;
+                    $val=$vals->$fullVal?$vals->$fullVal->option_value:"";   
+                           
+                    ?>
+                    <tr><td>           
+                  
+                    <tr><td align="right">Default Quickbooks Item Id</td><td><select name="DefaultQBItemId"><option value="0">[--None--]</option><?php               
+                    foreach($items as $item){
+                        print '<option value="'.$item->Id.'"'.($item->Id==$val?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
+                    }
+                    ?></select>
+                    <input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/>
+
+                    <input type="hidden" name="<?php print $var?>_was" value="<?php print $val?>"/> </td></tr>
+                <?php 
+            } ?>
                 
             </table>           
             
@@ -310,6 +332,21 @@ class CustomVariables extends ModelLite
                         add_option( self::base."_".$var, self::encode($_POST[$var]));
                     }
                 }
+            }
+
+            foreach(self::variables_manual as $var){
+                if ($_POST[$var]!=$_POST[$var.'_was']){
+                    if ($_POST[$var.'_id']){
+                        //update
+                        print "update ".$var."<br>";
+                        update_option( self::base."_".$var, $_POST[$var], true);
+                    }else{
+                        print "insert ".$var." <br>";
+                        //insert
+                        //dump(self::base."_".$var, $_POST[$var]);
+                        add_option( self::base."_".$var, $_POST[$var]);
+                    }
+                }   
             }
         }
     }

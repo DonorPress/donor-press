@@ -6,7 +6,7 @@ class DonorType extends ModelLite
     protected $table = 'donor_type';
 	protected $primaryKey = 'TypeId';
 	### Fields that can be passed 
-    protected $fillable = ["Title","QBAccountId"];	   
+    protected $fillable = ["Title","QBItemId"];	   
 
     static public function request_handler(){
         $wpdb=self::db();  
@@ -56,7 +56,7 @@ class DonorType extends ModelLite
             ?></div><?php
             return true;
         }elseif($_REQUEST['TypeId']=="new"){
-            $donorType=new self(['Title'=>$_POST['Title'],'QBAccountId'=>$_POST['QBAccountId']]);
+            $donorType=new self(['Title'=>$_POST['Title'],'QBItemId'=>$_POST['QBItemId']]);
             $donorType->save();
             self::display_notice("Donor Type #".$donorType->show_field("TypeId")." ".$donorType->Type." created.");
         }else{
@@ -75,16 +75,16 @@ class DonorType extends ModelLite
             <?php 
             if (Quickbooks::is_setup()){                
                 $qb=new QuickBooks();
-                $items=$qb->account_list("Classification='Revenue'");               
+                $items=$qb->item_list();               
                 ?>
-                <tr><td align="right">Quickbooks Account Id</td><td><select name="QBAccountId"><option value="0">[--None--]</option><?php               
+                <tr><td align="right">Quickbooks Item</td><td><select name="QBItemId"><option value="0">[--None--]</option><?php               
                 foreach($items as $item){
                     print '<option value="'.$item->Id.'"'.($item->Id==$this->QBItemId?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
                 }
                 ?></select></td></tr>
             <?php 
             }else{ 
-                ?><input type="hidden" name="QBAccountId" value="<?php print $this->QBAccountId?>"/><?php  
+                ?><input type="hidden" name="QBItemId" value="<?php print $this->QBItemId?>"/><?php  
             }                   
             
             ?>
@@ -128,12 +128,12 @@ class DonorType extends ModelLite
         ?>
         <h2>Donor Types</h2>
         <div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&TypeId=new&edit=t">Add Donor Type</a>
-        <table border="1"><tr><th>Id</th><th>Title</th><?php if (Quickbooks::is_setup()) print "<th>QuickBook Account</th>"; ?><th>Total</th></tr><?php
+        <table border="1"><tr><th>Id</th><th>Title</th><?php if (Quickbooks::is_setup()) print "<th>QuickBook Item</th>"; ?><th>Total</th></tr><?php
         foreach ( $results as $r){
             ?><tr>
                 <td><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&TypeId=<?php print $r->TypeId?>&edit=t"><?php print $r->TypeId?></a></td>
                 <td><?php print $r->Title?></td>
-                <?php if (Quickbooks::is_setup()) print  "<td>".$r->QBAccountId."</td>";?>
+                <?php if (Quickbooks::is_setup()) print  "<td>".$r->QBItemId."</td>";?>
                 <td><?php print $r->donor_count?></td>
             </tr>
             <?php
@@ -195,7 +195,7 @@ class DonorType extends ModelLite
         $sql = "CREATE TABLE `".self::get_table_name()."` ( 
                 `TypeId` INT NOT NULL AUTO_INCREMENT , 
                 `Title` VARCHAR(60) NOT NULL , 
-                `QBAccountId` INT NOT NULL ,
+                `QBItemId` INT NOT NULL ,
                 `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, 
                 PRIMARY KEY (`TypeId`)

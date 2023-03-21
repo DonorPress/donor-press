@@ -403,7 +403,7 @@ class QuickBooks extends ModelLite
         $invoice->TxnDate = date('Y-m-d', strtotime($donation->DateDeposited));
         $invoice->ShipDate = date('Y-m-d', strtotime($donation->Date)); //check date... not sure if this is the best field
         $invoice->CustomerRef   = $donor->QuickBooksId;
-        $invoice->PrivateNote   = $donation->Source."|".$donation->SourceId."|".$donation->Note;
+        $invoice->PrivateNote   = $donation->DonorId."|".$donation->DonationId."|".$donation->Source."|".$donation->SourceId."|".$donation->Note;
         $invoice->TxnStatus     = "Payable";
         $invoice->PONumber      = substr($donation->TransactionID,0,15); //
 
@@ -413,7 +413,21 @@ class QuickBooks extends ModelLite
         $lineDetail->TaxCodeRef="NON";
         //$lineDetail->UnitPrice        = 1;
         //$lineDetail->Qty              = $donation->Gross;
-        
+        $QBItemId=null;
+        if ($donor->TypeId){
+            $donorType=DonorType::get(["TypeId=".$donor->TypeId]);
+            $QBItemId=$donorType->QBItemId;
+        }
+        if (!$QBItemId){
+            $QBItemId=CustomVariables::get_option('DefaultQBItemId');
+        }
+        if (!$QBItemId){
+            self::display_error("Quickbook <a href='?page=donor-settings'>Default Item Id Not Set</a> and <a href='?page=donor-settings&tab=type'>Donor Type</a> not set.");
+            return;
+        }
+        dd($donor->TypeId,$QBItemId);
+        // CustomVariables::get_option('DefaultQBItemId')
+
         $line = new IPPLine();
         $line->Id = "0";
         $line->LineNum          = "1";
