@@ -10,6 +10,11 @@ use QuickBooksOnline\API\Data\IPPInvoice;
 use QuickBooksOnline\API\Data\IPPLine;
 use QuickBooksOnline\API\Data\IPPItem;
 use QuickBooksOnline\API\Data\IPPDescriptionLineDetail;
+use QuickBooksOnline\API\Data\IPPSalesItemLineDetail;
+
+use QuickBooksOnline\API\Data\IPPPayment;
+use QuickBooksOnline\API\Data\IPPLinkedTxn;
+//use QuickBooksOnline\API\Data\IPPPaymentLineDetail;
 
 require_once 'CustomVariables.php';
 // use QuickBooksOnline\API\Core\ServiceContext;
@@ -162,6 +167,8 @@ class QuickBooks extends ModelLite
             if ($_GET['syncDonorId']){
                 $this->donor_to_customer_check($_GET['syncDonorId'],$_GET['QuickBooksId']);
                 return true;
+            }elseif($_GET['syncDonationPaid']){
+                $this->donation_to_payment_check($_GET['syncDonationPaid']);
             }elseif($_GET['syncDonation']){
                 $this->donation_to_invoice_check($_GET['syncDonation']);
                 return true;
@@ -191,6 +198,35 @@ class QuickBooks extends ModelLite
             }
     }
 
+    public function donation_to_payment_check($donationId){
+        $donation=Donation::get_by_id($donationId);
+       
+        if (!$donation){
+            self::display_error("Donation #".$donationId." not found.");
+            return;
+        }
+        if (!$donation->QBOInvoiceId){
+            self::display_error("Donation #".$donation->show_field("DonationId")." not linked to an invoice");           
+        }
+        $donor=Donor::get_by_id($donation->DonorId);        
+        if ($donor->QuickBooksId){
+            $payment=$this->donation_to_payment($donation,$donor);
+            $this->process_payment_obj($payment);
+        }
+    }
+
+    public function process_payment_obj($payment){
+        if (!$payment) return false; //errored out earlier        
+        $resultObj=$this->dataService->Add($payment);
+        if($this->check_dateService_error()){
+            if ($resultObj->Id){
+                // $donation->QBOInvoiceId=$resultObj->Id;
+                //$donation->QBOInvoicePaymentId=$resultObj->Id;
+                //$donation->save();
+                self::display_notice("Payment: ".$resultObj->Id." Made.");
+            }
+        }
+    }
 
     public function donation_to_invoice_check($donationId){
         $donation=Donation::get_by_id($donationId);
@@ -215,8 +251,12 @@ class QuickBooks extends ModelLite
                     $donation->QBOInvoiceId=$resultObj->Id;
                     $donation->save();
                     self::display_notice("Quick Books Invoice Id #".$donation->show_field('QBOInvoiceId')." created and linked to Donation #".$donation->show_field('DonationId'));
-                     dd($resultObj,$invoice,$donation,$donor);
-                    return $donation->QBOInvoiceId;
+                     //dd($resultObj,$invoice,$donation,$donor);
+                    
+                     $payment=$this->donation_to_payment($donation,$donor);
+                     $this->process_payment_obj($payment);
+                    
+                     return $donation->QBOInvoiceId;
                 }
             }
             //dd($invoice,$donation,$donor);
@@ -298,7 +338,7 @@ class QuickBooks extends ModelLite
         $name=explode(" ",$donor->Name);        
         $array=[           
             'FullyQualifiedName'=>$donor->Name,
-            'CompanyName'=>$donor->Name,
+            // 'CompanyName'=>$donor->Name,
             'DisplayName'=>$donor->Name,
             'OtherContactInfo'=>$donor->Name2,            
             'PrimaryEmailAddr'=>['Address'=>$donor->Email,'Default'=>$donor->EmailStatus==1?1:0],
@@ -317,7 +357,7 @@ class QuickBooks extends ModelLite
         return Customer::create($array);
     }
 
-    public function item_donation(){
+    public function item_donation(){ //don't like automatically doing this...
         if (!$this->authenticate()){
             self::display_error("Could Not Authenticate to Quickbooks API.");
             return false;
@@ -398,19 +438,18 @@ class QuickBooks extends ModelLite
         $invoice = new IPPInvoice();
         $invoice->Deposit       = 0;
         $invoice->domain        =  "QBO";
-        //$invoice->AutoDocNumber = true;
+        $invoice->AutoDocNumber = false;
         $invoice->DocNumber=$donation->DonorId."|".$donation->DonationId;
         $invoice->TxnDate = date('Y-m-d', strtotime($donation->DateDeposited));
         $invoice->ShipDate = date('Y-m-d', strtotime($donation->Date)); //check date... not sure if this is the best field
         $invoice->CustomerRef   = $donor->QuickBooksId;
         $invoice->PrivateNote   = $donation->DonorId."|".$donation->DonationId."|".$donation->Source."|".$donation->SourceId."|".$donation->Note;
-        $invoice->TxnStatus     = "Payable";
+        //$invoice->TxnStatus     = "Payable";
         $invoice->PONumber      = substr($donation->TransactionID,0,15); //
 
         
-        $lineDetail=new IPPDescriptionLineDetail();
-        $lineDetail->ItemRef=(object)['value'=>$item->Id,'name'=>"Donation"];
-        $lineDetail->TaxCodeRef="NON";
+
+       
         //$lineDetail->UnitPrice        = 1;
         //$lineDetail->Qty              = $donation->Gross;
         $QBItemId=null;
@@ -425,25 +464,117 @@ class QuickBooks extends ModelLite
             self::display_error("Quickbook <a href='?page=donor-settings'>Default Item Id Not Set</a> and <a href='?page=donor-settings&tab=type'>Donor Type</a> not set.");
             return;
         }
-        dd($donor->TypeId,$QBItemId);
-        // CustomVariables::get_option('DefaultQBItemId')
 
-        $line = new IPPLine();
-        $line->Id = "0";
-        $line->LineNum          = "1";
-        $line->Description      = $donation->Subject?$donation->Subject:"Donation";
-        $line->Amount           = $donation->Gross; 
-        $line->DetailType       = "SalesItemLineDetail"; 
-        $line->SalesItemLineDetail=$lineDetail;
+        $SalesItemLineDetail = new IPPSalesItemLineDetail();
+        $SalesItemLineDetail->ItemRef =   $QBItemId;
+        $SalesItemLineDetail->TaxCodeRef =  'NON'; //'TAX' in USA or 'NON'  
+        
+        $l = new IPPLine();
+      
+        $l->SalesItemLineDetail = $SalesItemLineDetail;        
+        $l->Id = "0";
+        $l->LineNum          = 1;
+        $desciption=$donation->show_field("CategoryId");
+        $l->Description      = $desciption?desciption:'Donation';
+        //$l->QtyOnPurchaseOrder = $line->quanity;
+        $l->Amount           = $donation->Gross;
+        $l->DetailType = "SalesItemLineDetail";
+        
+        $invoice->Line[]=$l;          
 
-        //should we add something for the fee? $donation->Fee
-
-        $invoice->Line          = array($line);
         $invoice->RemitToRef    = $donor->QuickBooksId;
+        $invoice->SalesTermRef= 1;
         $invoice->TotalAmt      = $donation->Gross;
-        $invoice->FinanceCharge = 'false';
+        $invoice->FinanceCharge = 'false';      
         return $invoice;
 
+    }
+
+    public function donation_to_payment($donation,$donor){
+        //https://developer.intuit.com/app/developer/qbo/docs/api/accounting/all-entities/payment#the-payment-object
+        if (!$donation->QBOInvoiceId){
+            self::display_error("Could not find QB invoice attached to donation ".$donation->show_field("DonationId"));
+            return false;
+        }
+        $payment= new IPPPayment();
+
+        $payment->domain =  "QBO";
+        $payment->TotalAmt = $donation->Gross;
+        $payment->CustomerRef = $donor->QuickBooksId;
+        $payment->TxnDate = date('Y-m-d', strtotime($donation->DateDeposited));
+        //$payment->DepositToAccountRef =  1;// new stdClass() ->value=1
+        $payment->ProcessPayment = false;
+
+        $linkedTxn = new IPPLinkedTxn();
+        $linkedTxn->TxnId=$donation->QBOInvoiceId;
+        $linkedTxn->TxnType='Invoice';
+
+        $l = new IPPLine();      
+        $l->Amount           = $donation->Gross;
+        $l->LinkedTxn = $linkedTxn;    
+
+       
+        $l->DetailType = "PaymentLineDetail";
+        
+        $payment->Line[]=$l; 
+        //dd($paymenet);
+        //$detail=new IPPPaymentLineDetail();
+        /*
+        "Line": [
+      {
+        "Amount": 55.0, 
+        "LineEx": {
+          "any": [
+            {
+              "name": "{http://schema.intuit.com/finance/v3}NameValue", 
+              "nil": false, 
+              "value": {
+                "Name": "txnId", 
+                "Value": "70"
+              }, 
+              "declaredType": "com.intuit.schema.finance.v3.NameValue", 
+              "scope": "javax.xml.bind.JAXBElement$GlobalScope", 
+              "globalScope": true, 
+              "typeSubstituted": false
+            }, 
+            {
+              "name": "{http://schema.intuit.com/finance/v3}NameValue", 
+              "nil": false, 
+              "value": {
+                "Name": "txnOpenBalance", 
+                "Value": "71.00"
+              }, 
+              "declaredType": "com.intuit.schema.finance.v3.NameValue", 
+              "scope": "javax.xml.bind.JAXBElement$GlobalScope", 
+              "globalScope": true, 
+              "typeSubstituted": false
+            }, 
+            {
+              "name": "{http://schema.intuit.com/finance/v3}NameValue", 
+              "nil": false, 
+              "value": {
+                "Name": "txnReferenceNumber", 
+                "Value": "1024"
+              }, 
+              "declaredType": "com.intuit.schema.finance.v3.NameValue", 
+              "scope": "javax.xml.bind.JAXBElement$GlobalScope", 
+              "globalScope": true, 
+              "typeSubstituted": false
+            }
+          ]
+        }, 
+        "LinkedTxn": [
+          {
+            "TxnId": "70", 
+            "TxnType": "Invoice"
+          }
+        ]
+      }
+    ],
+    */
+        
+
+        return $payment;
     }
 
     public function customer_to_donor($customer){
@@ -465,12 +596,151 @@ class QuickBooks extends ModelLite
         return new Donor($array);
     }
 
+    public function hash($string){
+        return preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($string));
+    }
+
     public function show(){
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");
             $tables=['Customer'=>'DisplayName','Invoice'=>'Balance','Vendor'=>'DisplayName','Employee'=>'DisplayName','Item'=>'Name','Account'=>'Name','Bill'=>'VendorRef','BillPayment'=>'VendorRef','CompanyInfo'=>'CompanyName','CreditMemo'=>'TotalAmt'
-            ,'Deposit'=>'CashBack.Memo','JournalEntry'=>'PrivateNote','SalesReceipt'=>'DocNumber']; //,'Department',,'Budget'
-            if ($_GET['table']){      
+            ,'Deposit'=>'CashBack.Memo','JournalEntry'=>'PrivateNote','SalesReceipt'=>'DocNumber','Payment'=>'TotalAmt']; //,'Department',,'Budget'
+            $updatedCount=0;
+            if ($_GET['syncDonorsToQB']){
+                if ($_POST['Function']=="LinkMatchQBtoDonorId"){
+                    foreach($_POST['match'] as $cId=>$donorId){
+                        if ($donorId){
+                            $uSQL="UPDATE ".Donor::get_table_name()." SET QuickBooksId='".$cId."' WHERE DonorId='".$donorId."'";
+                            print $uSQL."<br>";
+                            self::db()->query($uSQL);
+                            $updatedCount++;                           
+                        }
+                    }
+
+                    foreach($_POST['rmatch'] as $donorId =>$cId){
+                        if ($cId){
+                            $uSQL="UPDATE ".Donor::get_table_name()." SET QuickBooksId='".$cId."' WHERE DonorId='".$donorId."'";
+                            print $uSQL."<br>"; 
+                            self::db()->query($uSQL); 
+                            $updatedCount++;                        
+                        }
+                    }
+                    self::display_notice("Linked ".$updatedCount." entries");
+                }
+                $match=[];
+                ?><h2>Sync Donors to Quickbooks</h2><?php
+                $entities =$this->dataService->Query("SELECT * FROM Customer");
+                if($this->check_dateService_error()){
+                    $results = Donor::get();
+                    foreach($results as $d){
+                        $donors[$d->DonorId]=$d;
+                        if ($d->QuickBooksId){
+                            $existing[$d->QuickBooksId][]=$d->DonorId;
+                        }else{                            
+                            if ($d->Email) $hash['Email'][$this->hash($d->Email)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
+                            if ($d->Phone) $hash['Phone'][$this->hash($d->Phone)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
+                            if ($d->Name) $hash['Name'][$this->hash($d->Name)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
+                            if ($d->Name2) $hash['Name'][$this->hash($d->Name2)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
+                            $leftOverDonors[$d->DonorId]=1;
+                        }
+                    }
+                    foreach($entities as $c){
+                        $customer[$c->Id]=$c;
+                        if ($existing[$c->Id]){
+
+                        }else{
+                            $found=0;
+                            
+                            $check=[];                          
+
+                            if ($c->PrimaryEmailAddr) $check['Email'][]=$c->PrimaryEmailAddr->Address;
+                            if ($c->PrimaryPhone) $check['Phone'][]=$c->PrimaryPhone->FreeFormNumber;
+                            if ($c->FamilyName) $check['Name'][]=$c->GivenName.$c->FamilyName;
+                            if ($c->FullyQualifiedName) $check['Name'][]=$c->FullyQualifiedName;
+
+                            foreach($check as $field=>$values){
+                                foreach($values as $val){
+                                    $matchId=$hash[$field][$this->hash($val)];
+                                    if ($matchId){
+                                        unset($leftOverDonors[$matchId]);
+                                        $match[$c->Id][$matchId][$field]++;
+                                        $found++;
+                                    }
+                                }
+                            }  
+                           
+                          
+                            if ($found==0){
+                                $notFound[]=$c->Id;
+                            }                          
+                        }                                               
+                    }
+
+                    if (sizeof($match)>0){
+                        ?>
+                        <form method="post"> <button name="Function" value="LinkMatchQBtoDonorId"/>Match Selected Below</button>
+                        <h2>Potential Matches Founds</h2>
+                        <table class="dp"><tr><th></th><th>QuickBooks</th><th>Donor Press</th><th>Matched On</th></tr>
+                        <?php 
+                        foreach($match as $cId=>$donorIds){
+                            $i=0;
+                            foreach($donorIds as $donorId=>$matchedOn){
+                                ?><tr>
+                                    <td><input type="checkbox" name="match[<?php print $cId;?>]" value="<?php print $donorId?>"<?php if ($i==0) print " checked"?>></td>
+                                <?php if ($i==0){?>
+                                    <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
+                                <?php } ?>  
+                                <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td><td><?php print implode(", ",array_keys($matchedOn));?></td></tr><?php
+                                $i++;
+                            }                                  
+                               
+                        }?></table>
+                        
+                        <?php
+                    }
+                    ?>                    
+                    <h2>On QuickBooks, but not Donor System</h2> 
+                    <table class="dp"><tr><th>QuickBooks</th><th>Link to Donor Id</tH></tr>                  
+                    <?php
+                    foreach($notFound as $cId){?>
+                        <tr><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
+                        <td><input type="number" name="match[<?php print $cId;?>]" value="" step=1></td>
+                        </tr><?php
+
+                    }?></table>
+                    <h2>On Donor Press, but not Donor System</h2> 
+                    <table class="dp"><tr><th>Donor Press</th><th>Link to Customer</tH></tr>
+                    <?php
+                    foreach($leftOverDonors as $donorId=>$true){
+                        ?><tr>                       
+                        <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td>
+                        <td><input type="number" name="rmatch[<?php print $$donorId;?>]" value="" step=1></td>
+                        
+                        </tr><?php
+                        
+                    } 
+                    ?></table>
+                    <h2>Existing Matches Found</h2>
+                    <table class="dp"><tr><th>QuickBooks</th><th>Donor Press</th></tr>
+                        <?php 
+                        foreach($existing as $cId=>$donorIds){
+                            $i=0;
+                            foreach($donorIds as $donorId){
+                                ?><tr>
+                                <?php if ($i==0){?>
+                                    <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
+                                <?php } ?>  
+                                <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td></tr><?php
+                                $i++;
+                            }                                  
+                               
+                        }?></table>
+
+                    <?php            
+                    
+                }
+                return;
+            }elseif ($_GET['table']){      
                 if ($_GET['Id']){
                     $entity=$this->dataService->FindById($_GET['table'], $_GET['Id']);
                     if($this->check_dateService_error()){
@@ -517,7 +787,8 @@ class QuickBooks extends ModelLite
             }else{ 
                 $companyInfo = $this->dataService->getCompanyInfo();               
                 ?>
-                <h2>Company: <?php print $companyInfo->LegalName?> | <?php print CustomVariables::get_option('QuickbooksBase');?></h2>             
+                <h2>Company: <?php print $companyInfo->LegalName?> | <?php print CustomVariables::get_option('QuickbooksBase');?></h2>  
+                <div><a href="?page=<?php print $_GET['page']?>&syncDonorsToQB=t">Sync Donors to QuickBooks</a></div>           
                 <h3>View</h3>
                  <?php foreach ($tables as $tbl=>$key){ ?>
                     <div><a href="?page=donor-quickbooks&table=<?php print $tbl?>"><?php print $tbl?></a></div>
@@ -549,7 +820,7 @@ class QuickBooks extends ModelLite
     public function requestToSession(){ 
         foreach(self::SESSION_VARS as $key){
             if ($_GET[$key]){
-                $this->session([self::SESSION_PREFIX.$key=>$_GET[$key]]);  
+                $this->session([self::SESSION_PREFIX.$key => $_GET[$key]]);  
             }   
         }       
     }

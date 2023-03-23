@@ -6,7 +6,8 @@ class DonorType extends ModelLite
     protected $table = 'donor_type';
 	protected $primaryKey = 'TypeId';
 	### Fields that can be passed 
-    protected $fillable = ["Title","QBItemId"];	   
+    protected $fillable = ["Title","QBItemId"];	  
+    //add "table" + "Field"? and make it more flexible for any field?
 
     static public function request_handler(){
         $wpdb=self::db();  

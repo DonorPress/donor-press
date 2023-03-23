@@ -7,7 +7,7 @@ function donor_press_upgrade(){
 		donor_press_upgrade_003();
 	}
 	
-	if ($current_db_version<>'0.0.4'){ //future upgrade
+	if ($current_db_version<'0.0.4'){ 
 		donor_press_upgrade_004();
 	}
 
