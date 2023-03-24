@@ -434,10 +434,10 @@ class QuickBooks extends ModelLite
     }
 
     public function donation_to_invoice($donation,$donor){
-        $item=$this->item_donation();
-        if (!$item){
-            return false; //expects error message to have already been displayed in above function.
-        }
+        // $item=$this->item_donation();
+        // if (!$item){
+        //     return false; //expects error message to have already been displayed in above function.
+        // }
         
         $invoice = new IPPInvoice();
         $invoice->Deposit       = 0;
