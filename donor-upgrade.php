@@ -23,7 +23,7 @@ function donor_press_upgrade(){
 function donor_press_upgrade_003(){
 	DonorType::create_table();
 	$wpdb=Donor::db();
-	$aSQL="ALTER TABLE `".Donor::get_table_name()."` ADD `TypeId` NOT NULL DEFAULT '0' AFTER `Country`;";
+	$aSQL="ALTER TABLE `".Donor::get_table_name()."` ADD COLUMN `TypeId` NOT NULL DEFAULT '0' AFTER `Country`;";
 	$wpdb->query( $aSQL );
 	$aSQL="ALTER TABLE `".Donation::get_table_name()."` CHANGE `NotTaxDeductible` `TransactionType` INT NULL DEFAULT '0' COMMENT '0=TaxExempt 1=NotTaxExcempt 2=Service -1=Expense';";
 	$wpdb->query(  $aSQL );
@@ -32,5 +32,7 @@ function donor_press_upgrade_003(){
 function donor_press_upgrade_004(){
 	$wpdb=Donor::db();
 	$aSQL="ALTER TABLE `".DonorType::get_table_name()."` CHANGE `QBAccountId` `QBItemId` INT NULL DEFAULT '0';";
+	$wpdb->query( $aSQL );	
+	$aSQL="ALTER TABLE `".Donation::get_table_name()."` ADD COLUMN `QBOPaymentId` INT NULL DEFAULT NULL AFTER `QBOInvoiceId`;";	
 	$wpdb->query( $aSQL );
 }

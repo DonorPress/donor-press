@@ -7,7 +7,7 @@ class Donation extends ModelLite
     protected $table = 'donation';
 	protected $primaryKey = 'DonationId';
 	### Fields that can be passed //,"Time","TimeZone"
-    public $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","TransactionType","QBOInvoiceId"];	 
+    public $fillable = ["Date","DateDeposited","DonorId","Name","Type","Status","Currency","Gross","Fee","Net","FromEmailAddress","ToEmailAddress","Source","SourceId","TransactionID","AddressStatus","CategoryId","ReceiptID","ContactPhoneNumber","Subject","Note","PaymentSource","TransactionType","QBOInvoiceId","QBOPaymentId"];	 
 
     public $flat_key = ["Date","Name","Gross","FromEmailAddress","TransactionID"];
     protected $duplicateCheck=["Date","Gross","FromEmailAddress","TransactionID"]; //check these fields before reinserting a matching entry.
@@ -773,6 +773,7 @@ class Donation extends ModelLite
                 `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `TransactionType` tinyint(4) DEFAULT '0' COMMENT '0=Tax Deductible 1=Not Tax Deductible, 2=Service, -1=Expense',
                 QBOInvoiceId int(11) DEFAULT NULL,
+                QBOPaymentId int(11) DEFAULT NULL,
                 PRIMARY KEY (`DonationId`)
                 )";               
         dbDelta( $sql );        
@@ -793,8 +794,15 @@ class Donation extends ModelLite
         $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
         $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
         $bodyContent=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']):$bodyContent; //Post value overrides this though.
-        if (CustomVariables::get_option('QuickbooksClientId',true) && !$this->QBOInvoiceId){
-            print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
+        if (CustomVariables::get_option('QuickbooksClientId',true)){
+            if (!$this->QBOInvoiceId){
+                print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
+            }elseif(!$this->QBOPaymentId){
+                print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
+                print '<a href="?page=donor-quickbooks&syncDonationPaid='.$this->DonationId.'">Sync Payment to QuickBooks</a>';
+            }else{
+                print "<div>Invoice #".$this->show_field("QBOInvoiceId")." & Payment: ".$this->show_field("QBOPaymentId")." synced to Quickbooks.</div>";
+            }
         }
         //$receipts[0]->content
    

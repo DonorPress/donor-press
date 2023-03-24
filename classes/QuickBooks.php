@@ -26,6 +26,7 @@ require_once 'CustomVariables.php';
 class QuickBooks extends ModelLite
 {
 	protected $dataService;
+    protected $QBurl;
     protected $oAuth2LoginHelper;
     protected $accessTokenObj;
     const SESSION_PREFIX='quickBooks_';
@@ -42,6 +43,8 @@ class QuickBooks extends ModelLite
             }
             $quickbooks_base=CustomVariables::get_option('QuickbooksBase');
             if ($quickbooks_base!="Production") $quickbooks_base="Development";
+
+            $this->QBurl=self::get_QB_url($quickbooks_base); 
             $this->dataService = DataService::Configure(array(
                 'auth_mode' => 'oauth2',
                 'ClientID' => $clientId,
@@ -211,21 +214,21 @@ class QuickBooks extends ModelLite
         $donor=Donor::get_by_id($donation->DonorId);        
         if ($donor->QuickBooksId){
             $payment=$this->donation_to_payment($donation,$donor);
-            $this->process_payment_obj($payment);
+            $this->process_payment_obj($payment,$donation);
         }
     }
 
-    public function process_payment_obj($payment){
+    public function process_payment_obj($payment,$donation){
         if (!$payment) return false; //errored out earlier        
         $resultObj=$this->dataService->Add($payment);
         if($this->check_dateService_error()){
             if ($resultObj->Id){
-                // $donation->QBOInvoiceId=$resultObj->Id;
-                //$donation->QBOInvoicePaymentId=$resultObj->Id;
-                //$donation->save();
+                $donation->QBOPaymentId=$resultObj->Id;
+                $donation->save();
                 self::display_notice("Payment: ".$resultObj->Id." Made.");
             }
         }
+        $donation->full_view();
     }
 
     public function donation_to_invoice_check($donationId){
@@ -236,6 +239,7 @@ class QuickBooks extends ModelLite
         }
         if ($donation->QBOInvoiceId){
             self::display_error("Donation #".$donation->show_field("DonationId")." already linked to Invoice #".$donation->show_field("QBOInvoiceId"));
+            $donation->full_view();
             return $donation->QBOInvoiceId;
         }
         $donor=Donor::get_by_id($donation->DonorId);
@@ -254,7 +258,7 @@ class QuickBooks extends ModelLite
                      //dd($resultObj,$invoice,$donation,$donor);
                     
                      $payment=$this->donation_to_payment($donation,$donor);
-                     $this->process_payment_obj($payment);
+                     $this->process_payment_obj($payment,$donation);
                     
                      return $donation->QBOInvoiceId;
                 }
@@ -505,6 +509,9 @@ class QuickBooks extends ModelLite
         //$payment->DepositToAccountRef =  1;// new stdClass() ->value=1
         $payment->ProcessPayment = false;
 
+        //$payment->PaymentMethodRef='';
+        $payment->PaymentRefNum=$donation->TransactionID;
+
         $linkedTxn = new IPPLinkedTxn();
         $linkedTxn->TxnId=$donation->QBOInvoiceId;
         $linkedTxn->TxnType='Invoice';
@@ -604,7 +611,7 @@ class QuickBooks extends ModelLite
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");
             $tables=['Customer'=>'DisplayName','Invoice'=>'Balance','Vendor'=>'DisplayName','Employee'=>'DisplayName','Item'=>'Name','Account'=>'Name','Bill'=>'VendorRef','BillPayment'=>'VendorRef','CompanyInfo'=>'CompanyName','CreditMemo'=>'TotalAmt'
-            ,'Deposit'=>'CashBack.Memo','JournalEntry'=>'PrivateNote','SalesReceipt'=>'DocNumber','Payment'=>'TotalAmt']; //,'Department',,'Budget'
+            ,'Deposit'=>'CashBack.Memo','JournalEntry'=>'PrivateNote','SalesReceipt'=>'DocNumber','Payment'=>'TotalAmt','PaymentMethod'=>'Name']; //,'Department',,'Budget'
             $updatedCount=0;
             if ($_GET['syncDonorsToQB']){
                 if ($_POST['Function']=="LinkMatchQBtoDonorId"){
@@ -856,5 +863,9 @@ class QuickBooks extends ModelLite
 
     public function missing_api_error(){
         self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".QuickBooks::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
+    }
+
+    static public function get_QB_url($base){
+        return $base=="Production"?"https://app.qbo.intuit.com/":"https://app.sandbox.qbo.intuit.com/";
     }
 }
