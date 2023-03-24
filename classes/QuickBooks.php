@@ -508,8 +508,11 @@ class QuickBooks extends ModelLite
         $payment->TxnDate = date('Y-m-d', strtotime($donation->DateDeposited));
         //$payment->DepositToAccountRef =  1;// new stdClass() ->value=1
         $payment->ProcessPayment = false;
-
-        //$payment->PaymentMethodRef='';
+        $paymentSourceMap=["2"=>"1","1"=>"2","10"=>"4"]; //paymentSource to PaymentMethod on QB
+        //"PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer","10"=>"Paypal"]
+        if ($paymentSourceMap[$donation->PaymentSource]){
+            $payment->PaymentMethodRef=$paymentSourceMap[$donation->PaymentSource];
+        }        
         $payment->PaymentRefNum=$donation->TransactionID;
 
         $linkedTxn = new IPPLinkedTxn();
