@@ -710,19 +710,19 @@ class QuickBooks extends ModelLite
                     }
                     ?>                    
                     <h2>On QuickBooks, but not Donor Press</h2> 
-                    <table class="dp"><tr><th>QuickBooks</th><th>Link to Donor Id</tH></tr>                  
+                    <table class="dp"><tr><th>&#8592;</th><th>QuickBooks</th><th>Link to Donor Id</tH></tr>                  
                     <?php
                     foreach($notFound as $cId){?>
-                        <tr><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
+                        <tr><td>&#8592;</td><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
                         <td><input type="number" name="match[<?php print $cId;?>]" value="" step=1></td>
                         </tr><?php
 
                     }?></table>
                     <h2>On Donor Press, but not QuickBooks</h2> 
-                    <table class="dp"><tr><th>&#8592;</th><th>Donor Press</th><th>Link to Customer</tH></tr>
+                    <table class="dp"><tr><th>&#8594;</th><th>Donor Press</th><th>Link to Customer</tH></tr>
                     <?php
                     foreach($leftOverDonors as $donorId=>$true){
-                        ?><tr><td>&#8592;</td>                      
+                        ?><tr><td>&#8594;</td>                      
                         <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td>
                         <td><input type="number" name="rmatch[<?php print $$donorId;?>]" value="" step=1></td>
                         
@@ -731,13 +731,12 @@ class QuickBooks extends ModelLite
                     } 
                     ?></table>
                     <h2>Existing Matches Found</h2>
-                    <table class="dp"><tr><th>&#8594;</th><th>QuickBooks</th><th>Donor Press</th></tr>
+                    <table class="dp"><tr><th>QuickBooks</th><th>Donor Press</th></tr>
                         <?php 
                         foreach($existing as $cId=>$donorIds){
                             $i=0;
                             foreach($donorIds as $donorId){
-                                ?><tr>
-                                <td>&#8594;</td>  
+                                ?><tr>                                
                                 <?php if ($i==0){?>
                                     <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
                                 <?php } ?>  
