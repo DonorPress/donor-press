@@ -478,8 +478,8 @@ class QuickBooks extends ModelLite
         $l->SalesItemLineDetail = $SalesItemLineDetail;        
         $l->Id = "0";
         $l->LineNum          = 1;
-        $desciption=$donation->show_field("CategoryId");
-        $l->Description      = $desciption?desciption:'Donation';
+        $description=$donation->show_field("CategoryId");
+        $l->Description      = $description?$description:'Donation';
         //$l->QtyOnPurchaseOrder = $line->quanity;
         $l->Amount           = $donation->Gross;
         $l->DetailType = "SalesItemLineDetail";
