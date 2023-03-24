@@ -639,12 +639,30 @@ class QuickBooks extends ModelLite
                 }
                 $match=[];
                 ?><h2>Sync Donors to Quickbooks</h2><?php
-                $entities =$this->dataService->Query("SELECT * FROM Customer");
+                $index=$_GET['index']??1;
+                
+                $max=1000;
+
+                $count =$this->dataService->Query("SELECT count(*) FROM Customer");
+                # get past Quickbook limit of 1000 resuls.
+                for($i=0;$i<ceil($count/$max);$i++){
+                    $SQL="SELECT * FROM Customer STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;
+                    //print $SQL;
+                    $chunks[] =$this->dataService->Query($SQL);
+                }
+
+                foreach($chunks as $a){
+                    foreach($a as $c){
+                        $customer[$c->Id]=$c;      
+                    }                    
+                }                            
+
                 if($this->check_dateService_error()){
                     $results = Donor::get();
+                    print "<div>".sizeof($customer)." Customer in QB found. ".sizeof($results)." Donors in Donor Press found.</div>";    
                     foreach($results as $d){
                         $donors[$d->DonorId]=$d;
-                        if ($d->QuickBooksId){
+                        if ($d->QuickBooksId && $customer[$d->QuickBooksId]){
                             $existing[$d->QuickBooksId][]=$d->DonorId;
                         }else{                            
                             if ($d->Email) $hash['Email'][$this->hash($d->Email)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
@@ -654,8 +672,7 @@ class QuickBooks extends ModelLite
                             $leftOverDonors[$d->DonorId]=1;
                         }
                     }
-                    foreach($entities as $c){
-                        $customer[$c->Id]=$c;
+                    foreach($customer as $c){                       
                         if ($existing[$c->Id]){
 
                         }else{
@@ -780,10 +797,22 @@ class QuickBooks extends ModelLite
                         }                        
                     }
                 }else{
-                    $entities =$this->dataService->Query("SELECT * FROM ".$_GET['table']);
+                    $index=$_GET['index']??1;
+                    $max=$_GET['max']??100;
+                    if ($max>1000) $max=1000;
+
+                    $count =$this->dataService->Query("SELECT count(*) FROM ".$_GET['table']);
+
+                    $entities =$this->dataService->Query("SELECT * FROM ".$_GET['table']." STARTPOSITION ".(($index-1)*$max)." MAXRESULTS ".$max);
+                    //dd($count,$entities,"SELECT * FROM ".$_GET['table']." STARTPOSITION ".($index*$max)." MAXRESULTS ".$max);
                     if($this->check_dateService_error()){
                         print "<div><a href='?page=donor-quickbooks'>Back to Quickbook list</a></div>
-                        <h3>".$_GET['table']." List</h3>";
+                        <h3>".$_GET['table']." List <span style=\"font-size:60%\">- ". sizeof($entities).($count!=sizeof($entities)?" of ". $count:"")." Entries</span></h3>";
+                        if (!$entities || sizeof($entities)==0){
+                            self::display_error("No Results Found");
+                            return;
+                        }
+                        print self::pagination($index,$max,$count);
                         ?><table class="dp">
                         <?php
                         foreach ($entities as $entity){
@@ -792,6 +821,7 @@ class QuickBooks extends ModelLite
                         }?>
                         </table>
                         <?php    
+                        print self::pagination($index,$max,$count);
                     }                           
                 }
             }else{ 
@@ -809,6 +839,43 @@ class QuickBooks extends ModelLite
             return;           
         }
 	}
+
+    public function pagination($index,$max,$count){
+        if ($max>$count) return;
+
+        $return="<div style='padding:4px 8px;'>";
+        if ($index >1){
+            $return.='<a href="s'.self::make_link(['index'=>$index-1,'max'=>$max]).'"><- Previous '.$max.'</a>';
+        }             
+        
+        if ($count>$max){
+            for($i=1;$i<ceil($count/$max);$i++){                
+                $return.='<a href="'.self::make_link(['index'=>$i,'max'=>$max]).'" style="border:1px solid #CCC; padding:4px 8px;';
+                if($i==$index) $return.='font-weight:bold; background-color:#CCC;';
+                $return.='">'.$i.'</a>';
+            }
+        }
+
+        if (($index+1)*$max<$count){
+            $return.='<a href="s'.self::make_link(['index'=>$index+1,'max'=>$max]).'">Next '.(($index+2)*$max>$count?$count-(($index+1)*$max):$max).' -></a>';
+        }
+        $return.="</div>";
+        return $return;
+        
+    }
+
+    static function make_link($replace=[]){
+        $get=$_GET;
+        foreach($replace as $f=>$v) $get[$f]=$v;
+        $return="?";
+        $i=0;
+        foreach($get as $f=>$v){           
+            if ($i>0) $return.="&";
+            $return.=$f."=".urlencode($v);
+            $i++;
+        }
+        return $return;
+    }
 
     public function oauthcallback(){
         ///api/quickbooks/oauth2/callback?code=AB11670607450L4ne1zzbuPBxTHOz00f8oPv9ZKA0B2qVIBw34&state=QANVI&realmId=4620816365259820260
