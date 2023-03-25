@@ -940,6 +940,25 @@ class QuickBooks extends ModelLite
         self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".QuickBooks::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
     }
 
+    static public function donation_process_check($donation,$donor){
+        if ($donor->QuickBooksId){
+            print "Donor in QB: ".$donor->show_field("QuickBooksId");
+       
+            if($donation->QBOInvoiceId){
+                print " | Invoice #".$donation->show_field("QBOInvoiceId")." synced to QB";
+                if($donation->QBOPaymentId){     
+                    print " | Payment: ".$donation->show_field("QBOPaymentId")." synced to QB";                             
+                }else{
+                    print ' | <a style="background-color:lightgreen;" target="QB" href="?page=donor-quickbooks&syncDonationPaid='.$donation->DonationId.'">Sync Payment to QuickBooks</a>';
+                }
+            }else{
+                print ' | <a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonation='.$donation->DonationId.'">Create Invoice & Payment In QB</a>';
+            }
+        }else{
+            print '<a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonorId='.$donation->DonorId.'">Create Donor in QB</a>';
+        }     
+    }
+
     static public function qbLink($type,$v,$labelOverride=""){
         if (!$labelOverride) $labelOverride=$v;
         switch($type){

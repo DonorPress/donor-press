@@ -336,10 +336,15 @@ class Donation extends ModelLite
                 foreach ($type as $t=>$donationsByType){                    
                     $total=0;
                     ?><h2><?php print self::s()->tinyIntDescriptions["Type"][$t]?></h2>
-                    <table class="dp"><tr><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr><?php
+                    <table class="dp"><tr><th>Donor Id</th><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr>
+                    <?php
                     foreach($donationsByType as $donations){
                         $donation=new Donation($donations[key($donations)]);
-                        ?><tr><td  rowspan="<?php print sizeof($donations)?>"><?php
+                        ?><tr>
+                            <td  rowspan="<?php print sizeof($donations)?>"><?php                        
+                                print $donation->show_field('DonorId');
+                            ?></td>                            
+                            <td rowspan="<?php print sizeof($donations)?>"><?php
                         if ($donors[$donation->DonorId]){
                             //print $donors[$donation->DonorId]->display_key()." ".
                             print $donors[$donation->DonorId]->name_check();
@@ -361,7 +366,7 @@ class Donation extends ModelLite
                             if ($donation->CategoryId) print $donation->show_field("CategoryId");
                             else print $donation->Subject;
                             ?></td><td><?php print $donation->show_field("Note")?></td>  
-                            <td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?php  print "x".$donorCount[$donation->DonorId].($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")."";?> </td>               
+                            <td <?php print $donorCount[$donation->DonorId]==1?" style='background-color:orange;'":""?>><?php  print "x".$donorCount[$donation->DonorId].($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")."";?> </td>                            
                             </tr><?php
                             $total+=$donation->Gross;
                             $count++;
@@ -378,7 +383,7 @@ class Donation extends ModelLite
                     <button type="submit" name="Function" value="PdfLabelDonationReceipts">Generate Labels</button>
                     Labels Start At: <strong>Column:</strong> (1-3) &#8594; <input name="col" type="number" value="1"  min="1" max="3" /> &#8595; <strong>Row:</strong> (1-10)<input name="row" type="number" value="1" min="1" max="10"   />
 
-                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th></tr><?php
+                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th><?php if (Quickbooks::is_setup()){ print "<th>Quickbooks Link</th>"; } ?></tr><?php
                 foreach($donations as $r){
                     $donation=new Donation($r);
                     ?><tr><td><?php
@@ -398,7 +403,13 @@ class Donation extends ModelLite
                         else print $donation->Subject;
                         ?></td>
                         <td><?php print $donation->show_field("Note")?></td>
-                        <td><?php print $donation->show_field("Type")?></td>                
+                        <td><?php print $donation->show_field("Type")?></td> 
+                        <?php 
+                            if (Quickbooks::is_setup()){
+                                print "<td>";
+                                Quickbooks::donation_process_check($donation,$donors[$donation->DonorId]);
+                                print "</td>";
+                        }?>             
                     </tr><?php
                 }
                 ?></table><?php
@@ -409,8 +420,7 @@ class Donation extends ModelLite
         if (!$settings['summary']){
            // $all=self::get($where);
            // print self::show_results($all);
-        }
-        
+        }        
     }
 
     static public function request_handler(){
