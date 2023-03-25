@@ -458,7 +458,7 @@ class QuickBooks extends ModelLite
         //$lineDetail->Qty              = $donation->Gross;
         $QBItemId=null;
         if ($donor->TypeId){
-            $donorType=DonorType::get(["TypeId=".$donor->TypeId]);
+            $donorType=DonorType::find($donor->TypeId);            
             $QBItemId=$donorType->QBItemId;
         }
         if (!$QBItemId){
@@ -941,6 +941,11 @@ class QuickBooks extends ModelLite
     }
 
     static public function donation_process_check($donation,$donor){
+        if ($donor->TypeId){
+            $donorType=DonorType::find($donor->TypeId);      
+            print "Type: ".$donorType->Title.($donorType->QBItemId?" QB:".self::qbLink('Item',$donorType->QBItemId):"")." | ";
+        }
+
         if ($donor->QuickBooksId){
             print "Donor in QB: ".$donor->show_field("QuickBooksId");
        
@@ -967,13 +972,15 @@ class QuickBooks extends ModelLite
                 break;	
             case "Invoice":
                 return '<a target="QB" href="'.self::get_QB_url().'app/invoice?txnId='.$v.'">'.$labelOverride.'</a>';
-                break;
+                break;          
             case "Customer":
                 return '<a target="QB" href="'.self::get_QB_url().'app/customerdetail?nameId='.$v.'">'.$labelOverride.'</a>';
                 break;
-            // case "Item": //not currently linkable
-            //     return '<a target="QB" href="'.self::get_QB_url().'app/items?itemId='.$v.'">'.$labelOverride.'</a>';
-            //     break;
+            case "Item": //not currently linkable
+                return '<a target="QB" href="?page=donor-quickbooks&table=Item&Id='.$v.'">'.$labelOverride.'</a>';
+               
+                //return $labelOverride; //return '<a target="QB" href="'.self::get_QB_url().'app/items?itemId='.$v.'">'.$labelOverride.'</a>';
+                break;
         }
     }
 

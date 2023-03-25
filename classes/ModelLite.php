@@ -227,6 +227,10 @@ class ModelLite{
 		if (is_array($first) && sizeof($first)>0) return $first[key($first)];
 		else return false;
 	}
+
+	public static function find($id){
+		return self::get_by_id($id);			
+	}
 	
 	public static function get($where=array(),$orderby="",$settings=false){	
 		$SQL="SELECT ".($settings['select']?$settings['select']:"*")." FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"").($settings['limit']?" LIMIT ".$settings['limit']:"");
