@@ -656,7 +656,7 @@ class QuickBooks extends ModelLite
                 $count =$this->dataService->Query("SELECT count(*) FROM Customer");
                 # get past Quickbook limit of 1000 resuls.
                 for($i=0;$i<ceil($count/$max);$i++){
-                    $SQL="SELECT * FROM Customer STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;
+                    $SQL="SELECT * FROM Customer Where Active=true STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;
                     //print $SQL;
                     $chunks[] =$this->dataService->Query($SQL);
                 }
