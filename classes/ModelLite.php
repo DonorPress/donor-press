@@ -320,11 +320,17 @@ class ModelLite{
 				return ($v?"<div><a href='#' onclick=\"toggleDisplay('message_".$this->ReceiptId."');return false;\">Show/Hide</a></div><div style='display:none;' id='message_".$this->ReceiptId."'>".$v."</div>":"<div><em>Standard Message</em></div>");
 				break;
 			case "QBOPaymentId":
+				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
+				if ($v==0) return "<span>Not Synced to QB</span>";
 				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Payment&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Payment',$v,'QB');
 				break;	
 			case "QBOInvoiceId":
+				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
+				if ($v==0) return "<span>Not Synced to QB</span>";
 				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Invoice',$v,'QB');
 			case "QuickBooksId":
+				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
+				if ($v==0) return "<span>Not Synced to QB</span>";
 				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Customer',$v,'QB');
 			case "DonationId":
 				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonationId='.$v.'">'.$v.'</a>';

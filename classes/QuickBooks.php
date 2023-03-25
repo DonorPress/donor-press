@@ -165,7 +165,11 @@ class QuickBooks extends ModelLite
         return $changedFields;
     }
 
-    public function request_handler(){      
+    public function request_handler(){ 
+        if($_GET['ignoreSyncDonation']){ //doesn't require authentication first...
+            $this-> ignore_sync_donation($_GET['ignoreSyncDonation']);
+            return true;           
+        }     
         if ($this->authenticate()){
             if ($_GET['syncDonorId']){
                 $this->donor_to_customer_check($_GET['syncDonorId'],$_GET['QuickBooksId']);
@@ -218,6 +222,24 @@ class QuickBooks extends ModelLite
         }
     }
 
+    public function ignore_sync_donation($donationId){
+        $donation = Donation::find($donationId);
+        $changes=[];
+        if ($donation->QBOInvoiceId>0){ 
+            self::display_error("Invoice already matched in QB ".self::qbLink('Invoice',$donation->QBOInvoiceId).". Manually edit/override if this is a mistake.");
+        }else{ $donation->QBOInvoiceId=-1; $changes[]="Invoice"; }
+
+        if ($donation->QBOPaymentId>0){ 
+            self::display_error("Payment already matched in QB ".self::qbLink('Payment',$donation->QBOPaymentId).". Manually edit/override if this is a mistake.");
+        }else{ $donation->QBOPaymentId=-1; $changes[]="Payment"; }
+
+        if(sizeof($changes)>0){
+            $donation->save();
+            self::display_notice("The following QB Fields were marked ignored: ".implode(', ',$changes));
+        }
+        $donation->full_view();
+    }
+
     public function process_payment_obj($payment,$donation){
         if (!$payment) return false; //errored out earlier        
         $resultObj=$this->dataService->Add($payment);
@@ -230,6 +252,7 @@ class QuickBooks extends ModelLite
         }
         $donation->full_view();
     }
+
 
     public function donation_to_invoice_check($donationId){
         $donation=Donation::get_by_id($donationId);
@@ -1005,7 +1028,7 @@ class QuickBooks extends ModelLite
                     print ' | <a style="background-color:lightgreen;" target="QB" href="?page=donor-quickbooks&syncDonationPaid='.$donation->DonationId.'">Sync Payment to QuickBooks</a>';
                 }
             }else{
-                print ' | <a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonation='.$donation->DonationId.'">Create Invoice & Payment In QB</a>';
+                print ' | <a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonation='.$donation->DonationId.'">Create Invoice & Payment In QB</a> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId.'">Ignore/Don\'t Sync to QB</a>';
             }
         }else{
             print '<a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonorId='.$donation->DonorId.'">Create Donor in QB</a>';

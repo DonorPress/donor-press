@@ -804,10 +804,10 @@ class Donation extends ModelLite
         $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
         $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
         $bodyContent=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']):$bodyContent; //Post value overrides this though.
-        if (CustomVariables::get_option('QuickbooksClientId',true)){
-            if (!$this->QBOInvoiceId){
+        if (CustomVariables::get_option('QuickbooksClientId',true) && $this->QBOInvoiceId>=0){
+            if ($this->QBOInvoiceId==0){
                 print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
-            }elseif(!$this->QBOPaymentId){
+            }elseif(!$this->QBOPaymentId==0){
                 print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
                 print '<a href="?page=donor-quickbooks&syncDonationPaid='.$this->DonationId.'">Sync Payment to QuickBooks</a>';
             }else{
