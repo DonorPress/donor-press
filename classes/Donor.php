@@ -469,6 +469,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,YEAR(DT.Date) "
         .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
         ." Order BY ".$settings['orderBy'];
+        //print "<pre>".$SQL."</pre>";
         $results = self::db()->get_results($SQL);
         $q=[];
         foreach($results as $r){
@@ -476,7 +477,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             if (!$q['donors'][$r->DonorId]) $q['donors'][$r->DonorId]=new Donor($r);
             $q['year'][$r->Year]+=$r->Total;
         }
-        ksort($q['year']);
+        if ($q['year']) ksort($q['year']);
         ?><table class="dp">
             <thead>
                 <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th>
@@ -502,7 +503,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 }else{
                     $pass=true;
                 }
-                if ($pass){                   
+                if ($pass){ 
+                    $donorList[]=$donor->DonorId;                
                     ?>  
                     <tr>
                         <td><?php print $donor->show_field('DonorId')?></td>
@@ -527,7 +529,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
             ?></tr></tfoot>
         </table>
-        <?php       
+        <?php 
+        if (sizeof($donorList)>0) print "<div>Donor Ids: ".implode(",",$donorList) ."</div>";   
     }
 
     static function summary_list($where=[],$year=null,$settings=[]){

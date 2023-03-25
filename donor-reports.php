@@ -94,7 +94,8 @@ function report_donors(){
 	<form method="get" style="font-size:90%;">
 	<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
 	<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
-	Top: <input type="number" name="top" value="<?php print $top?>"/>
+	Top: <input type="number" name="top" value="<?php print $top?>" step=1 style="width:80px;"/>
+	Name Search: <input name="name" value="<?php print $_GET['name']?>" />	
 	Dates From <input type="date" name="df" value="<?php print $_GET['df']?>"/> to 
 	<input type="date" name="dt" value="<?php print $_GET['dt']?>"/> 
 	Date Field: <select name="dateField"><?php 
@@ -104,7 +105,8 @@ function report_donors(){
 	</select>
 	<br>
 	Amount >=  <input type="number" step=".01" name="af" value="<?php print $_GET['af']?>" style="width:120px;"/>
-		<label><input type="checkbox" name="yearView" value="t" <?=$_GET['yearView']=="t"?" checked":""?>/> Year Trends</label>
+		<label><input type="checkbox" name="yearView" value="t" <?php print $_GET['yearView']=="t"?" checked":""?>/> Year Trends</label>
+		<!-- <label><input type="checkbox" name="bulkAction" value="t" <?php print $_GET['bulkAction']=="t"?" checked":""?>/> Bulk Action</label> -->
 		<button name="f" value="Go">Go</button>
 	</form>
 	<?php
@@ -115,11 +117,12 @@ function report_donors(){
 	if ($_GET['dt']){
 		$where[]="`$dateField`<='".$_GET['dt'].($dateField=="Date"?"":" 23:59:59")."'";
 	}
+	if ($_GET['name']){
+		$where[]="(UPPER(D.Name) LIKE '%".addslashes($_GET['name'])."%' OR UPPER(D.Name2) LIKE '%".addslashes($_GET['name'])."%')";
+	}
 	
 	if($_GET['f']=="Go"){
-		if($_GET['yearView']=="t"){
-			//print "year view comming soon.";
-
+		if($_GET['yearView']=="t"){	
 			Donor::year_list(['where'=>$where,'orderBy'=>'D.Name, D.Name2','having'=>$having,'amount'=>$_GET['af']]);
 		}else{
 			if ($_GET['af']){
