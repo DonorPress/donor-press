@@ -316,12 +316,12 @@ class ModelLite{
 				return ($v?"<div><a href='#' onclick=\"toggleDisplay('message_".$this->ReceiptId."');return false;\">Show/Hide</a></div><div style='display:none;' id='message_".$this->ReceiptId."'>".$v."</div>":"<div><em>Standard Message</em></div>");
 				break;
 			case "QBOPaymentId":
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Payment&Id='.$v.'">'.$v.'</a> <a target="QB" href="'.QuickBooks::get_QB_url(CustomVariables::get_option('QuickbooksBase')).'app/recvpayment?txnId='.$v.'">QB</a>';
+				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Payment&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Payment',$v,'QB');
 				break;	
 			case "QBOInvoiceId":
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a> <a target="QB" href="'.QuickBooks::get_QB_url(CustomVariables::get_option('QuickbooksBase')).'app/invoice?txnId='.$v.'">QB</a>';
+				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Invoice',$v,'QB');
 			case "QuickBooksId":
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a> <a target="QB" href="'.QuickBooks::get_QB_url(CustomVariables::get_option('QuickbooksBase')).'app/customerdetail?nameId='.$v.'">QB</a>';
+				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Customer',$v,'QB');
 			case "DonationId":
 				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonationId='.$v.'">'.$v.'</a>';
 			break;

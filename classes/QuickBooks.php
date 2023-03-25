@@ -702,10 +702,10 @@ class QuickBooks extends ModelLite
                             }                          
                         }                                               
                     }
-
+                    ?><form method="post"> <button name="Function" value="LinkMatchQBtoDonorId"/>Match Selected Below</button><?php
                     if (sizeof($match)>0){
                         ?>
-                        <form method="post"> <button name="Function" value="LinkMatchQBtoDonorId"/>Match Selected Below</button>
+                        
                         <h2>Potential Matches Founds</h2>
                         <table class="dp"><tr><th></th><th>QuickBooks</th><th>Donor Press</th><th>Matched On</th></tr>
                         <?php 
@@ -715,7 +715,7 @@ class QuickBooks extends ModelLite
                                 ?><tr>
                                     <td><input type="checkbox" name="match[<?php print $cId;?>]" value="<?php print $donorId?>"<?php if ($i==0) print " checked"?>></td>
                                 <?php if ($i==0){?>
-                                    <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
+                                    <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a>".QuickBooks::qbLink('Customer',$cId,'QB')."  - ".$customer[$cId]->FullyQualifiedName?></td>
                                 <?php } ?>  
                                 <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td><td><?php print implode(", ",array_keys($matchedOn));?></td></tr><?php
                                 $i++;
@@ -730,7 +730,7 @@ class QuickBooks extends ModelLite
                     <table class="dp"><tr><th>&#8592;</th><th>QuickBooks</th><th>Link to Donor Id</tH></tr>                  
                     <?php
                     foreach($notFound as $cId){?>
-                        <tr><td>&#8592;</td><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
+                        <tr><td>&#8592;</td><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')."- ".$customer[$cId]->FullyQualifiedName?></td>
                         <td><input type="number" name="match[<?php print $cId;?>]" value="" step=1></td>
                         </tr><?php
 
@@ -741,28 +741,33 @@ class QuickBooks extends ModelLite
                     foreach($leftOverDonors as $donorId=>$true){
                         ?><tr><td>&#8594;</td>                      
                         <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td>
-                        <td><input type="number" name="rmatch[<?php print $$donorId;?>]" value="" step=1></td>
+                        <td><input type="number" name="rmatch[<?php print $donorId;?>]" value="" step=1></td>
                         
                         </tr><?php
                         
                     } 
                     ?></table>
-                    <h2>Existing Matches Found</h2>
-                    <table class="dp"><tr><th>QuickBooks</th><th>Donor Press</th></tr>
-                        <?php 
-                        foreach($existing as $cId=>$donorIds){
-                            $i=0;
-                            foreach($donorIds as $donorId){
-                                ?><tr>                                
-                                <?php if ($i==0){?>
-                                    <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> - ".$customer[$cId]->FullyQualifiedName?></td>
-                                <?php } ?>  
-                                <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td></tr><?php
-                                $i++;
-                            }                                  
-                               
-                        }?></table>
-
+                    <?php 
+                    if (sizeof($existing)>0){?>
+                        <h2>Existing Matches Found</h2>
+                        <table class="dp"><tr><th>QuickBooks</th><th>Donor Press</th></tr>
+                            <?php 
+                            foreach($existing as $cId=>$donorIds){
+                                $i=0;
+                                foreach($donorIds as $donorId){
+                                    ?><tr>                                
+                                    <?php if ($i==0){?>
+                                        <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')." - ".$customer[$cId]->FullyQualifiedName?></td>
+                                    <?php } ?>  
+                                    <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td></tr><?php
+                                    $i++;
+                                }                                  
+                                
+                            }?>
+                        </table>
+                    <?php 
+                    }?>
+                    </form>
                     <?php            
                     
                 }
@@ -935,7 +940,26 @@ class QuickBooks extends ModelLite
         self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".QuickBooks::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
     }
 
-    static public function get_QB_url($base){
+    static public function qbLink($type,$v,$labelOverride=""){
+        if (!$labelOverride) $labelOverride=$v;
+        switch($type){
+            case "Payment":
+                return '<a target="QB" href="'.self::get_QB_url().'app/recvpayment?txnId='.$v.'">'.$labelOverride.'</a>';
+                break;	
+            case "Invoice":
+                return '<a target="QB" href="'.self::get_QB_url().'app/invoice?txnId='.$v.'">'.$labelOverride.'</a>';
+                break;
+            case "Customer":
+                return '<a target="QB" href="'.self::get_QB_url().'app/customerdetail?nameId='.$v.'">'.$labelOverride.'</a>';
+                break;
+            // case "Item": //not currently linkable
+            //     return '<a target="QB" href="'.self::get_QB_url().'app/items?itemId='.$v.'">'.$labelOverride.'</a>';
+            //     break;
+        }
+    }
+
+    static public function get_QB_url($base=""){
+        if (!$base) $base=CustomVariables::get_option('QuickbooksBase');
         return $base=="Production"?"https://app.qbo.intuit.com/":"https://app.sandbox.qbo.intuit.com/";
     }
 }
