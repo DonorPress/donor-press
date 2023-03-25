@@ -610,6 +610,16 @@ class QuickBooks extends ModelLite
         return preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($string));
     }
 
+    public function partialHash($string){
+        $segments=explode(" ",$string);
+        $return=[];
+        foreach($segments as $s){
+            $hash=$this->hash($s);
+            if (strlen($hash)>2) $return[]=$hash;
+        }
+        return $return;
+    }
+
     public function show(){
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");
@@ -658,7 +668,7 @@ class QuickBooks extends ModelLite
                 }                            
 
                 if($this->check_dateService_error()){
-                    $results = Donor::get();
+                    $results = Donor::get(['MergedId=0']);
                     print "<div>".sizeof($customer)." Customer in QB found. ".sizeof($results)." Donors in Donor Press found.</div>";    
                     foreach($results as $d){
                         $donors[$d->DonorId]=$d;
@@ -670,6 +680,14 @@ class QuickBooks extends ModelLite
                             if ($d->Name) $hash['Name'][$this->hash($d->Name)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
                             if ($d->Name2) $hash['Name'][$this->hash($d->Name2)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
                             $leftOverDonors[$d->DonorId]=1;
+                            $partial=$this->partialHash($d->Name);
+                            foreach($partial as $p){
+                                $hash['partial'][$p][]=$d->MergedId>0?$d->MergedId:$d->DonorId;
+                            }
+                            $partial=$this->partialHash($d->Name2);
+                            foreach($partial as $p){
+                                $hash['partial'][$p][]=$d->MergedId>0?$d->MergedId:$d->DonorId;
+                            }
                         }
                     }
                     foreach($customer as $c){                       
@@ -694,11 +712,21 @@ class QuickBooks extends ModelLite
                                         $found++;
                                     }
                                 }
-                            }  
-                           
-                          
+                            }                           
                             if ($found==0){
                                 $notFound[]=$c->Id;
+                                ### attempt parital matches on name
+                                $check=['FamilyName','FullyQualifiedName','GivenName'];
+                                foreach($check as $f){
+                                    $array=$this->partialHash($c->FamilyName);
+                                    foreach( $array as $p){
+                                        if ($hash['partial'][$p]){
+                                            foreach ($hash['partial'][$p] as $donorId){
+                                                $partial[$c->Id][$donorId][]=$f;
+                                            }
+                                        }                                        
+                                    }
+                                }                              
                             }                          
                         }                                               
                     }
@@ -725,13 +753,25 @@ class QuickBooks extends ModelLite
                         
                         <?php
                     }
+                    //dump($partial);
                     ?>                    
                     <h2>On QuickBooks, but not Donor Press</h2> 
-                    <table class="dp"><tr><th>&#8592;</th><th>QuickBooks</th><th>Link to Donor Id</tH></tr>                  
+                    <table class="dp"><tr><th>&#8592;</th><th>QuickBooks</th><th>Link to Donor Id</th><th>Partial matches</th></tr>                  
                     <?php
-                    foreach($notFound as $cId){?>
-                        <tr><td>&#8592;</td><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')."- ".$customer[$cId]->FullyQualifiedName?></td>
-                        <td><input type="number" name="match[<?php print $cId;?>]" value="" step=1></td>
+                    foreach($notFound as $cId){ ?>
+                        <tr><td>&#8592;</td><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId])?></td>
+                        <td><input type="number" id="match_<?php print $cId;?>" name="match[<?php print $cId;?>]" value="" step=1></td>
+                        <td><?php
+                        if ($partial[$cId]){
+                            $i=0;
+                            foreach($partial[$cId] as $donorId=>$matchedOn){
+                                if ($i>0) print ", ";
+                                print '<a onclick="document.getElementById(\'match_'.$cId.'\').value='.$donorId.';return false;">'.$donors[$donorId]->name_combine()."</a>"." (".implode(", ",$matchedOn).") ".$donors[$donorId]->show_field('DonorId');
+                                $i++;
+                            }
+                        }
+                        ?>
+                        </td>
                         </tr><?php
 
                     }?></table>
@@ -757,7 +797,7 @@ class QuickBooks extends ModelLite
                                 foreach($donorIds as $donorId){
                                     ?><tr>                                
                                     <?php if ($i==0){?>
-                                        <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')." - ".$customer[$cId]->FullyQualifiedName?></td>
+                                        <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')." - ".self::show_customer_name($customer[$cId])?></td>
                                     <?php } ?>  
                                     <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td></tr><?php
                                     $i++;
@@ -844,6 +884,14 @@ class QuickBooks extends ModelLite
             return;           
         }
 	}
+
+    static function show_customer_name($c){
+        if ($c->CompanyName==$c->FullyQualifiedName){
+            return $c->CompanyName.($c->GivenName?" (".$c->GivenName." ".$c->FamilyName.")":"");
+        }else{
+            return $c->FullyQualifiedName.($c->CompanyName?" (".$c->CompanyName.")":"");
+        }
+    } 
 
     public function pagination($index,$max,$count){
         if ($max>$count) return;
