@@ -19,7 +19,7 @@ $clientSecret=CustomVariables::get_option('PaypalSecret');
                 sizeof($response->transaction_details)." records retrieved. <ul>".
                 "<li>".($process['DonorsAdded']?sizeof($process['DonorsAdded']):"0")." New Donor Entries Created.</li>".
                 ($process['DonationsMatched'] && sizeof($process['DonationsMatched'])>0?"<li>".sizeof($process['DonationsMatched'])." donations already created.</li>":"").
-                ($process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",strotime($process['time'])))."'>View These Donations/Send Acknowledgements</a></li>":"").
+                ($process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",strtotime($process['time'])))."'>View These Donations/Send Acknowledgements</a></li>":"").
                 "</ul>"
             );
         }
