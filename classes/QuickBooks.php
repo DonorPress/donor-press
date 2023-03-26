@@ -240,14 +240,14 @@ class QuickBooks extends ModelLite
         $donation->full_view();
     }
 
-    public function process_payment_obj($payment,$donation){
+    public function process_payment_obj($payment,$donation,$settings=[]){
         if (!$payment) return false; //errored out earlier        
         $resultObj=$this->dataService->Add($payment);
         if($this->check_dateService_error()){
             if ($resultObj->Id){
                 $donation->QBOPaymentId=$resultObj->Id;
                 $donation->save();
-                self::display_notice("Payment: ".$resultObj->Id." Made.");
+                if (!$settings['silent']) self::display_notice("Payment: ".self::qbLink('Payment',$resultObj->Id)." send to Quickbooks");
             }
         }
         $donation->full_view();
@@ -289,6 +289,26 @@ class QuickBooks extends ModelLite
             //dd($invoice,$donation,$donor);
         }       
     }
+
+    public function donation_to_invoice_process($donation,$donor=""){
+        if (!$donor) $donor=Donor::find($donation->DonorId);
+        if ($donor->QuickBooksId){          
+            if ($this->authenticate()){
+                $invoice=$this->donation_to_invoice($donation,$donor);
+                if (!$invoice) return false; //errored out earlier        
+                $resultObj=$this->dataService->Add($invoice);
+                if($this->check_dateService_error()){
+                    if ($resultObj->Id){
+                        $donation->QBOInvoiceId=$resultObj->Id;
+                        $donation->save();
+                        $payment=$this->donation_to_payment($donation,$donor);
+                        $this->process_payment_obj($payment,$donation,['silent'=>true]);
+                    }
+                }
+            }
+        }
+    }
+
 
     public function donor_to_customer_check($donorId,$quickBookId=""){
         $donor=Donor::get_by_id($donorId);
@@ -501,8 +521,7 @@ class QuickBooks extends ModelLite
         $l->SalesItemLineDetail = $SalesItemLineDetail;        
         $l->Id = "0";
         $l->LineNum          = 1;
-        $description=$donation->show_field("CategoryId");
-        $l->Description      = $description?$description:'Donation';
+        $description=$donatinon->CategoryId?$donation->show_field("CategoryId"):'Donation';
         //$l->QtyOnPurchaseOrder = $line->quanity;
         $l->Amount           = $donation->Gross;
         $l->DetailType = "SalesItemLineDetail";
@@ -629,6 +648,22 @@ class QuickBooks extends ModelLite
         return new Donor($array);
     }
 
+    public function hash_donor_add($donor,&$hash){
+        if ($donor->Email) $hash['Email'][$this->hash($donor->Email)]=$donor->MergedId>0?$donor->MergedId:$donor->DonorId;
+        if ($donor->Phone) $hash['Phone'][$this->hash($donor->Phone)]=$donor->MergedId>0?$donor->MergedId:$donor->DonorId;
+        if ($donor->Name) $hash['Name'][$this->hash($donor->Name)]=$donor->MergedId>0?$donor->MergedId:$donor->DonorId;
+        if ($donor->Name2) $hash['Name'][$this->hash($donor->Name2)]=$donor->MergedId>0?$donor->MergedId:$donor->DonorId;        
+        $partial=$this->partialHash($donor->Name);
+        foreach($partial as $p){
+            $hash['partial'][$p][]=$donor->MergedId>0?$donor->MergedId:$donor->DonorId;
+        }
+        $partial=$this->partialHash($donor->Name2);
+        foreach($partial as $p){
+            $hash['partial'][$p][]=$donor->MergedId>0?$donor->MergedId:$donor->DonorId;
+        }
+        return $hash;
+    }
+    
     public function hash($string){
         return preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($string));
     }
@@ -643,124 +678,97 @@ class QuickBooks extends ModelLite
         return $return;
     }
 
+    public function process_customer_match($match,$rmatch){
+        $updatedCount=0;  $createNew=[];
+        foreach($match as $cId=>$donorId){
+            if ($donorId){
+                $uSQL="UPDATE ".Donor::get_table_name()." SET QuickBooksId='".$cId."' WHERE DonorId='".$donorId."'";
+                print $uSQL."<br>";
+                self::db()->query($uSQL);
+                $updatedCount++;                           
+            }
+        }
+        foreach($rmatch as $donorId =>$cId){
+            if ($cId=="new"){
+                $createNew[]=$donorId;
+            }elseif ($cId){
+                $uSQL="UPDATE ".Donor::get_table_name()." SET QuickBooksId='".$cId."' WHERE DonorId='".$donorId."'";
+                print $uSQL."<br>"; 
+                self::db()->query($uSQL); 
+                $updatedCount++;                        
+            }
+        }
+        self::display_notice("Linked ".$updatedCount." entries");
+        if (sizeof($createNew)>0){ 
+            $created=[];           
+            $donors=Donor::get(["DonorId IN ('".implode("','",$createNew)."')"]);
+            foreach($donors as $donor){
+                if ($donor->QuickBooksId>0){
+                    print self::display_error("Donor ".$donor->DonorId." already connectd to QB Customer account: ".$donor->QuickBooksId);
+                }else{
+                    if ($this->authenticate()){
+                        $customerToCreate=$this->donor_to_customer($donor);
+                        $resultObj = $this->dataService->Add($customerToCreate);
+                        if($this->check_dateService_error()){
+                            if ($resultObj->Id){
+                                $donor->QuickBooksId=$resultObj->Id;
+                                $donor->save();
+                                self::display_notice("Quick Books Id #".$donor->show_field('QuickBooksId')." created and linked to Donor #".$donor->show_field('DonorId'));                               
+                                $created[]=$donor->QuickBooksId;
+                            }
+                        }
+                    }
+                }
+            }
+            //if (sizeof($created)>0) self:display_notice("Created ".sizeof($created)." new Customers from Donors");
+        }
+    }
+
     public function show(){
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");
             $tables=['Customer'=>'DisplayName','Invoice'=>'Balance','Vendor'=>'DisplayName','Employee'=>'DisplayName','Item'=>'Name','Account'=>'Name','Bill'=>'VendorRef','BillPayment'=>'VendorRef','CompanyInfo'=>'CompanyName','CreditMemo'=>'TotalAmt'
             ,'Deposit'=>'CashBack.Memo','JournalEntry'=>'PrivateNote','SalesReceipt'=>'DocNumber','Payment'=>'TotalAmt','PaymentMethod'=>'Name']; //,'Department',,'Budget'
-            $updatedCount=0;
-            if ($_GET['syncDonorsToQB']){
+            
+            
+            if ($_GET['syncDonorsToQB']){         
                 if ($_POST['Function']=="LinkMatchQBtoDonorId"){
-                    foreach($_POST['match'] as $cId=>$donorId){
-                        if ($donorId){
-                            $uSQL="UPDATE ".Donor::get_table_name()." SET QuickBooksId='".$cId."' WHERE DonorId='".$donorId."'";
-                            print $uSQL."<br>";
-                            self::db()->query($uSQL);
-                            $updatedCount++;                           
-                        }
-                    }
-
-                    foreach($_POST['rmatch'] as $donorId =>$cId){
-                        if ($cId){
-                            $uSQL="UPDATE ".Donor::get_table_name()." SET QuickBooksId='".$cId."' WHERE DonorId='".$donorId."'";
-                            print $uSQL."<br>"; 
-                            self::db()->query($uSQL); 
-                            $updatedCount++;                        
-                        }
-                    }
-                    self::display_notice("Linked ".$updatedCount." entries");
+                    $this->process_customer_match($_POST['match'],$_POST['rmatch']);                    
                 }
+
                 $match=[];
                 ?><h2>Sync Donors to Quickbooks</h2><?php
                 $index=$_GET['index']??1;
                 
-                $max=1000;
-
-                $count =$this->dataService->Query("SELECT count(*) FROM Customer");
-                # get past Quickbook limit of 1000 resuls.
-                for($i=0;$i<ceil($count/$max);$i++){
-                    $SQL="SELECT * FROM Customer Where Active=true STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;
-                    //print $SQL;
-                    $chunks[] =$this->dataService->Query($SQL);
-                }
-
-                foreach($chunks as $a){
-                    foreach($a as $c){
-                        $customer[$c->Id]=$c;      
-                    }                    
-                }                            
-
+                $customer=$this->get_all_entity('Customer');                                         
+                
                 if($this->check_dateService_error()){
+                    $hash=[];
                     $results = Donor::get(['MergedId=0']);
                     print "<div>".sizeof($customer)." Customer in QB found. ".sizeof($results)." Donors in Donor Press found.</div>";    
                     foreach($results as $d){
                         $donors[$d->DonorId]=$d;
                         if ($d->QuickBooksId && $customer[$d->QuickBooksId]){
                             $existing[$d->QuickBooksId][]=$d->DonorId;
-                        }else{                            
-                            if ($d->Email) $hash['Email'][$this->hash($d->Email)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
-                            if ($d->Phone) $hash['Phone'][$this->hash($d->Phone)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
-                            if ($d->Name) $hash['Name'][$this->hash($d->Name)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
-                            if ($d->Name2) $hash['Name'][$this->hash($d->Name2)]=$d->MergedId>0?$d->MergedId:$d->DonorId;
-                            $leftOverDonors[$d->DonorId]=1;
-                            $partial=$this->partialHash($d->Name);
-                            foreach($partial as $p){
-                                $hash['partial'][$p][]=$d->MergedId>0?$d->MergedId:$d->DonorId;
-                            }
-                            $partial=$this->partialHash($d->Name2);
-                            foreach($partial as $p){
-                                $hash['partial'][$p][]=$d->MergedId>0?$d->MergedId:$d->DonorId;
-                            }
+                        }else{
+                            $this->hash_donor_add($d,$hash);
+                            $leftOverDonors[$d->DonorId]=1;                            
                         }
                     }
-                    foreach($customer as $c){                       
-                        if ($existing[$c->Id]){
-
-                        }else{
-                            $found=0;
-                            
-                            $check=[];                          
-
-                            if ($c->PrimaryEmailAddr) $check['Email'][]=$c->PrimaryEmailAddr->Address;
-                            if ($c->PrimaryPhone) $check['Phone'][]=$c->PrimaryPhone->FreeFormNumber;
-                            if ($c->FamilyName) $check['Name'][]=$c->GivenName.$c->FamilyName;
-                            if ($c->FullyQualifiedName) $check['Name'][]=$c->FullyQualifiedName;
-
-                            foreach($check as $field=>$values){
-                                foreach($values as $val){
-                                    $matchId=$hash[$field][$this->hash($val)];
-                                    if ($matchId){
-                                        unset($leftOverDonors[$matchId]);
-                                        $match[$c->Id][$matchId][$field]++;
-                                        $found++;
-                                    }
-                                }
-                            }                           
-                            if ($found==0){
-                                $notFound[]=$c->Id;
-                                ### attempt parital matches on name
-                                $check=['FamilyName','FullyQualifiedName','GivenName'];
-                                foreach($check as $f){
-                                    $array=$this->partialHash($c->FamilyName);
-                                    foreach( $array as $p){
-                                        if ($hash['partial'][$p]){
-                                            foreach ($hash['partial'][$p] as $donorId){
-                                                $partial[$c->Id][$donorId][]=$f;
-                                            }
-                                        }                                        
-                                    }
-                                }                              
-                            }                          
-                        }                                               
+                    $match=self::customers_to_donor_hash($customer,$hash,['existing'=>$existing]); 
+                    //->match, ->partial ->donorId
+                    if ($match->donorId){ 
+                        foreach($match->donorId as $donorId=>$customerMatches){ unset($leftOverDonors[$matchId]);}
                     }
+
                     ?><form method="post"> <button name="Function" value="LinkMatchQBtoDonorId"/>Match Selected Below</button><?php
-                    if (sizeof($match)>0){
+                    if (sizeof($match->match)>0){
                         ?>
                         
                         <h2>Potential Matches Founds</h2>
                         <table class="dp"><tr><th></th><th>QuickBooks</th><th>Donor Press</th><th>Matched On</th></tr>
                         <?php 
-                        foreach($match as $cId=>$donorIds){
+                        foreach($match->match as $cId=>$donorIds){
                             $i=0;
                             foreach($donorIds as $donorId=>$matchedOn){
                                 ?><tr>
@@ -775,8 +783,7 @@ class QuickBooks extends ModelLite
                         }?></table>
                         
                         <?php
-                    }
-                    //dump($partial);
+                    }                   
                     ?>                    
                     <h2>On QuickBooks, but not Donor Press</h2> 
                     <table class="dp"><tr><th>&#8592;</th><th>QuickBooks</th><th>Link to Donor Id</th><th>Partial matches</th></tr>                  
@@ -785,9 +792,9 @@ class QuickBooks extends ModelLite
                         <tr><td>&#8592;</td><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId])?></td>
                         <td><input type="number" id="match_<?php print $cId;?>" name="match[<?php print $cId;?>]" value="" step=1></td>
                         <td><?php
-                        if ($partial[$cId]){
+                        if ($match->partial[$cId]){
                             $i=0;
-                            foreach($partial[$cId] as $donorId=>$matchedOn){
+                            foreach($match->partial[$cId] as $donorId=>$matchedOn){
                                 if ($i>0) print ", ";
                                 print '<a onclick="document.getElementById(\'match_'.$cId.'\').value='.$donorId.';return false;">'.$donors[$donorId]->name_combine()."</a>"." (".implode(", ",$matchedOn).") ".$donors[$donorId]->show_field('DonorId');
                                 $i++;
@@ -1011,28 +1018,149 @@ class QuickBooks extends ModelLite
         self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".QuickBooks::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
     }
 
+    function DonorToCustomer($donorIds){   
+        $hash=[];   
+        
+        $qb = new self();
+        if ($qb->authenticate()){
+            $donors=Donor::get(["DonorId IN ('".implode("','",$donorIds)."')"]);
+            foreach($donors as $donor){
+                $qb->hash_donor_add($donor,$hash);
+            }
+            $customer=$qb->get_all_entity('Customer');           
+            $match=self::customers_to_donor_hash($customer,$hash,['existing'=>$existing]); 
+            
+           ?><h2>Create/Sync Donors to QuickBook Customers</h2>
+           <form method="post">
+           <table class="dp"><tr><th>Donor</th><th>QuickBooks</th></tr>
+           <?php foreach($donors as $donor){               
+            print '<tr><td>'.$donor->show_field('DonorId')." ".$donor->name_combine()."</td><td>";
+            if ($donor->QuickBooksId>0){
+                print "Already matched to: ".self::qbLink('Customer',$donor->QuickBooksId);
+            }else{
+                print '<select name="rmatch['.$donor->DonorId.']">
+                <option value="new">-- Create New --</option>
+                <option value="0">-- Skip for Now --</option>
+                <option value="-1">-- Ignore/Do not create --</option>';                
+                if ($match->donorId[$donor->DonorId]){
+                    foreach($match->donorId[$donor->DonorId] as $cId){
+                        print '<option value="'.$cId.'" selected>'.self::show_customer_name($customer[$cId]).' - '.$cId.'</option>';
+                    }
+                }
+                if ($match->partial[$donor->DonorId]){
+                    foreach($match->partial[$donor->DonorId] as $cId){
+                        print '<option value="'.$cId.'" selected>'.self::show_customer_name($customer[$cId]).' - '.$cId.'</option>';
+                    }
+                }
+                print "</select>";
+                if ($match->donorId[$donor->DonorId]){
+                    print "<span style='color:green;'>Match Found</span>";
+                }
+                if ($match->partial[$donor->DonorId]){
+                    print "<span style='color:green;'>Partial Matches Found</span>";
+                }
+            }    
+
+                
+            print "</td></tr>";
+           }?>
+           </table> <button name="Function" value="LinkMatchQBtoDonorId">Match or Created Selected Above</button>
+         </form>
+           <?php
+        
+            
+        }
+    }
+
     static public function donation_process_check($donation,$donor){
         if ($donor->TypeId){
             $donorType=DonorType::find($donor->TypeId);      
-            print "Type: ".$donorType->Title.($donorType->QBItemId?" QB:".self::qbLink('Item',$donorType->QBItemId):"")." | ";
+            print "<strong>Type:</strong> ".$donorType->Title.($donorType->QBItemId?" QB: ".self::qbLink('Item',$donorType->QBItemId):"")." | ";
         }
-
         if ($donor->QuickBooksId){
-            print "Donor in QB: ".$donor->show_field("QuickBooksId");
-       
+            print "<strong>Donor in QB:</strong> ".$donor->show_field("QuickBooksId");       
             if($donation->QBOInvoiceId){
-                print " | Invoice #".$donation->show_field("QBOInvoiceId")." synced to QB";
+                print " | <strong>Invoice:</strong> ".$donation->show_field("QBOInvoiceId")." synced to QB";
                 if($donation->QBOPaymentId){     
-                    print " | Payment: ".$donation->show_field("QBOPaymentId")." synced to QB";                             
+                    print " | <strong>Payment</strong>: ".$donation->show_field("QBOPaymentId")." synced to QB";                             
                 }else{
                     print ' | <a style="background-color:lightgreen;" target="QB" href="?page=donor-quickbooks&syncDonationPaid='.$donation->DonationId.'">Sync Payment to QuickBooks</a>';
                 }
             }else{
+                $return['newInvoicesFromDonation'][]=$donation->DonationId;
                 print ' | <a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonation='.$donation->DonationId.'">Create Invoice & Payment In QB</a> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId.'">Ignore/Don\'t Sync to QB</a>';
             }
         }else{
             print '<a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonorId='.$donation->DonorId.'">Create Donor in QB</a>';
-        }     
+            $return['newCustomerFromDonor'][]=$donation->DonorId;              
+        }
+        return  $return;      
+    } 
+    
+    public function get_all_entity($table){ //get past the max of 1000 entries on a query from QB
+        $return = new stdClass();
+        $max=1000;
+        $return->count =$this->dataService->Query("SELECT count(*) FROM ".$table);
+        # get past Quickbook limit of 1000 resuls.
+        for($i=0;$i<ceil($return->count/$max);$i++){
+            $SQL="SELECT * FROM ".$table." Where Active=true STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;           
+            $chunks[] =$this->dataService->Query($SQL);
+        }
+
+        foreach($chunks as $a){
+            foreach($a as $c){
+                $entity[$c->Id]=$c;      
+            }                    
+        }
+        return $entity;
+    }
+
+    static function customers_to_donor_hash($customer,$hash,$settings=[]){       
+        $return = new stdClass();
+        $return->match=[];
+        $return->partial=[];
+        $return->donorId=[];
+        $qb=new self();
+
+        foreach($customer as $c){                       
+            if ($settings['existing'][$c->Id]){ //skip over donors that are already matched if provided
+
+            }else{
+                $found=0;                
+                $check=[];
+                if ($c->PrimaryEmailAddr) $check['Email'][]=$c->PrimaryEmailAddr->Address;
+                if ($c->PrimaryPhone) $check['Phone'][]=$c->PrimaryPhone->FreeFormNumber;
+                if ($c->FamilyName) $check['Name'][]=$c->GivenName.$c->FamilyName;
+                if ($c->FullyQualifiedName) $check['Name'][]=$c->FullyQualifiedName;
+
+                foreach($check as $field=>$values){
+                    foreach($values as $val){
+                        $matchId=$hash[$field][$qb->hash($val)];
+                        if ($matchId){
+                            $return->donorId[$matchId][]=$c->Id;
+                            $return->match[$c->Id][$matchId][$field]++;
+                            $found++;
+                        }
+                    }
+                }                           
+                if ($found==0){
+                    $notFound[]=$c->Id;
+                    ### attempt parital matches on name
+                    $check=['FamilyName','FullyQualifiedName','GivenName'];
+                    foreach($check as $f){
+                        $array=$qb->partialHash($c->FamilyName);
+                        foreach( $array as $p){
+                            if ($hash['partial'][$p]){
+                                foreach ($hash['partial'][$p] as $donorId){
+                                    $return->partial[$c->Id][$donorId][]=$f;
+                                }
+                            }                                        
+                        }
+                    }                              
+                }                          
+            }
+        }
+        return $return;                                               
     }
 
     static public function qbLink($type,$v,$labelOverride=""){

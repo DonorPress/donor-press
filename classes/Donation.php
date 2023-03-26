@@ -375,7 +375,9 @@ class Donation extends ModelLite
                     ?><tfoot><tr><td colspan=3>Totals:</td><td align=right><?php print number_format($total,2)?></td><td></td><td></td><td></td></tr></tfoot></table><?php
                 }
 
-            }else{?>
+            }else{
+                $qbAction=[];
+                ?>
                 <form method="post">
                     <button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
                     <button type="submit" name="Function" value="PdfDonationReceipts" disabled>Generate Pdf Receipts</button>
@@ -407,12 +409,40 @@ class Donation extends ModelLite
                         <?php 
                             if (Quickbooks::is_setup()){
                                 print "<td>";
-                                Quickbooks::donation_process_check($donation,$donors[$donation->DonorId]);
+                                $return=Quickbooks::donation_process_check($donation,$donors[$donation->DonorId]);
+                                if (isset($return['newCustomerFromDonor'])){ 
+                                    foreach($return['newCustomerFromDonor'] as $donorId){
+                                        $qbAction['newCustomerFromDonor'][]=$donorId;
+                                    }
+                                }
+
+                                if (isset($return['newInvoicesFromDonation'])){ 
+                                    foreach($return['newInvoicesFromDonation'] as $donationId){
+                                        $qbAction['newInvoicesFromDonation'][]=$donationId;
+                                    }
+                                }
+           
                                 print "</td>";
                         }?>             
                     </tr><?php
                 }
-                ?></table><?php
+                ?></table>
+                <?php
+                if (sizeof($qbAction)>0 && Quickbooks::is_setup()){
+                    $qb = new Quickbooks();
+                    if ($qb->authenticate()){
+                        if ($qbAction['newCustomerFromDonor']){
+                            print sizeof($qbAction['newCustomerFromDonor'])." Customers Need created in QB. <input type=\"hidden\" name=\"DonorsToCreateInQB\" value=\"".implode("|",$qbAction['newCustomerFromDonor'])."\"/> <button name='Function' value='QBDonorToCustomerCheck'>Create Customer in QB</button> ";
+                        }
+
+                        if ($qbAction['newInvoicesFromDonation']){
+                            print sizeof($qbAction['newInvoicesFromDonation'])." Invoices Need created in QB. <input type=\"hidden\" name=\"DonationsToCreateInQB\" value=\"".implode("|",$qbAction['newInvoicesFromDonation'])."\"/> <button name='Function' value='QBDonationToInvoice'>Create Invoice & Payments in QB</button>";
+                        }
+                    }
+                }
+                ?>
+                </form>
+                <?php
             }
 
         }
@@ -485,7 +515,26 @@ class Donation extends ModelLite
                 $donation->full_view();
             }
             return true;
-        }elseif($_GET['UploadDate'] || $_GET['SummaryView']){                    
+        }elseif ($_POST['Function']=="QBDonorToCustomerCheck" && $_POST['DonorsToCreateInQB']){
+            $qb = new QuickBooks();
+            $qb->DonorToCustomer(explode("|",$_POST['DonorsToCreateInQB']));  
+            return true;         
+            
+        }elseif($_POST['Function']=="QBDonationToInvoice" && $_POST['DonationsToCreateInQB']){
+            $donationIds=explode("|",$_POST['DonationsToCreateInQB']);
+            
+            $donations=self::get(["DonationId IN ('".implode("','",$donationIds)."')"]);            
+            foreach($donations as $donation){
+                $donation->send_to_QB(['silent'=>true]);
+            }
+            self::display_notice(sizeof($donations)." invoices/payments created in QuickBooks.");  
+            return true;     
+        }elseif($_GET['UploadDate'] || $_GET['SummaryView']){    
+            if ($_POST['Function']=="LinkMatchQBtoDonorId"){
+                $qb=new QuickBooks();
+                $qb->process_customer_match($_POST['match'],$_POST['rmatch']);                    
+            }
+            
             if ($_POST['Function']=="EmailDonationReceipts" && sizeof($_POST['EmailDonationId'])>0){               
                 foreach($_POST['EmailDonationId'] as $donationId){
                     $donation=Donation::get_by_id($donationId);
@@ -889,5 +938,10 @@ class Donation extends ModelLite
         }	
         $pdf->Output("DonorPressDonationLabels.pdf", 'D');
 
+    }
+
+    public function send_to_QB(){
+        $qb = new Quickbooks();
+        return $qb->donation_to_invoice_process($this);
     }
 }
