@@ -36,3 +36,10 @@ function donor_press_upgrade_004(){
 	$aSQL="ALTER TABLE `".Donation::get_table_name()."` ADD COLUMN `QBOPaymentId` INT NULL DEFAULT NULL AFTER `QBOInvoiceId`;";	
 	$wpdb->query( $aSQL );
 }
+
+function donor_press_upgrade_005(){
+	$aSQL="ALTER TABLE `".Donation::get_table_name()."`
+	CHANGE COLUMN `Gross` `Gross` DECIMAL(10,2) NOT NULL ,
+	CHANGE COLUMN `Net` `Net` DECIMAL(10,2) NULL DEFAULT NULL ;";
+	$wpdb->query( $aSQL );	
+}
