@@ -456,7 +456,7 @@ class QuickBooks extends ModelLite
         }          
     }
 
-    public function item_list($where=""){       
+    public function item_list($where="",$exitOnFail=true){       
         if ($this->authenticate()){            
             $entities =$this->dataService->Query("SELECT * FROM Item".($where?" WHERE ".$where." ":" ")." Orderby FullyQualifiedName");
             if($this->check_dateService_error()){
@@ -464,7 +464,7 @@ class QuickBooks extends ModelLite
             }  
         }else {
             print "Must connect to Quickbooks before editing Categories.";
-            die();
+            if($exitOnFail) die();
         }          
     }
 
@@ -494,13 +494,17 @@ class QuickBooks extends ModelLite
         //$invoice->TxnStatus     = "Payable";
         $invoice->PONumber      = substr($donation->TransactionID,0,15); //
 
-        
+        if ($donation->CategoryId){
+            $category=DonationCategory::find($donation->CategoryId);
+        }
 
        
         //$lineDetail->UnitPrice        = 1;
         //$lineDetail->Qty              = $donation->Gross;
-        $QBItemId=null;
-        if ($donor->TypeId){
+        $QBItemId=$category?$category->getQuickBooksId():null;
+       
+
+        if (!$QBItemId && $donor->TypeId){
             $donorType=DonorType::find($donor->TypeId);            
             $QBItemId=$donorType->QBItemId;
         }
@@ -521,7 +525,7 @@ class QuickBooks extends ModelLite
         $l->SalesItemLineDetail = $SalesItemLineDetail;        
         $l->Id = "0";
         $l->LineNum          = 1;
-        $description=$donatinon->CategoryId?$donation->show_field("CategoryId"):'Donation';
+        $description=$category?$category->Description:'Donation';
         //$l->QtyOnPurchaseOrder = $line->quanity;
         $l->Amount           = $donation->Gross;
         $l->DetailType = "SalesItemLineDetail";
