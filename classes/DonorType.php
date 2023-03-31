@@ -56,7 +56,7 @@ class DonorType extends ModelLite
                 }
             ?></div><?php
             return true;
-        }elseif($_REQUEST['TypeId']=="new"){
+        }elseif($_REQUEST['TypeId']=="new" && $_REQUEST['tab']=='type'){
             $donorType=new self(['Title'=>$_POST['Title'],'QBItemId'=>$_POST['QBItemId']]);
             $donorType->save();
             self::display_notice("Donor Type #".$donorType->show_field("TypeId")." ".$donorType->Type." created.");
