@@ -36,6 +36,15 @@ class ModelLite{
 			foreach ($fields as $field){
 				//I'm not positive why we have to strip slashes... but it fixes the issue.
 				$this->$field=stripslashes(isset($attributes->$field)?$attributes->$field:$this->attributes[$field]);
+
+				if (isset($this->fieldLimits)&&isset($this->fieldLimits[$field])){ //trim strings that are to long.
+					$this->$field=substr($this->$field,0,$this->fieldLimits[$field]);
+					//if (strlen($this->$field)>$this->fieldLimits[$field]){
+						//print $field." -> Was: '".$this->$field."' | Trimmed to: '". substr($this->$field,0,$this->fieldLimits[$field])."'<br>";
+						
+					//}				
+
+				}
 			}
 		}	
 	}
@@ -85,9 +94,11 @@ class ModelLite{
 		$wpdb->show_errors();
 		$keyField=$this->primaryKey;
 		foreach ($this->fillable as $field){
-			if ($field!=$keyField){
+			if (isset($this->fieldLimits)&&isset($this->fieldLimits[$field])){ //trim strings that are to long.
+				$data[$field]=substr($this->$field,0,$this->fieldLimits[$field]);
+			}else{
 				$data[$field]=$this->$field;
-			}
+			}			
 		}		
 		if (static::UPDATED_AT && !$data[static::UPDATED_AT]){
 			$data[static::UPDATED_AT]= $time;
@@ -95,16 +106,18 @@ class ModelLite{
 
 		if ($this->$keyField>0){
 			if (!$wpdb->update($this->get_table(),$data,array($keyField=>$this->$keyField))){
+				print $wpdb->print_error();
 				dump($data,"WHERE ".$keyField."=".$this->$keyField);
-				$wpdb->print_error();
+				
 			}
 		}else{
 			if (static::CREATED_AT && !$data[static::CREATED_AT]){
 				$data[static::CREATED_AT]= $time;
-			}		 	
-			if (!$wpdb->insert($this->get_table(),$data)){
+			}
+			//dump($data);		 	
+			if (!$wpdb->insert($this->get_table(),$data)){				
+				print $wpdb->print_error();
 				dump($data);
-				$wpdb->print_error();
 			}			
 			$this->$keyField=$wpdb->insert_id;
 			$insert=true;
@@ -232,7 +245,8 @@ class ModelLite{
 		return self::get_by_id($id);			
 	}
 	
-	public static function get($where=array(),$orderby="",$settings=false){	
+	public static function get($where=array(),$orderby="",$settings=false){
+		if ($where && !is_array($where)) $where=[$where];	
 		$SQL="SELECT ".($settings['select']?$settings['select']:"*")." FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"").($settings['limit']?" LIMIT ".$settings['limit']:"");
 		$all=self::db()->get_results($SQL);
 		foreach($all as $r){
@@ -422,6 +436,11 @@ class ModelLite{
 		<table><?php
 		foreach($this->fillable as $field){
 			$type="text";
+			if (isset($this->fieldLimits)&&isset($this->fieldLimits[$field])){ //trim strings that are to long.
+				$maxlength=$this->fieldLimits[$field];
+			}else{
+				$maxlength=false;
+			}
             if (strpos($field,"Date")>-1){
                 $type="date";
 			}
@@ -446,7 +465,8 @@ class ModelLite{
 					}
 					?></select><?php
 			}else{
-				?><input type="<?php print $type?>" name="<?php print $field?>" value="<?php print $this->$field?>"/><?php
+				?><input type="<?php print $type?>" name="<?php print $field?>" value="<?php print $this->$field?>"<?php
+				if ($maxlength) print ' maxlength="'.$maxlength.'"';?>/><?php
 			}	
 		
 			

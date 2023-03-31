@@ -12,7 +12,8 @@ class DonationUpload extends ModelLite
         'Last, Name1 & Name2'=>'Name|Name2',
         'Name1 & Name2 Last'=>'Name|Name2',
         'City, Region Postal Country'=>'City|Region|PostalCode|Country',
-        'Category'=>'CategoryId'
+        'Category'=>'CategoryId',
+        'Payment Source'=>'PaymentSource'
     ];
 
     const UPLOAD_AUTO_SELECT = ['name'=>'Name','check'=>'TransactionID','date'=>'Date','deposit'=>'DateDeposited','amount'=>'Gross','total'=>'Gross','note'=>'Note','comment'=>'Note','address'=>'Address1','address1'=>'Address1','address2'=>'Address2','e-mail'=>'Email','Phone'=>'Phone'];  
@@ -56,12 +57,12 @@ class DonationUpload extends ModelLite
                         }else{
                             $donationFill[$fieldName]=$v;
                         }
-                    } 
+                    }
+                    
                     
                     $donationFill['PaymentSource']=1;
                                        
-                    $obj=new Donation($donationFill);             
-                   
+                    $obj=new Donation($donationFill);
                     $obj->donation_to_donor($donorFill,true);  //Will Set DonorId on Donation Table.    
                     // print "<pre>"; print_r($obj); print "</pre>";
                     // print "<pre>"; print_r($donorFill); print "</pre>";
@@ -134,6 +135,14 @@ class DonationUpload extends ModelLite
                             if($regionSplit[2]) $donor->Country=trim($regionSplit[2]);
                             //print "pattern $field set to $v on Index $c. <br>";
                         break;
+                        case 'PaymentSource':
+                            foreach (Donation::s()->tinyIntDescriptions["PaymentSource"] as $k=>$desc){
+                                if (strtolower($desc)==strtolower($v)){
+                                    $donation->PaymentSource=$k;
+                                    break;
+                                }
+                            }                            
+                            break;
                         case "Category":
                             $donation->CategoryId=DonationCategory::get_category_id($v);
                             break;
@@ -158,7 +167,11 @@ class DonationUpload extends ModelLite
                         break;
                     }
                     //dd($headerField,$field,$c,$selectDonor,$v,$post,$csv,$donor);
-                
+                    //
+                    if (isset($donation->fieldLimits[$field])){ //make sure field isn't to long...
+                        $donation->$field=substr($donation->$field,0,$donation->fieldLimits[$field]);
+                    }
+                    
                 }               
             }
             if (!$donation->DateDeposited)  $donation->DateDeposited=$donation->Date;

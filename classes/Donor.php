@@ -21,6 +21,21 @@ class Donor extends ModelLite {
     protected $tinyIntDescriptions=[
         "EmailStatus"=>["-1"=>"Returned","0"=>"Not Set","1"=>"Valid"],        
     ];
+
+    protected $fieldLimits = [//SELECT concat("'",column_name,"'=>",character_maximum_length ,",") as grid FROM information_schema.columns where table_name = 'wp_donor' and table_schema='wordpress' and data_type='varchar'
+        'Source'=>20,
+        'SourceId'=>50,
+        'Name'=>80,
+        'Name2'=>80,
+        'Email'=>80,
+        'Phone'=>20,
+        'Address1'=>80,
+        'Address2'=>80,
+        'City'=>50,
+        'Region'=>20,
+        'PostalCode'=>20,
+        'Country'=>2,
+    ];
 	//public $incrementing = true;
 	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';
@@ -1018,7 +1033,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     static function get_mail_list($where=[]){
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
+        $SQL="Select D.DonorId, D.Name, D.Name2, D.Email,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".(sizeof($where)>0?implode(" AND ",$where):" 1 ")."    
         Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY D.Name";   

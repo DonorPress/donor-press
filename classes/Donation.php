@@ -33,8 +33,25 @@ class Donation extends ModelLite
         'Type'=>'1',
         'Status'=>'9',
         'AddressStatus'=>1,
-        'PaymentSource'=>0
+        'PaymentSource'=>0,
+        'TransactionType'=>0,
+        'QBOInvoiceId'=>0,
+        'QBOPaymentId'=>0
 	];
+
+    protected $fieldLimits = [ //SELECT concat("'",column_name,"'=>",character_maximum_length ,",") as grid FROM information_schema.columns where table_name = 'wp_donation' and table_schema='wordpress' and data_type='varchar'
+        'Name'=>80,
+        'TypeOther'=>30,
+        'Currency'=>3,
+        'FromEmailAddress'=>70,
+        'ToEmailAddress'=>26,
+        'Source'=>20,
+        'SourceId'=>50,
+        'TransactionID'=>17,
+        'ReceiptID'=>16,
+        'ContactPhoneNumber'=>20,
+        'Subject'=>50
+    ];
 
     // public $incrementing = true;
     const DONATION_TO_DONOR = ['Name'=>'Name','Name2'=>'Name2','FromEmailAddress'=>'Email','ContactPhoneNumber'=>'Phone','Address1'=>'Address1', 'Address2'=>'Address2','City'=>'City','Region'=>'Region',	'PostalCode'=>'PostalCode',	'Country'=>'Country'];
@@ -813,9 +830,9 @@ class Donation extends ModelLite
                 `TypeOther` varchar(30) DEFAULT NULL,
                 `Status` tinyint(4) DEFAULT NULL,
                 `Currency` varchar(3) DEFAULT NULL,
-                `Gross` float(10,2) NOT NULL,
+                `Gross` DECIMAL(10,2) NOT NULL,
                 `Fee` decimal(6,2) DEFAULT NULL,
-                `Net` varchar(10) DEFAULT NULL,
+                `Net` DECIMAL(10,2) DEFAULT NULL,
                 `FromEmailAddress` varchar(70) NOT NULL,
                 `ToEmailAddress` varchar(26) DEFAULT NULL,
                 `Source` varchar(20) NOT NULL,
@@ -840,27 +857,31 @@ class Donation extends ModelLite
 
     
     public function receipt_form(){  
-            
+        $donor=Donor::find($this->DonorId); 
         $this->receipt_email();            
         if ($_POST['Function']=="SendDonationReceipt" && $_POST['Email']){
             print $this->email_receipt($_POST['Email'],stripslashes_deep($_POST['customMessage']),stripslashes_deep($_POST['EmailSubject']));
             
         }
-        
-        print "<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
         $file=$this->receipt_file_info();
+               
+        print "<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","KeyType='DonationId'","KeyId='".$this->DonationId."'"));
         $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
         $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
         $bodyContent=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']):$bodyContent; //Post value overrides this though.
         if (CustomVariables::get_option('QuickbooksClientId',true) && $this->QBOInvoiceId>=0){
-            if ($this->QBOInvoiceId==0){
-                print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
-            }elseif(!$this->QBOPaymentId==0){
-                print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
-                print '<a href="?page=donor-quickbooks&syncDonationPaid='.$this->DonationId.'">Sync Payment to QuickBooks</a>';
-            }else{
-                print "<div>Invoice #".$this->show_field("QBOInvoiceId")." & Payment: ".$this->show_field("QBOPaymentId")." synced to Quickbooks.</div>";
+            if ($donor->QuickBooksId>0){            
+                if ($this->QBOInvoiceId==0){
+                    print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
+                }elseif(!$this->QBOPaymentId==0){
+                    print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
+                    print '<a href="?page=donor-quickbooks&syncDonationPaid='.$this->DonationId.'">Sync Payment to QuickBooks</a>';
+                }else{
+                    print "<div>Invoice #".$this->show_field("QBOInvoiceId")." & Payment: ".$this->show_field("QBOPaymentId")." synced to Quickbooks.</div>";
+                }
+            }elseif($donor->QuickBooksId==0){
+                print '<a href="?page=donor-quickbooks&syncDonorId=42">Create Donor in QB</a> (before sending Invoice)';
             }
         }
         //$receipts[0]->content
