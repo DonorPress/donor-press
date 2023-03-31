@@ -212,7 +212,14 @@ class Paypal extends ModelLite{
         if ($dateEnd && $process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0){
             CustomVariables::set_option('PaypalLastSyncDate',$dateEnd);
         }
-
         return $process;
+    }
+
+    static function is_setup(){ 
+        if (CustomVariables::get_option('PaypalClientId') && CustomVariables::get_option('PaypalSecret')){
+            return true;
+        }else{
+            return false;
+        }
     }
 }

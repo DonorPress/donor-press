@@ -5,10 +5,10 @@
     Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry. Syncing data to Quickbooks is also in beta.
     Author: Denver Steiner
     Author URI: https://denversteiner.com/donorpress/
-    Version: 0.0.4
+    Version: 0.0.5
 */
 global $donor_press_db_version;
-$donor_press_db_version='0.0.4';
+$donor_press_db_version='0.0.5';
 
 ### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
 if (file_exists(__DIR__ . '/vendor/autoload.php')){
@@ -22,6 +22,7 @@ require_once 'classes/DonationUpload.php';
 require_once 'classes/DonorTemplate.php';
 require_once 'classes/CustomVariables.php'; 
 require_once 'classes/QuickBooks.php';
+require_once 'classes/Paypal.php';
 /* Resources: 
 https://www.sitepoint.com/working-with-databases-in-wordpress/
 https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-scratch--net-2668
@@ -107,10 +108,10 @@ function donor_plugin_create_menu_entry() {
 	// adding the main manu entry
 	add_menu_page('Donors', 'Donors', 'edit_posts', 'donor-index', 'donor_show_index', $icon);
 	// adding the sub menu entry
-	add_submenu_page( 'donor-index', 'Reports', 'Reports', 'edit_posts', 'donor-reports', 'donor_show_reports',2 );
-	add_submenu_page( 'donor-index', 'Settings', 'Settings', 'edit_posts', 'donor-settings', 'donor_show_settings',3);
-	add_submenu_page( 'donor-index', 'Paypal', 'Paypal', 'edit_posts', 'donor-paypal', 'donor_show_paypal',4);
-	add_submenu_page( 'donor-index', 'QuickBooks', 'QuickBooks', 'edit_posts', 'donor-quickbooks', 'donor_show_quickbooks',4);
+	add_submenu_page( 'donor-index', 'Reports', 'Reports', 'edit_posts', 'donor-reports', 'donor_show_reports',2 );	
+	if (Quickbooks::is_setup())	add_submenu_page( 'donor-index', 'QuickBooks', 'QuickBooks', 'edit_posts', 'donor-quickbooks', 'donor_show_quickbooks',4);
+	if (Paypal::is_setup()) add_submenu_page( 'donor-index', 'Paypal', 'Paypal', 'edit_posts', 'donor-paypal', 'donor_show_paypal',4);
+	add_submenu_page( 'donor-index', 'Settings', 'Settings', 'edit_posts', 'donor-settings', 'donor_show_settings',5);
 }
 
 // function triggered in add_menu_page
