@@ -21,7 +21,7 @@ class DonationCategory extends ModelLite
             }
         }elseif ($_POST['CategoryId'] && $_POST['Function']=="DonationCategoryMergeTo" && $_POST['table']=="donation_category"){
             $donationCategory=new self($_POST);
-            $mergeTo=self::get($_POST['MergeTo']);
+            $mergeTo=self::find($_POST['MergeTo']);
             //self::dump($mergeTo);
             if (!$mergeTo->CategoryId){
                 self::display_error("Could not find Merge to Donation Category: ".$_POST['MergeTo']);
@@ -36,18 +36,29 @@ class DonationCategory extends ModelLite
             if ($donationCategory->delete()){                
                 self::display_notice("Donation Category '".$donationCategory->Category."' deleted."); 
             }        
-        }elseif ($_GET['CategoryId']&&$_GET['tab']=="cat"){	
-            if ($_POST['Function']=="Save" && $_POST['table']=="donation_category"){
+        }elseif ($_REQUEST['CategoryId']&&$_GET['tab']=="cat"){	            
+
+            if ($_POST['CategoryId']=='new'){
+                unset($_POST['CategoryId']);
+            }
+            if ($_POST['Function']=="Save" && $_POST['table']=="donation_category"){                
+                
                 $donationCategory=new self($_POST);
                 if ($donationCategory->save()){
                     self::display_notice("Donation Category#".$donationCategory->show_field("CategoryId")." - ".$donationCategory->Cateogry." saved.");
+                    $_REQUEST['CategoryId']=$donationCategory->CategoryId;
                 }
             }
-            $donationCategory=self::get_by_id($_REQUEST['CategoryId']);	
+            if ($_REQUEST['CategoryId']=="new"){
+                $donationCategory=new self();
+            }else{
+                $donationCategory=self::get_by_id($_REQUEST['CategoryId']);	
+            }          
+
             ?>
             <div id="pluginwrap">
-                <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
-                <h1>Category #<?php print $donationCategory->CategoryId?></h1><?php 
+                <div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>">Return</a></div>
+                <h1>Category <?php print $_GET['CategoryId']=="new"?"NEW":"#".$donationCategory->CategoryId?></h1><?php 
                 if ($_REQUEST['edit']){
                     $donationCategory->edit_form();
                 }else{
@@ -66,7 +77,7 @@ class DonationCategory extends ModelLite
         $primaryKey=$this->primaryKey;
 		?><form method="post" action="?page=<?php print $_GET['page'].($_GET['tab']?'&tab='.$_GET['tab']:"")."&".$primaryKey."=".$this->$primaryKey?>">
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
-		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
+		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?$this->$primaryKey:"new"?>"/>
         <table>
             <tr><td align="right">Category Title</td><td><input style="width: 300px" type="text" name="Category" value="<?php print $this->Category?>"></td></tr>
             <tr><td align="right">Description</td><td><textarea rows=3 cols=40 name="Description"><?php print $this->Description?></textarea></td></tr>
@@ -76,7 +87,7 @@ class DonationCategory extends ModelLite
                 ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->CategoryId?" selected":"")?>><?php
                 print $r->Category." (".$r->CategoryId.")";?></option><?php
              }?></select></td></tr>
-            <tr><td>Response Template</td><td><select name="TemplateId"><option value="">default</option><?php
+            <tr><td align="right">Response Template</td><td><select name="TemplateId"><option value="">default</option><?php
             $list=DonorTemplate::get(array("post_type='donortemplate'","post_parent=0"),"post_name,post_title");
             foreach($list as $t){
                 print '<option value="'.$t->ID.'"'.($t->ID==$this->TemplateId?" selected":"").'>'.$t->post_name.'</option>';
@@ -85,19 +96,20 @@ class DonationCategory extends ModelLite
             <?php            
             if (Quickbooks::is_setup()){?>
                 <tr>
-                    <td>Default QuickBook Item:</td>
+                    <td align="right">Default QuickBook Item:</td>
                     <td><?php
                     $qb=new QuickBooks();
-                    $items=$qb->item_list();
-                    if (sizeof($items)>0){?>                        
-                    <select name="QBItemId"><option value="">-not set-</option><?php                    
-                    foreach($items as $item){
-                        print '<option value="'.$item->Id.'"'.($item->Id==$this->QBItemId?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
-                    }
-                    ?></select> 
-                    <?php 
+                    if ($items=$qb->item_list("",false)){
+                        if (sizeof($items)>0){?>                        
+                        <select name="QBItemId"><option value="">-not set-</option><?php                    
+                        foreach($items as $item){
+                            print '<option value="'.$item->Id.'"'.($item->Id==$this->QBItemId?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
+                        }
+                        ?></select> 
+                        <?php 
+                        }
                     }else{?>
-                    <div>No Item Found in Quickbooks. Please create a non-stock item in Quickbooks first.</div>
+                    <div>No Items Found in Quickbooks. Please create a non-stock item in Quickbooks first.</div>
                     <input type="hidden" name="QBItemId" value="<?php print $this->QBItemId?>"/>
                     <?php } ?>
                     <em>When syncing to Quickbooks, this is how the default item on an invoice is logged. Items on Quickbooks determine which sales account gets used.</em></td>
@@ -169,6 +181,7 @@ class DonationCategory extends ModelLite
         }
         ?>
         <h2>Donation Categories</h2>
+        <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=new&edit=t">Add Category</a>
         <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>ParentId</th><th>Total</th></tr><?php
          self::show_children(0,$parent,0);
          foreach ($results as $r){       
@@ -222,6 +235,15 @@ class DonationCategory extends ModelLite
         $return.=self::show_options(0,$parent,0,$selected);
         $return.="</select>";
         return $return;
+    }
+
+    public function getQuickBooksId(){
+        if($this->QBItemId) return $this->QBItemId;
+        if ($this->ParentId){
+            $parent=self::find($this->ParentId);
+            return $parent->getQuickBooksId(); //recursive all the way to top.
+        }
+        return false;
     }
 
 
