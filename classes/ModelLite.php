@@ -364,13 +364,14 @@ class ModelLite{
 			break;
 			case "CategoryId":
 				$label="";
-				if ($this->table=='DonationCategory') {}
-				else{
+				if ($this->table=='DonationCategory') {
+					$settings['idShow']=true;
+				}else{
 					global $cache_ModelLite_show_field;
 					if (isset($cache_ModelLite_show_field[$fieldName][$v])){
 						$label=$cache_ModelLite_show_field[$fieldName][$v];
 					}elseif($v){
-						$dCat=DonationCategory::get_by_id($v); //need to cache this..
+						$dCat=DonationCategory::find($v); //need to cache this..
 						if ($dCat){
 							$cache_ModelLite_show_field[$fieldName][$v]=$dCat->Category;
 							$label=$dCat->Category;
@@ -379,7 +380,8 @@ class ModelLite{
 					
 										
 				}
-				return ($settings['idShow']?'<a href="?page='.$_GET['page'].'&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
+				return '<a href="?page='.$_GET['page'].'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - '.$label;
+				//return ($settings['idShow']?'<a href="?page='.$_GET['page'].'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
 			break;
 			// case "TransactionType":
 			// 	if (!$v) $v=0;
