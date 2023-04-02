@@ -1,10 +1,10 @@
 <?php
 /*
     Plugin Name: Donor Press - A Donation Tracking System
-    Plugin URI: https://denversteiner.com/donorpress/
+    Plugin URI: https://github.com/DonorPress/donor-press
     Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry. Syncing data to Quickbooks is also in beta.
     Author: Denver Steiner
-    Author URI: https://denversteiner.com/donorpress/
+    Author URI: https://github.com/DonorPress/donor-press
     Version: 0.0.5
 */
 global $donor_press_db_version;
@@ -36,7 +36,9 @@ register_activation_hook( __FILE__, 'donor_plugin_create_tables' );
 
 function donor_header_check() {
 	global $donor_press_db_version;
-	if (!session_id()) session_start();	
+	if (!session_id()) session_start();
+
+	require_once "donor-upgrade.php";	
 	
 	## When Code base is updated, make sure database upgrade is run
 	if (get_option( "donor_press_db_version")!=$donor_press_db_version){

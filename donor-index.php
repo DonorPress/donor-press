@@ -59,7 +59,8 @@
 <div style="border:1px solid gray; padding: 20px; margin-top:10px;">
 <div>File Upload Options:</div>
 <form action="" method="post" enctype="multipart/form-data">
-	<h4>Add From Paypal (.csv method)</h4>
+	<h4>Add From Paypal (.csv method)  </h4>
+	<div><em>Note: it is recommended setting up Paypal API integration access instead</em></div>
 	Import Paypal Exported File: (.csv)
   <input type="file" name="fileToUpload" id="fileToUpload" accept=".csv"> 
   <input type="hidden" name="uploadSummary" value="true" checked/>
