@@ -465,6 +465,7 @@ class QuickBooks extends ModelLite
         }else {
             print "Must connect to Quickbooks before editing Categories.";
             if($exitOnFail) die();
+            return false;
         }          
     }
 
@@ -886,7 +887,7 @@ class QuickBooks extends ModelLite
                     //dd($count,$entities,"SELECT * FROM ".$_GET['table']." STARTPOSITION ".($index*$max)." MAXRESULTS ".$max);
                     if($this->check_dateService_error()){
                         print "<div><a href='?page=donor-quickbooks'>Back to Quickbook list</a></div>
-                        <h3>".$_GET['table']." List <span style=\"font-size:60%\">- ". sizeof($entities).($count!=sizeof($entities)?" of ". $count:"")." Entries</span></h3>";
+                        <h3>".$_GET['table']." List <span style=\"font-size:60%\">- ".($entities?sizeof($entities).($count!=sizeof($entities)?" of ". $count:""):0)." Entries</span></h3>";
                         if (!$entities || sizeof($entities)==0){
                             self::display_error("No Results Found");
                             return;
