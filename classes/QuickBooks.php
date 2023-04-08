@@ -1033,8 +1033,7 @@ class QuickBooks extends ModelLite
                 $qb->hash_donor_add($donor,$hash);
             }
             $customer=$qb->get_all_entity('Customer');           
-            $match=self::customers_to_donor_hash($customer,$hash,['existing'=>$existing]); 
-            
+            $match=self::customers_to_donor_hash($customer,$hash,['existing'=>$existing]);             
            ?><h2>Create/Sync Donors to QuickBook Customers</h2>
            <form method="post">
            <table class="dp"><tr><th>Donor</th><th>QuickBooks</th></tr>
@@ -1047,12 +1046,12 @@ class QuickBooks extends ModelLite
                 <option value="new">-- Create New --</option>
                 <option value="0">-- Skip for Now --</option>
                 <option value="-1">-- Ignore/Do not create --</option>';                
-                if ($match->donorId[$donor->DonorId]){
+                if ($match->donorId && isset($match->donorId[$donor->DonorId])){
                     foreach($match->donorId[$donor->DonorId] as $cId){
                         print '<option value="'.$cId.'" selected>'.self::show_customer_name($customer[$cId]).' - '.$cId.'</option>';
                     }
                 }
-                if ($match->partial[$donor->DonorId]){
+                if ($match->partial && isset($match->partial[$donor->DonorId])){
                     foreach($match->partial[$donor->DonorId] as $cId){
                         print '<option value="'.$cId.'" selected>'.self::show_customer_name($customer[$cId]).' - '.$cId.'</option>';
                     }
