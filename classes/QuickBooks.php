@@ -1091,7 +1091,7 @@ class QuickBooks extends ModelLite
                 }else{
                     print ' | <a style="background-color:lightgreen;" target="QB" href="?page=donor-quickbooks&syncDonationPaid='.$donation->DonationId.'">Sync Payment to QuickBooks</a>';
                 }
-            }else{
+            }elseif($donor->QuickBooksId>0){ //dont' create on ignored entries.
                 $return['newInvoicesFromDonation'][]=$donation->DonationId;
                 print ' | <a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonation='.$donation->DonationId.'">Create Invoice & Payment In QB</a> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId.'">Ignore/Don\'t Sync to QB</a>';
             }
