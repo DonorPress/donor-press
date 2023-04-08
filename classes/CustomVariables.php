@@ -117,6 +117,8 @@ class CustomVariables extends ModelLite
         if (CustomVariables::get_option('QuickbooksClientId',true)){
             self::display_notice("Allow Redirect access in the <a target='quickbooks' href='https://developer.intuit.com/app/developer/dashboard'>QuickBook API</a> for: ".QuickBooks::redirect_url());
         }
+        print "<div>Plugin base dir: ".dn_plugin_base_dir()."  (".dirname(__FILE__).")</div>";       
+        
     }
     
     static function get_custom_variables(){
