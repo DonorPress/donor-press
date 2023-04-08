@@ -482,7 +482,7 @@ class DonationUpload extends ModelLite
             $originalFile=basename($_FILES["fileToUpload"]["name"]);
            // $target_file = $tmpfname = tempnam(sys_get_temp_dir(), 'CSV');            
             //if (!file_exists(self::upload_dir()) {   mkdir(self::upload_dir(), 0777, true); }
-            $target_file=self::upload_dir()."/".$originalFile;
+            $target_file=self::upload_dir().$originalFile;
             //dd($target_file);
             if (file_exists($target_file)){ 
                 unlink($target_file);
