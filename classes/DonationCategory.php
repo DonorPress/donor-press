@@ -182,11 +182,10 @@ class DonationCategory extends ModelLite
         ?>
         <h2>Donation Categories</h2>
         <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=new&edit=t">Add Category</a>
-        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>ParentId</th><th>Total</th></tr><?php
-         self::show_children(0,$parent,0);
-         foreach ($results as $r){       
-           
-         }
+        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>ParentId</th>
+        <?php if (Quickbooks::is_setup()) print  "<th>QuickBooks Item Id</th>";?>
+        <th>Total</th></tr><?php
+         self::show_children(0,$parent,0);         
         ?></table>	
         <?php
     }
@@ -199,6 +198,8 @@ class DonationCategory extends ModelLite
                 <td><?php print $r->Category?></td>
                 <td><?php print $r->Description?></td>
                 <td><?php print $r->ParentId?></td>
+                <?php if (Quickbooks::is_setup()) print  "<td>".Quickbooks::qbLink('Item',$r->QBItemId)."</td>";?>
+
                 <td><?php print $r->donation_count?></td>
             </tr>
             <?php
