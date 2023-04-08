@@ -519,18 +519,5 @@ class ModelLite{
 		}
         return $dir;
     }
-
-	// public static function compare($old, $new){
-	// 	if (sizeof($old)==0){
-	// 		return false;
-	// 	}
-	// 	foreach (static::fields as $field){
-	// 		if ($old->$field!=$new->$field){
-	// 			$was[$field]=$old->$field;
-	// 		}
-	// 	}
-	// 	return $was;
-	// }
-
 }
 ?>
