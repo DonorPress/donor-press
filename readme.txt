@@ -81,6 +81,9 @@ This is required by the Quickbooks plugin. If you don't need the Quickbooks plug
 
 If this plugin starts to take off, I'll develop out better setup tutorials and videos. I would suggest playing with the setup. There is a "backup" and "nuke" function in the setup. So feel free to test it out.
 
+= I'm having trouble uploading a file =
+The plugin might not have proper permissions. You may need to created a "upload" folder and give it chmod 777 permissions.
+
 == Screenshots ==
 
 1. This screen shot description corresponds to screenshot-1.(png|jpg|jpeg|gif). Screenshots are stored in the /assets directory.
