@@ -1048,7 +1048,7 @@ class QuickBooks extends ModelLite
                 <option value="0">-- Skip for Now --</option>
                 <option value="-1">-- Ignore/Do not create --</option>';                
                 if (isset($match->donorId[$donor->DonorId])){
-                    foreach($match->donorId[$donor->DonorId] as $cId){
+                    foreach($match->donorId[$donor->DonorId] as $cId=>$matchedOn){
                         print '<option value="'.$cId.'" selected>'.self::show_customer_name($customer[$cId]).' - '.$cId.'</option>';
                     }
                 }
@@ -1142,7 +1142,7 @@ class QuickBooks extends ModelLite
                     foreach($values as $val){
                         $matchId=$hash[$field][$qb->hash($val)];
                         if ($matchId){
-                            $return->donorId[$matchId][]=$c->Id;
+                            $return->donorId[$matchId][$c->Id][$field]++;
                             $return->match[$c->Id][$matchId][$field]++;
                             $found++;
                         }
