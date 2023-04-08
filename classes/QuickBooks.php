@@ -1057,10 +1057,10 @@ class QuickBooks extends ModelLite
                     }
                 }
                 print "</select>";
-                if ($match->donorId[$donor->DonorId]){
+                if (isset($match->donorId[$donor->DonorId])){
                     print "<span style='color:green;'>Match Found</span>";
                 }
-                if ($match->partial[$donor->DonorId]){
+                if (isset($match->partial[$donor->DonorId])){
                     print "<span style='color:green;'>Partial Matches Found</span>";
                 }
             }    
