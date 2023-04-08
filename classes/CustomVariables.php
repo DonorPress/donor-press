@@ -90,23 +90,22 @@ class CustomVariables extends ModelLite
                 }                
                 if (Quickbooks::is_setup()){                
                     $qb=new QuickBooks();
-                    $items=$qb->item_list(); 
-                    $var="DefaultQBItemId";
-                    $fullVal=self::base."_".$var;
-                    $val=$vals->$fullVal?$vals->$fullVal->option_value:"";   
-                           
-                    ?>
-                    <tr><td>           
+                    if ($items=$qb->item_list("",false)){
+                        $var="DefaultQBItemId";
+                        $fullVal=self::base."_".$var;
+                        $val=$vals->$fullVal?$vals->$fullVal->option_value:"";                            
+                        ?>  
                   
-                    <tr><td align="right">Default Quickbooks Item Id</td><td><select name="DefaultQBItemId"><option value="0">[--None--]</option><?php               
-                    foreach($items as $item){
-                        print '<option value="'.$item->Id.'"'.($item->Id==$val?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
-                    }
-                    ?></select>
-                    <input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/>
+                        <tr><td align="right">Default Quickbooks Item Id</td><td><select name="DefaultQBItemId"><option value="0">[--None--]</option><?php               
+                        foreach($items as $item){
+                            print '<option value="'.$item->Id.'"'.($item->Id==$val?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
+                        }
+                        ?></select>
+                        <input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/>
 
-                    <input type="hidden" name="<?php print $var?>_was" value="<?php print $val?>"/> </td></tr>
-                <?php 
+                        <input type="hidden" name="<?php print $var?>_was" value="<?php print $val?>"/> </td></tr>
+                    <?php
+                    } 
             } ?>
                 
             </table>           
@@ -117,7 +116,7 @@ class CustomVariables extends ModelLite
         if (CustomVariables::get_option('QuickbooksClientId',true)){
             self::display_notice("Allow Redirect access in the <a target='quickbooks' href='https://developer.intuit.com/app/developer/dashboard'>QuickBook API</a> for: ".QuickBooks::redirect_url());
         }
-        print "<div>Plugin base dir: ".dn_plugin_base_dir()."  (".dirname(__FILE__).")</div>";       
+        print "<div><strong>Plugin base dir:</strong> ".dn_plugin_base_dir()."</div>";       
         
     }
     
