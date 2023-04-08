@@ -198,7 +198,7 @@ class DonationCategory extends ModelLite
                 <td><?php print $r->Category?></td>
                 <td><?php print $r->Description?></td>
                 <td><?php print $r->ParentId?></td>
-                <?php if (Quickbooks::is_setup()) print  "<td>".Quickbooks::qbLink('Item',$r->QBItemId)."</td>";?>
+                <?php if (Quickbooks::is_setup()) print  "<td>".($r->QBItemId>0?Quickbooks::qbLink('Item',$r->QBItemId):"")."</td>";?>
 
                 <td><?php print $r->donation_count?></td>
             </tr>
