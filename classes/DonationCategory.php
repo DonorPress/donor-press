@@ -214,7 +214,7 @@ class DonationCategory extends ModelLite
             for($i=0;$i<$level;$i++){
                 $return.="--";
             }
-            $return.=$r->Category." (x".$r->donation_count.")</option>";
+            $return.=$r->Category.(isset($r->donation_count)?" (x".$r->donation_count.")":"")."</option>";
             $return.=self::show_options($r->CategoryId,$parent,$level+1,$selected);
         }
         return $return;
@@ -224,7 +224,7 @@ class DonationCategory extends ModelLite
         $return='<select name="'.($settings['Name']?$settings['Name']:"CategoryId").'"';
         if ($settings["Multiple"]) $return.=" multiple";
         $return.='><option></option>';
-        $SQL= "SELECT *,(Select COUNT(*) FROM ".Donation::get_table_name()." Where CategoryId=C.CategoryId) as donation_count FROM ".self::get_table_name()." C Order BY Category";       
+        $SQL= "SELECT *".($settings['Count']?",(Select COUNT(*) FROM ".Donation::get_table_name()." Where CategoryId=C.CategoryId) as donation_count":"")." FROM ".self::get_table_name()." C Order BY Category";       
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){ 
             $parent[$r->ParentId?$r->ParentId:0][]=$r;

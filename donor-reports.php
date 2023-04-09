@@ -155,7 +155,7 @@ function report_donations(){
 		Amount:  <input type="number" step=".01" name="af" value="<?php print $_GET['af']?>" style="width:120px;"/>
 		to <input type="number" step=".01" name="at" value="<?php print $_GET['at']?>" style="width:120px;"/>
 		Category:
-		<?php print DonationCategory::select(['Name'=>'CategoryId']);?>
+		<?php print DonationCategory::select(['Name'=>'CategoryId','Count'=>true]);?>
 		<br>
 		Source: 		<select name="PaymentSource">
 			<option value="">--All--</option>

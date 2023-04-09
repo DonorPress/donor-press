@@ -666,12 +666,8 @@ class Donation extends ModelLite
         <tr><td align="right">Status</td><td><?php $this->select_drop_down('Status');?></td></tr>
 
        <!-- <tr><td align="right">Address Status</td><td><?php $this->select_drop_down('AddressStatus');?></td></tr> -->
-       <tr><td align="right">Category</td><td><select name="CategoryId"><?php
-            $donationCategory=DonationCategory::get(array('(ParentId=0 OR ParentId IS NULL)'),'Category');
-            foreach($donationCategory as $cat){
-                ?><option value="<?php print $cat->CategoryId?>"<?php print $cat->CategoryId==$this->CategoryId?" selected":""?>><?php print $cat->Category?></option><?php
-            }
-       ?></select></td></tr>
+       <tr><td align="right">Category</td><td><?php
+        print DonationCategory::select(['Name'=>"CategoryId",'selected'=>$this->CategoryId])?></td></tr>
        <tr><td align="right">Subject</td><td><input type="text" name="Subject" value="<?php print $this->Subject?>"></td></tr>
         <tr><td align="right">Note</td><td><textarea name="Note"><?php print $this->Note?></textarea></td></tr>
         <tr><td align="right">Transaction Type</td><td><?php print $this->select_drop_down('TransactionType')?><div><em>Set to "Not Tax Deductible" if they have already been giving credit for the donation by donating through a donor advised fund, or if this is a payment for a service.</div></td></tr>
