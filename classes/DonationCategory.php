@@ -131,12 +131,10 @@ class DonationCategory extends ModelLite
             <?php 
             if ($this->donation_count()>0){                
                 ?><div>Donations using this Category: <?php $this->donation_count()?></div>
-                Merge To: <select name="MergeTo"><option value="0">[--None--]</option><?php
-             $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::get_table_name()." WHERE CategoryId<>'".$this->CategoryId."' Order BY Category");
-             foreach($results as $r){
-                ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->CategoryId?" selected":"")?>><?php
-                print $r->Category." (".$r->CategoryId.")";?></option><?php
-             }?></select> <button type="submit" name="Function" value="DonationCategoryMergeTo">Merge</button>
+                Merge To: <?php
+                print self::select(["Name"=>"MergeTo","IncludeNone"=>true,"DisableId"=>$this->CategoryId]);
+                ?>                
+                <button type="submit" name="Function" value="DonationCategoryMergeTo">Merge</button>
             <?php }?>           
 		</form><?php
 
@@ -207,33 +205,39 @@ class DonationCategory extends ModelLite
         }
     }
 
-    static function show_options($parentId,$parent,$level=0,$selected=""){
+    static function show_options($parentId,$parent,$level=0,$settings=[]){
         if (!$parent[$parentId]) return;
+        if (!is_array($settings['selected'])) $settings['selected']=[$settings['selected']];
         foreach ($parent[$parentId] as $r){
-            $return.='<option value="'.$r->CategoryId.'"'.(in_array($r->CategoryId,$selected)?' selected':"").'>';
+            $return.='<option value="'.$r->CategoryId.'"'.(isset($settings['DisableId']) && $settings['DisableId']==$r->CategoryId?" disabled":"").(in_array($r->CategoryId,$settings['selected'])?' selected':"").'>';
             for($i=0;$i<$level;$i++){
                 $return.="--";
             }
             $return.=$r->Category.(isset($r->donation_count)?" (x".$r->donation_count.")":"")."</option>";
-            $return.=self::show_options($r->CategoryId,$parent,$level+1,$selected);
+            $return.=self::show_options($r->CategoryId,$parent,$level+1,$settings);
         }
         return $return;
     }
 
     static public function select($settings=[]){
         $return='<select name="'.($settings['Name']?$settings['Name']:"CategoryId").'"';
-        if ($settings["Multiple"]) $return.=" multiple";
-        $return.='><option></option>';
+        if ($settings["Multiple"]) $return.=" multiple";       
+        $return.=">";
+        if ($settings['IncludeNone']){
+           $return.='<option value="0">[--None--]</option>';
+        }else{
+            $return.='<option></option>';
+        }       
+       
         $SQL= "SELECT *".($settings['Count']?",(Select COUNT(*) FROM ".Donation::get_table_name()." Where CategoryId=C.CategoryId) as donation_count":"")." FROM ".self::get_table_name()." C Order BY Category";       
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){ 
             $parent[$r->ParentId?$r->ParentId:0][]=$r;
         }
-        if (!isset($settings['selected'])) $selected=$_REQUEST[$settings['Name']?$settings['Name']:"CategoryId"];
+        if (!isset($settings['selected'])) $settings['selected']=$_REQUEST[$settings['Name']?$settings['Name']:"CategoryId"];
         else $selected=$settings['selected'];
 
-        if (!is_array($selected)) $selected=array($selected);        
-        $return.=self::show_options(0,$parent,0,$selected);
+        $return.=self::show_options(0,$parent,0,$settings);
         $return.="</select>";
         return $return;
     }
