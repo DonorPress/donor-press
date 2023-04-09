@@ -132,7 +132,7 @@ class DonationCategory extends ModelLite
             if ($this->donation_count()>0){                
                 ?><div>Donations using this Category: <?php $this->donation_count()?></div>
                 Merge To: <select name="MergeTo"><option value="0">[--None--]</option><?php
-             $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::get_table_name()." WHERE (ParentId=0 OR ParentId IS NULL) AND CategoryId<>'".$this->CategoryId."' Order BY Category");
+             $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::get_table_name()." WHERE CategoryId<>'".$this->CategoryId."' Order BY Category");
              foreach($results as $r){
                 ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->CategoryId?" selected":"")?>><?php
                 print $r->Category." (".$r->CategoryId.")";?></option><?php
