@@ -84,7 +84,7 @@ class DonationCategory extends ModelLite
             <tr><td align="right">Parent Category</td><td><select name="ParentId"><option value="0">[--None--]</option><?php
              $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::get_table_name()." WHERE (ParentId=0 OR ParentId IS NULL) AND CategoryId<>'".$this->CategoryId."' Order BY Category");
              foreach($results as $r){
-                ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->CategoryId?" selected":"")?>><?php
+                ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->ParentId?" selected":"")?>><?php
                 print $r->Category." (".$r->CategoryId.")";?></option><?php
              }?></select></td></tr>
             <tr><td align="right">Response Template</td><td><select name="TemplateId"><option value="">default</option><?php
