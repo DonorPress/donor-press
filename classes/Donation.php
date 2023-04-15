@@ -870,7 +870,7 @@ class Donation extends ModelLite
             if ($donor->QuickBooksId>0){            
                 if ($this->QBOInvoiceId==0){
                     print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
-                }elseif(!$this->QBOPaymentId==0){
+                }elseif(!$this->QBOPaymentId){
                     print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
                     print '<a href="?page=donor-quickbooks&syncDonationPaid='.$this->DonationId.'">Sync Payment to QuickBooks</a>';
                 }else{
