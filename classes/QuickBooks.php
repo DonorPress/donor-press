@@ -732,8 +732,22 @@ class QuickBooks extends ModelLite
     public function show(){
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");
-            $tables=['Customer'=>'DisplayName','Invoice'=>'Balance','Vendor'=>'DisplayName','Employee'=>'DisplayName','Item'=>'Name','Account'=>'Name','Bill'=>'VendorRef','BillPayment'=>'VendorRef','CompanyInfo'=>'CompanyName','CreditMemo'=>'TotalAmt'
-            ,'Deposit'=>'CashBack.Memo','JournalEntry'=>'PrivateNote','SalesReceipt'=>'DocNumber','Payment'=>'TotalAmt','PaymentMethod'=>'Name']; //,'Department',,'Budget'
+            $tables=[
+                'Customer'=>['DisplayName','PrimaryEmailAddr_Address','Notes'],
+                'Invoice'=>['CustomerRef','Balance','TotalAmt','ShipFromAddr_Line1','ShipFromAddr_Line2'],
+                'Vendor'=>'DisplayName',
+                'Employee'=>'DisplayName',
+                'Item'=>['Name','Description','Active','UnitPrice','Type','IncomeAccountRef','TrackQtyOnHand'],
+                'Account'=>['Name','Active','Classification','AccountType','AccountSubType','CurrentBalance','CurrentBalanceWithSubAccounts'],
+                'Bill'=>['VendorRef','TxnDate','DueDate','TotalAmt','VendorAddr_Line1','VendorAddr_City','VendorAddr_CountrySubDivisionCode'],
+                'BillPayment'=>['VendorRef','PayType','TotalAmt','Line_LinkedTxn_TxnId','Line_LinkedTxn_TxnType'],
+                'CreditMemo'=>['TxnDate','TotalAmt','BillAddr_Id','BillAddr_Line1','BillAddr_Line2']
+                ,'JournalEntry'=>['PrivateNote','TxnDate','Line_0_Amount','Line_0_JournalEntryLineDetail_PostingType','Line_0_JournalEntryLineDetail_AccountRef','Line_1_Amount','Line_1_JournalEntryLineDetail_PostingType','Line_1_JournalEntryLineDetail_AccountRef'],
+                'SalesReceipt'=>['DocNumber','TxnDate','CustomerRef','BillAddr_Line1','TotalAmt'],
+                'Payment'=>['TxnDate','PaymentRefNum','TotalAmt','CustomerRef','Line_LinkedTxn_TxnId','Line_LinkedTxn_TxnType'],
+                'PaymentMethod'=>'Name','Budget'=>"Name",
+                "Deposit"=>["DepositToAccountRef","TxnDate","TotalAmt","Line_LinkedTxn_TxnId","Line_LinkedTxn_TxnType"]
+            ]; //,'Department',,'Budget' 'CompanyInfo'=>'CompanyName'
             
             
             if ($_GET['syncDonorsToQB']){         
@@ -893,11 +907,25 @@ class QuickBooks extends ModelLite
                             return;
                         }
                         print self::pagination($index,$max,$count);
-                        ?><table class="dp">
+                        $field=$tables[$_GET['table']]?$tables[$_GET['table']]:"Id";  
+                        ?><table class="dp"><th>Id</th><?php
+                        if (is_array($field)){
+                            foreach($field as $f) print "<th>".str_replace("_"," ",$f)."</th>";
+                        }
+                        else print "<th>".str_replace("_"," ",$field)."</th>";
+                        ?></tr>
                         <?php
                         foreach ($entities as $entity){
-                            $field=$tables[$_GET['table']]?$tables[$_GET['table']]:"Id";
-                            ?><tr><td><a href="?page=donor-quickbooks&table=<?php print $_GET['table']?>&Id=<?php print $entity->Id?>"><?php print $entity->Id?></a></td><td><?php print $entity->$field?></td></tr><?php
+                                                      
+                            ?><tr><td><a href="?page=donor-quickbooks&table=<?php print $_GET['table']?>&Id=<?php print $entity->Id?>"><?php print $entity->Id?></a></td><?php 
+                            if (is_array($field)){
+                                foreach($field as $f)  print "<td>".self::showQBfield($entity,$f)."</td>"; //show
+
+                            }else{
+                                print "<td>".self::showQBfield($entity,$field)."</td>";
+                            }                           
+                            
+                            ?></tr><?php
                         }?>
                         </table>
                         <?php    
@@ -919,6 +947,20 @@ class QuickBooks extends ModelLite
             return;           
         }
 	}
+
+    static function showQBfield($entity,$field){
+        //example: $entity,'PrimaryPhone_FreeFormNumber' returns $entity->PrimaryPhone->FreeFormNumber 
+        $pieces=explode("_",$field);
+        $result=$entity;
+        foreach($pieces as $p){
+            if (is_array($result) && $result[$p]){
+                $result=$result[$p];
+            }elseif(is_object($result) && $result->$p){
+                $result=$result->$p;
+            }else return "";
+        }            
+        return $result; 
+    }
 
     static function show_customer_name($c){
         if ($c->CompanyName==$c->FullyQualifiedName){
