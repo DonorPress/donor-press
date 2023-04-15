@@ -896,7 +896,7 @@ class QuickBooks extends ModelLite
                         ?><table class="dp">
                         <?php
                         foreach ($entities as $entity){
-                            $field=$tables[$_GET['table']];
+                            $field=$tables[$_GET['table']]?$tables[$_GET['table']]:"Id";
                             ?><tr><td><a href="?page=donor-quickbooks&table=<?php print $_GET['table']?>&Id=<?php print $entity->Id?>"><?php print $entity->Id?></a></td><td><?php print $entity->$field?></td></tr><?php
                         }?>
                         </table>
