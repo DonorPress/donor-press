@@ -29,6 +29,31 @@ class QuickBooks extends ModelLite
     protected $QBurl;
     protected $oAuth2LoginHelper;
     protected $accessTokenObj;
+
+    protected $fieldLinks=[
+        'DepositToAccountRef'=>'Account',
+        'Line_LinkedTxn_TxnId'=>'+Line_LinkedTxn_TxnType',/***/
+        'CustomerRef'=>'Customer'        
+    ];
+
+    protected $QBtables=[
+        'Customer'=>['DisplayName','PrimaryEmailAddr_Address','Notes'],
+        'Invoice'=>['CustomerRef','Balance','TotalAmt','ShipFromAddr_Line1','ShipFromAddr_Line2'],
+        'Vendor'=>'DisplayName',
+        'Employee'=>'DisplayName',
+        'Item'=>['Name','Description','Active','UnitPrice','Type','IncomeAccountRef','TrackQtyOnHand'],
+        'Account'=>['Name','Active','Classification','AccountType','AccountSubType','CurrentBalance','CurrentBalanceWithSubAccounts'],
+        'Bill'=>['VendorRef','TxnDate','DueDate','TotalAmt','VendorAddr_Line1','VendorAddr_City','VendorAddr_CountrySubDivisionCode'],
+        'BillPayment'=>['VendorRef','PayType','TotalAmt','Line_LinkedTxn_TxnId','Line_LinkedTxn_TxnType'],
+        'CreditMemo'=>['TxnDate','TotalAmt','BillAddr_Id','BillAddr_Line1','BillAddr_Line2']
+        ,'JournalEntry'=>['PrivateNote','TxnDate','Line_0_Amount','Line_0_JournalEntryLineDetail_PostingType','Line_0_JournalEntryLineDetail_AccountRef','Line_1_Amount','Line_1_JournalEntryLineDetail_PostingType','Line_1_JournalEntryLineDetail_AccountRef'],
+        'SalesReceipt'=>['DocNumber','TxnDate','CustomerRef','BillAddr_Line1','TotalAmt'],
+        'Payment'=>['TxnDate','PaymentRefNum','TotalAmt','CustomerRef','Line_LinkedTxn_TxnId','Line_LinkedTxn_TxnType'],
+        'PaymentMethod'=>'Name','Budget'=>"Name",
+        "Deposit"=>["DepositToAccountRef","TxnDate","TotalAmt","Line_LinkedTxn_TxnId","Line_LinkedTxn_TxnType"]
+    ];
+
+
     const SESSION_PREFIX='quickBooks_';
     const SESSION_VARS=['code','state','realmId','accessToken','refreshToken','accessTokenExpiresAt','refreshTokenExpiresAt'];
     const SETTING_URL='https://www.developer.intuit.com/app/developer/dashboard';
@@ -125,7 +150,12 @@ class QuickBooks extends ModelLite
                     $this->display_line(($field?$field."_":"").$sf,$sv); // $this->display_line(($field?$field.(is_object($sv)?"->".$sf:"[".$sf."]"):""),$sv);                    
                 }
             }else{
-                print "<tr><td><strong>".$field."</strong></td><td>".$value."</td></tr>";
+                print "<tr><td><strong>".$field."</strong></td><td>";
+                
+                if ($value && $this->fieldLinks[$field]){
+                    print '<a target="QBdetail" href="?page=donor-quickbooks&table='.$this->fieldLinks[$field].'&Id='.$value.'">'.$value."</a>";
+                }else print $value;
+                print "</td></tr>"; //rewrite this to use: $this->showQBfield($entity,$field)  -
             }
             
         }else{
@@ -731,24 +761,7 @@ class QuickBooks extends ModelLite
 
     public function show(){
         if ($this->authenticate()){
-            self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");
-            $tables=[
-                'Customer'=>['DisplayName','PrimaryEmailAddr_Address','Notes'],
-                'Invoice'=>['CustomerRef','Balance','TotalAmt','ShipFromAddr_Line1','ShipFromAddr_Line2'],
-                'Vendor'=>'DisplayName',
-                'Employee'=>'DisplayName',
-                'Item'=>['Name','Description','Active','UnitPrice','Type','IncomeAccountRef','TrackQtyOnHand'],
-                'Account'=>['Name','Active','Classification','AccountType','AccountSubType','CurrentBalance','CurrentBalanceWithSubAccounts'],
-                'Bill'=>['VendorRef','TxnDate','DueDate','TotalAmt','VendorAddr_Line1','VendorAddr_City','VendorAddr_CountrySubDivisionCode'],
-                'BillPayment'=>['VendorRef','PayType','TotalAmt','Line_LinkedTxn_TxnId','Line_LinkedTxn_TxnType'],
-                'CreditMemo'=>['TxnDate','TotalAmt','BillAddr_Id','BillAddr_Line1','BillAddr_Line2']
-                ,'JournalEntry'=>['PrivateNote','TxnDate','Line_0_Amount','Line_0_JournalEntryLineDetail_PostingType','Line_0_JournalEntryLineDetail_AccountRef','Line_1_Amount','Line_1_JournalEntryLineDetail_PostingType','Line_1_JournalEntryLineDetail_AccountRef'],
-                'SalesReceipt'=>['DocNumber','TxnDate','CustomerRef','BillAddr_Line1','TotalAmt'],
-                'Payment'=>['TxnDate','PaymentRefNum','TotalAmt','CustomerRef','Line_LinkedTxn_TxnId','Line_LinkedTxn_TxnType'],
-                'PaymentMethod'=>'Name','Budget'=>"Name",
-                "Deposit"=>["DepositToAccountRef","TxnDate","TotalAmt","Line_LinkedTxn_TxnId","Line_LinkedTxn_TxnType"]
-            ]; //,'Department',,'Budget' 'CompanyInfo'=>'CompanyName'
-            
+            self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");            
             
             if ($_GET['syncDonorsToQB']){         
                 if ($_POST['Function']=="LinkMatchQBtoDonorId"){
@@ -907,7 +920,7 @@ class QuickBooks extends ModelLite
                             return;
                         }
                         print self::pagination($index,$max,$count);
-                        $field=$tables[$_GET['table']]?$tables[$_GET['table']]:"Id";  
+                        $field=$this->QBtables[$_GET['table']]?$this->QBtables[$_GET['table']]:"Id";
                         ?><table class="dp"><th>Id</th><?php
                         if (is_array($field)){
                             foreach($field as $f) print "<th>".str_replace("_"," ",$f)."</th>";
@@ -915,14 +928,13 @@ class QuickBooks extends ModelLite
                         else print "<th>".str_replace("_"," ",$field)."</th>";
                         ?></tr>
                         <?php
-                        foreach ($entities as $entity){
-                                                      
+                        foreach ($entities as $entity){                                                      
                             ?><tr><td><a href="?page=donor-quickbooks&table=<?php print $_GET['table']?>&Id=<?php print $entity->Id?>"><?php print $entity->Id?></a></td><?php 
                             if (is_array($field)){
-                                foreach($field as $f)  print "<td>".self::showQBfield($entity,$f)."</td>"; //show
+                                foreach($field as $f)  print "<td>".$this->showQBfield($entity,$f)."</td>"; //show
 
                             }else{
-                                print "<td>".self::showQBfield($entity,$field)."</td>";
+                                print "<td>".$this->showQBfield($entity,$field)."</td>";
                             }                           
                             
                             ?></tr><?php
@@ -938,7 +950,7 @@ class QuickBooks extends ModelLite
                 <h2>Company: <?php print $companyInfo->LegalName?> | <?php print CustomVariables::get_option('QuickbooksBase');?></h2>  
                 <div><a href="?page=<?php print $_GET['page']?>&syncDonorsToQB=t">Sync Donors to QuickBooks</a></div>           
                 <h3>View</h3>
-                 <?php foreach ($tables as $tbl=>$key){ ?>
+                 <?php foreach ($this->QBtables as $tbl=>$key){ ?>
                     <div><a href="?page=donor-quickbooks&table=<?php print $tbl?>"><?php print $tbl?></a></div>
                  <?php 
                  }  
@@ -948,7 +960,7 @@ class QuickBooks extends ModelLite
         }
 	}
 
-    static function showQBfield($entity,$field){
+    function showQBfield($entity,$field){
         //example: $entity,'PrimaryPhone_FreeFormNumber' returns $entity->PrimaryPhone->FreeFormNumber 
         $pieces=explode("_",$field);
         $result=$entity;
@@ -958,8 +970,29 @@ class QuickBooks extends ModelLite
             }elseif(is_object($result) && $result->$p){
                 $result=$result->$p;
             }else return "";
-        }            
+        }
+        if ($result && $this->fieldLinks[$field]){
+            $table=$field;
+            if (substr($this->fieldLinks[$field],0,1)=="+"){ //special type of "+" in front allows it to read another field
+                $tableField=substr($this->fieldLinks[$field],1);               
+                $table=$this->showQBfield($entity,$tableField);
+                //dd($tableField,$this->fieldLinks[$field],$entity,$table);
+            }
+            $result=$this->showQBfieldLink($table,$result); 
+        }
+               
         return $result; 
+    }
+
+    function showQBfieldLinkB($table,$value){
+        if ($value && $this->fieldLinks[$field]){
+            $result='<a target="QBdetail" href="?page=donor-quickbooks&table='.$table.'&Id='.$value.'">'.$value."</a>";
+            return $result;
+        }else return $value;
+    }
+
+    function showQBfieldLink($table,$value){
+        return '<a target="QBdetail" href="?page=donor-quickbooks&table='.$table.'&Id='.$value.'">'.$value."</a>";
     }
 
     static function show_customer_name($c){
@@ -975,7 +1008,7 @@ class QuickBooks extends ModelLite
 
         $return="<div style='padding:4px 8px;'>";
         if ($index >1){
-            $return.='<a href="s'.self::make_link(['index'=>$index-1,'max'=>$max]).'"><- Previous '.$max.'</a>';
+            $return.='<a href="'.self::make_link(['index'=>$index-1,'max'=>$max]).'"><- Previous '.$max.'</a>';
         }             
         
         if ($count>$max){
@@ -987,7 +1020,7 @@ class QuickBooks extends ModelLite
         }
 
         if (($index+1)*$max<$count){
-            $return.='<a href="s'.self::make_link(['index'=>$index+1,'max'=>$max]).'">Next '.(($index+2)*$max>$count?$count-(($index+1)*$max):$max).' -></a>';
+            $return.='<a href="'.self::make_link(['index'=>$index+1,'max'=>$max]).'">Next '.(($index+2)*$max>$count?$count-(($index+1)*$max):$max).' -></a>';
         }
         $return.="</div>";
         return $return;
