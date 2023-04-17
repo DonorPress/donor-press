@@ -33,6 +33,7 @@ class QuickBooks extends ModelLite
     protected $fieldLinks=[
         'DepositToAccountRef'=>'Account',
         'Line_LinkedTxn_TxnId'=>'+Line_LinkedTxn_TxnType',/***/
+        'LinkedTxn_TxnId'=>'+LinkedTxn_TxnType',
         'CustomerRef'=>'Customer'        
     ];
 
@@ -48,7 +49,7 @@ class QuickBooks extends ModelLite
         'CreditMemo'=>['TxnDate','TotalAmt','BillAddr_Id','BillAddr_Line1','BillAddr_Line2']
         ,'JournalEntry'=>['PrivateNote','TxnDate','Line_0_Amount','Line_0_JournalEntryLineDetail_PostingType','Line_0_JournalEntryLineDetail_AccountRef','Line_1_Amount','Line_1_JournalEntryLineDetail_PostingType','Line_1_JournalEntryLineDetail_AccountRef'],
         'SalesReceipt'=>['DocNumber','TxnDate','CustomerRef','BillAddr_Line1','TotalAmt'],
-        'Payment'=>['TxnDate','PaymentRefNum','TotalAmt','CustomerRef','Line_LinkedTxn_TxnId','Line_LinkedTxn_TxnType'],
+        'Payment'=>['TxnDate','PaymentRefNum','TotalAmt','CustomerRef','Line_LinkedTxn_TxnId','Line_LinkedTxn_TxnType','LinkedTxn_TxnId','LinkedTxn_TxnType'],
         'PaymentMethod'=>'Name','Budget'=>"Name",
         "Deposit"=>["DepositToAccountRef","TxnDate","TotalAmt","Line_LinkedTxn_TxnId","Line_LinkedTxn_TxnType"]
     ];
@@ -1175,12 +1176,29 @@ class QuickBooks extends ModelLite
             $return['newCustomerFromDonor'][]=$donation->DonorId;              
         }
         return  $return;      
-    } 
+    }
     
-    public function get_all_entity($table){ //get past the max of 1000 entries on a query from QB
+    public function unmatched_payments(){
+        $qb = new self();
+        if ($qb->authenticate()){
+            // $donors=Donor::get(["DonorId IN ('".implode("','",$donorIds)."')"]);
+            // foreach($donors as $donor){
+            //     $qb->hash_donor_add($donor,$hash);
+            // }
+            /*
+            $payments=$qb->get_all_entity('Payment','LinkedTxn IS NULL'); 
+            ?>
+            <h2>Unmatched Payments</h2>
+            <table class="dp"><tr><th</th></table><?php
+            */
+
+        }
+    }
+    
+    public function get_all_entity($table,$where=""){ //get past the max of 1000 entries on a query from QB
         $return = new stdClass();
         $max=1000;
-        $return->count =$this->dataService->Query("SELECT count(*) FROM ".$table);
+        $return->count =$this->dataService->Query("SELECT count(*) FROM ".$table.($where?" WHERE ".$where:""));
         # get past Quickbook limit of 1000 resuls.
         for($i=0;$i<ceil($return->count/$max);$i++){
             $SQL="SELECT * FROM ".$table." Where Active=true STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;           
