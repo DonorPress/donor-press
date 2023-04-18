@@ -76,6 +76,8 @@ class CustomVariables extends ModelLite
                 ?>                
                 </table>
                 <h3>Protected Variables (encoded)</h3>
+                <div>Paypal Integration Link: <a target="paypal" href="https://developer.paypal.com/dashboard/applications/live">https://developer.paypal.com/dashboard/applications/live</a> - (1) login into your paypal account (2) create an app using "live" (3) make sure Transaction search is checked 
+                (4) and paste in credentials below.</div>
                 <div>By entering a value, it will override what is currently there. Values are encrypted on the database.</div>
                 <table>
                 <?php
