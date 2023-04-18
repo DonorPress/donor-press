@@ -303,12 +303,14 @@ class Donation extends ModelLite
                 <option value="<?php print $field?>"<?php print $_GET['dateField']==$field?" selected":""?>><?php print $label?> Date</option>
             <?php } ?>
             </select>
-             <button type="submit" name="SummaryView" value="t">View Summary</button></form>
-             <div> 
-                <a href="<?php print $linkBase."&df=".date("Y-m-d")?>">Today</a> | 
-                <a href="<?php print $linkBase."&df=".date("Y-m-d",strtotime("-7 days"))?>">Last 7 Days</a> | 
-                <a href="<?php print $linkBase."&df=".date("Y-m-d",strtotime("-30 days"))?>">Last 30 Days</a>
-            </div>
+            <button type="submit" name="ActionView" value="t">View action List</button>
+            <button type="submit" name="SummaryView" value="t">View Summary</button>
+        </form>
+        <div> 
+            <a href="<?php print $linkBase."&df=".date("Y-m-d")?>">Today</a> | 
+            <a href="<?php print $linkBase."&df=".date("Y-m-d",strtotime("-7 days"))?>">Last 7 Days</a> | 
+            <a href="<?php print $linkBase."&df=".date("Y-m-d",strtotime("-30 days"))?>">Last 30 Days</a>
+        </div>
 
          <table class="dp"><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?php
          foreach ($results as $r){?>
@@ -546,7 +548,7 @@ class Donation extends ModelLite
             }
             self::display_notice(sizeof($donations)." invoices/payments created in QuickBooks.");  
             return true;     
-        }elseif($_GET['UploadDate'] || $_GET['SummaryView']){    
+        }elseif($_GET['UploadDate'] || $_GET['SummaryView'] || $_GET['ActionView']){    
             if ($_POST['Function']=="LinkMatchQBtoDonorId"){
                 $qb=new QuickBooks();
                 $qb->process_customer_match($_POST['match'],$_POST['rmatch']);                    
@@ -569,13 +571,15 @@ class Donation extends ModelLite
                     if ($_GET['UploadDate']){
                         $where[]="`CreatedAt`='".$_GET['UploadDate']."'";
                     }
+                    
                     $dateField=(self::s()->dateFields[$_GET['dateField']]?$_GET['dateField']:key(self::s()->dateFields));
                     if ($_GET['df']){
                         $where[]="DATE(`$dateField`)>='".$_GET['df']."'";
                     }
                     if ($_GET['dt']){
                         $where[]="DATE(`$dateField`)<='".$_GET['dt']."'";
-                    }                    
+                    } 
+                    //dd($where);                   
                     self::view_donations($where,
                         array(
                             'unsent'=>$_GET['unsent']=="t"?true:false,
