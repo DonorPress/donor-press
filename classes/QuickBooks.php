@@ -763,14 +763,20 @@ class QuickBooks extends ModelLite
     public function show(){
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");            
-            
+            if ($_GET['debug']){
+                $this->debug();
+                return;
+            }
             if ($_GET['syncDonorsToQB']){         
                 if ($_POST['Function']=="LinkMatchQBtoDonorId"){
                     $this->process_customer_match($_POST['match'],$_POST['rmatch']);                    
                 }
 
                 $match=[];
-                ?><h2>Sync Donors to Quickbooks</h2><?php
+                
+                ?>
+                
+                <h2>Sync Donors to Quickbooks</h2><?php
                 $index=$_GET['index']??1;
                 
                 $customer=$this->get_all_entity('Customer');                                         
@@ -948,7 +954,8 @@ class QuickBooks extends ModelLite
             }else{ 
                 $companyInfo = $this->dataService->getCompanyInfo();               
                 ?>
-                <h2>Company: <?php print $companyInfo->LegalName?> | <?php print CustomVariables::get_option('QuickbooksBase');?></h2>  
+                <h2>Company: <?php print $companyInfo->LegalName?> | <?php print CustomVariables::get_option('QuickbooksBase');?></h2> 
+                <div><a href="?page=<?php print $_GET['page']?>&debug=t">Debug Mode</a></div> 
                 <div><a href="?page=<?php print $_GET['page']?>&syncDonorsToQB=t">Sync Donors to QuickBooks</a></div>           
                 <h3>View</h3>
                  <?php foreach ($this->QBtables as $tbl=>$key){ ?>
@@ -1178,19 +1185,26 @@ class QuickBooks extends ModelLite
         return  $return;      
     }
     
-    public function unmatched_payments(){
+    public function debug(){
         $qb = new self();
         if ($qb->authenticate()){
-            // $donors=Donor::get(["DonorId IN ('".implode("','",$donorIds)."')"]);
-            // foreach($donors as $donor){
-            //     $qb->hash_donor_add($donor,$hash);
-            // }
+            $max=1000;
+            $query=$_REQUEST['query']?$_REQUEST['query']:"Select * From Customer MAXRESULTS ".$max;
+            ?><form method="post">
+                Query: <textarea name="query"><?php print $query;?></textarea>
+                <button>Go</button>
+            </form>
+            <?php
+            if ($query){
+                $result=$this->dataService->Query($query);
+                dump($result);                
+            }
+            
             /*
-            $payments=$qb->get_all_entity('Payment','LinkedTxn IS NULL'); 
-            ?>
+            $payments=$qb->get_all_entity('Payment','LinkedTxn IS NULL');            
             <h2>Unmatched Payments</h2>
-            <table class="dp"><tr><th</th></table><?php
-            */
+            <table class="dp"><tr><th</th></table>
+            */ 
 
         }
     }
