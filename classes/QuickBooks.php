@@ -911,11 +911,22 @@ class QuickBooks extends ModelLite
                         }                        
                     }
                 }else{
+                    if ($_GET['Report']=="UnMatched" && $_GET['table']=="Payment"){
+                        return self::reportUnMatchedPayments();
+                    }
+
+
                     $index=$_GET['index']??1;
                     $max=$_GET['max']??100;
                     if ($max>1000) $max=1000;
 
                     $count =$this->dataService->Query("SELECT count(*) FROM ".$_GET['table']);
+
+                    switch($_GET['table']){
+                        case "Payment":
+                            print "<div><a href='?page=donor-quickbooks&table=".$_GET['table']."&Report=UnMatched'>Show all unmatched Payments</a></div>";
+                        break;
+                    }
 
                     $entities =$this->dataService->Query("SELECT * FROM ".$_GET['table']." STARTPOSITION ".(($index-1)*$max)." MAXRESULTS ".$max);
                     //dd($count,$entities,"SELECT * FROM ".$_GET['table']." STARTPOSITION ".($index*$max)." MAXRESULTS ".$max);
@@ -1206,6 +1217,24 @@ class QuickBooks extends ModelLite
             <table class="dp"><tr><th</th></table>
             */ 
 
+        }
+    }
+
+    public function reportUnMatchedPayments(){
+        $unmatched=[];
+        $payments=self::get_all_entity('Payment');
+        //dump($payments);
+        foreach($payments as $p){
+            if (!$p->LinkedTxn){
+                $unmatched[$p->Id]=$p;
+            }            
+        }
+
+        if (sizeof($unmatched)>0){
+            $list=Donations::get(['QBPayment ID IN ('.implode(",",array_keys($unmatched)).')']);
+            print self::show_results($list);
+        }else{
+            print "None Found";
         }
     }
     
