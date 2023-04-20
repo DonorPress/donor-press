@@ -1199,7 +1199,7 @@ class QuickBooks extends ModelLite
     public function debug(){
         $qb = new self();
         if ($qb->authenticate()){
-            $max=1000;
+            $max=100;
             $query=$_REQUEST['query']?$_REQUEST['query']:"Select * From Customer MAXRESULTS ".$max;
             ?><form method="post">
                 Query: <textarea name="query"><?php print $query;?></textarea>
@@ -1208,7 +1208,12 @@ class QuickBooks extends ModelLite
             <?php
             if ($query){
                 $result=$this->dataService->Query($query);
-                dump($result);                
+                $error = $this->oAuth2LoginHelper->getLastError();
+                if($error){
+                    self::display_error("<strong>Error Refreshing Token</strong> ".$error->getResponseBody()."</div>");
+                }else{
+                    dump($result);
+                }                
             }
             
             /*
@@ -1244,7 +1249,7 @@ class QuickBooks extends ModelLite
         $return->count =$this->dataService->Query("SELECT count(*) FROM ".$table.($where?" WHERE ".$where:""));
         # get past Quickbook limit of 1000 resuls.
         for($i=0;$i<ceil($return->count/$max);$i++){
-            $SQL="SELECT * FROM ".$table." Where Active=true STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;           
+            $SQL="SELECT * FROM ".$table." STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;           
             $chunks[] =$this->dataService->Query($SQL);
         }
 
