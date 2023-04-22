@@ -95,7 +95,7 @@ class QuickBooks extends ModelLite
         return get_site_url()."/wp-admin/admin.php?redirect=donor_quickBooks_redirectUrl";
     }
     
-    public function authenticate(){  
+    public function authenticate(){ 
         $this->getOAuth2LoginHelper();
         ### if past accesss token expiration, clear out session, and start over
         if ($this->session(self::SESSION_PREFIX."accessToken") && $this->session(self::SESSION_PREFIX."accessTokenExpiresAt")<time()){
@@ -103,8 +103,15 @@ class QuickBooks extends ModelLite
         }
         ### refresh the token if expired
         if ($this->session(self::SESSION_PREFIX."refreshToken") && $this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")<time()){
-            $this->accessTokenObj=$this->oAuth2LoginHelper->refreshToken();
-            $error = $this->oAuth2LoginHelper->getLastError();
+            try{ 
+                $this->accessTokenObj=$this->oAuth2LoginHelper->refreshToken();
+                $error = $this->oAuth2LoginHelper->getLastError();
+            } catch (\Exception $ex) {
+                self::display_error($ex->getMessage()."<br>Reload this page.");
+                $this->clearSession();  
+                return false;
+            }
+            
             if($error){
                 self::display_error("<strong>Error Refreshing Token</strong> ".$error->getResponseBody()."</div>");
             }else{
@@ -1237,7 +1244,7 @@ class QuickBooks extends ModelLite
 
         if (sizeof($unmatched)>0){
             $list=Donation::get(['QBOPaymentId IN ('.implode(",",array_keys($unmatched)).')']);
-            print self::show_results($list);
+            print "<h2>UnMatched Payments</h2>".Donation::show_results($list);
         }else{
             print "None Found";
         }
