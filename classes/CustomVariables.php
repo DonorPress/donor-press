@@ -138,6 +138,7 @@ class CustomVariables extends ModelLite
         $version="";
         if ($lines = file($file)){                   
             foreach($lines as $line){
+                if (trim($line)=="") continue;
                 $json=json_decode($line);
                 $json->TABLE=strtolower($json->TABLE);
                 if ($json->PLUGIN && $json->VERSION){
