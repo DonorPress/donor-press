@@ -1236,7 +1236,7 @@ class QuickBooks extends ModelLite
         }
 
         if (sizeof($unmatched)>0){
-            $list=Donations::get(['QBPayment ID IN ('.implode(",",array_keys($unmatched)).')']);
+            $list=Donation::get(['QBOPaymentId IN ('.implode(",",array_keys($unmatched)).')']);
             print self::show_results($list);
         }else{
             print "None Found";
@@ -1247,7 +1247,7 @@ class QuickBooks extends ModelLite
         $return = new stdClass();
         $max=1000;
         $return->count =$this->dataService->Query("SELECT count(*) FROM ".$table.($where?" WHERE ".$where:""));
-        # get past Quickbook limit of 1000 resuls.
+        # get past Quickbook limit of 1000 results.
         for($i=0;$i<ceil($return->count/$max);$i++){
             $SQL="SELECT * FROM ".$table." STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;           
             $chunks[] =$this->dataService->Query($SQL);
