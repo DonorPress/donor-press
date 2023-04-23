@@ -150,18 +150,28 @@ class QuickBooks extends ModelLite
         }
     }
     
-    public function display_line($field,$value){
+    public function display_line($field,$value,$entity=""){
         $notset=array();
         if ($value){
             if(is_object($value)||is_array($value)){
                 foreach($value as $sf =>$sv){ 
-                    $this->display_line(($field?$field."_":"").$sf,$sv); // $this->display_line(($field?$field.(is_object($sv)?"->".$sf:"[".$sf."]"):""),$sv);                    
+                    $this->display_line(($field?$field."_":"").$sf,$sv,$entity); // $this->display_line(($field?$field.(is_object($sv)?"->".$sf:"[".$sf."]"):""),$sv);                    
                 }
             }else{
                 print "<tr><td><strong>".$field."</strong></td><td>";
                 
                 if ($value && $this->fieldLinks[$field]){
-                    print '<a target="QBdetail" href="?page=donor-quickbooks&table='.$this->fieldLinks[$field].'&Id='.$value.'">'.$value."</a>";
+                  
+                    if (substr($this->fieldLinks[$field],0,1)=="+"){ //special type of "+" in front allows it to read another field
+                        $tableField=substr($this->fieldLinks[$field],1);               
+                        $table=$this->showQBfield($entity,$tableField);
+                    //dd($tableField,$this->fieldLinks[$field],$entity,$table);
+                    }else{
+                        $table=$this->fieldLinks[$field];
+                    }
+                    //dd($this->fieldLinks[$field],$table,$tableField);
+
+                    print '<a target="QBdetail" href="?page=donor-quickbooks&table='.$table.'&Id='.$value.'">'.$value."</a> ".self::qbLink($table,$value,'QB');
                 }else print $value;
                 print "</td></tr>"; //rewrite this to use: $this->showQBfield($entity,$field)  -
             }
@@ -909,7 +919,7 @@ class QuickBooks extends ModelLite
                             print "
                             <div><a href='?page=donor-quickbooks&table=".$_GET['table']."&Id=".$_GET['Id']."&edit=t'>edit</a></div>
                             <table class=\"dp\">";
-                            $notset=$this->display_line('',$entity);                        
+                            $notset=$this->display_line('',$entity,$entity);                        
                             print "</table>";
                         }                        
                        
