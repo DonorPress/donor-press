@@ -1243,7 +1243,7 @@ class QuickBooks extends ModelLite
         }
 
         if (sizeof($unmatched)>0){
-            $list=Donation::get(['QBOPaymentId IN ('.implode(",",array_keys($unmatched)).')']);
+            $list=Donation::get(['QBOPaymentId IN ('.implode(",",array_keys($unmatched)).')'],'DateDeposited');
             print "<h2>UnMatched Payments</h2>".Donation::show_results($list);
         }else{
             print "None Found";
