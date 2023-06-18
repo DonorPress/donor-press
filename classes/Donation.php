@@ -690,23 +690,28 @@ class Donation extends ModelLite
     function receipt_email(){
         if ($this->emailBuilder) return;
         $this->emailBuilder=new stdClass();
-        
-        if ($this->TransactionType==1){                   
-            $page = DonorTemplate::get_by_name('no-tax-thank-you');  
-            if (!$page){ ### Make the template page if it doesn't exist.
-                self::make_receipt_template_no_tax();
+
+        if ($this->CategoryId){
+            $page=DonationCategory::find($this->CategoryId)->getTemplate();
+        }
+        if (!$page){
+            if ($this->TransactionType==1){                   
                 $page = DonorTemplate::get_by_name('no-tax-thank-you');  
-                self::display_notice("Page /no-tax-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
-            }
-        }else{
-            $page = DonorTemplate::get_by_name('receipt-thank-you');  
-            if (!$page){ ### Make the template page if it doesn't exist.
-                self::make_receipt_template_thank_you();
+                if (!$page){ ### Make the template page if it doesn't exist.
+                    self::make_receipt_template_no_tax();
+                    $page = DonorTemplate::get_by_name('no-tax-thank-you');  
+                    self::display_notice("Page /no-tax-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                }
+            }else{
                 $page = DonorTemplate::get_by_name('receipt-thank-you');  
-                self::display_notice("Page /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                if (!$page){ ### Make the template page if it doesn't exist.
+                    self::make_receipt_template_thank_you();
+                    $page = DonorTemplate::get_by_name('receipt-thank-you');  
+                    self::display_notice("Page /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                }
             }
         }
-         
+            
         if (!$page){ ### Make the template page if it doesn't exist.
             self::make_receipt_template_thank_you();
             $page = DonorTemplate::get_by_name('receipt-thank-you');  
@@ -783,7 +788,8 @@ class Donation extends ModelLite
                 $customMessage=null; //don't bother saving if template hasn't changed.
             }
             $notice="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$email."</div>";
-            $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s"),"Content"=>$customMessage));
+            $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s"),
+            "Subject"=>$subject,"Content"=>$customMessage));
             $dr->save();
         }else{
             self::display_error("Error sending e-mail to: ".$email.". Check your wordpress email sending settings.");
@@ -805,7 +811,7 @@ class Donation extends ModelLite
         $this->receipt_email();
         $pdf->writeHTML($customMessage?$customMessage:$this->emailBuilder->body, true, false, true, false, '');        
         
-        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Content"=>$customMessage));
+        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
         $dr->save();
 
         if ($pdf->Output($file, 'D')){
@@ -870,6 +876,17 @@ class Donation extends ModelLite
         $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
         $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
         $bodyContent=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']):$bodyContent; //Post value overrides this though.
+        
+        $subject=$_POST['EmailSubject']?stripslashes_deep($_POST['EmailSubject']):$this->emailBuilder->subject;
+
+        //dump($receipts[$lastReceiptKey]);
+
+        if ($_GET['resetLetter']=="t"){
+            $subject=$this->emailBuilder->subject;
+            $bodyContent=$this->emailBuilder->body;
+        }
+
+
         if (CustomVariables::get_option('QuickbooksClientId',true) && $this->QBOInvoiceId>=0){
             if ($donor->QuickBooksId>0){            
                 if ($this->QBOInvoiceId==0){
@@ -881,7 +898,7 @@ class Donation extends ModelLite
                     print "<div>Invoice #".$this->show_field("QBOInvoiceId")." & Payment: ".$this->show_field("QBOPaymentId")." synced to Quickbooks.</div>";
                 }
             }elseif($donor->QuickBooksId==0){
-                print '<a href="?page=donor-quickbooks&syncDonorId=42">Create Donor in QB</a> (before sending Invoice)';
+                print '<a href="?page=donor-quickbooks&syncDonorId='.$this->DonorId.'">Create Donor in QB</a> (before sending Invoice)';
             }
         }
         //$receipts[0]->content
@@ -890,15 +907,15 @@ class Donation extends ModelLite
 
         $emailToUse=($_POST['Email']?$_POST['Email']:$this->FromEmailAddress);
         if (!$emailToUse) $emailToUse=$this->Donor->Email;
-        ?><form method="post">
+        ?><form method="post" action="?page=<?php print $_GET['page']?>&DonationId=<?php print $this->DonationId?>">
             <h2>Send Receipt</h2>
             <input type="hidden" name="DonationId" value="<?php print $this->DonationId?>">
             <div>Send Receipt to: <input type="email" name="Email" value="<?php print $emailToUse?>">
                 <button type="submit" name="Function" value="SendDonationReceipt">Send E-mail Receipt</button> 
                 <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>                  
             </div>
-            <div><a target='pdf' href='?page=donor-settings&tab=email&DonorTemplateId=<?php print $this->emailBuilder->pageID?>&edit=t'>Edit Template</a></div>
-            <div style="font-size:18px;"><strong>Email Subject:</strong> <input style="font-size:18px; width:500px;" name="EmailSubject" value="<?php print $_POST['EmailSubject']?stripslashes_deep($_POST['EmailSubject']):$this->emailBuilder->subject?>"/>
+            <div><a target='pdf' href='?page=donor-settings&tab=email&DonorTemplateId=<?php print $this->emailBuilder->pageID?>&edit=t'>Edit Template</a> | <a href="?page=donor-reports&DonationId=<?php print $this->DonationId?>&resetLetter=t">Reset Letter</a></div>
+            <div style="font-size:18px;"><strong>Email Subject:</strong> <input style="font-size:18px; width:500px;" name="EmailSubject" value="<?php print $subject;?>"/>
             <?php wp_editor($bodyContent, 'customMessage',array("media_buttons" => false,"wpautop"=>false)); ?>
         </form>
         <?php    

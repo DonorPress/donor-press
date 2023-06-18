@@ -165,6 +165,16 @@ class DonationCategory extends ModelLite
         }
     }
 
+    public function getTemplate(){
+        if ($this->TemplateId>0){
+            return DonorTemplate::find($this->TemplateId);
+        }
+        if ($this->ParentId>0){
+            return self::find($this->ParentId)->getTemplate(); //recursive go up to parent to find default thank you
+        }
+        return false;
+    }
+
     public function view(){ //single entry->View fields
 		//print "varview";
 		$this->var_view();
