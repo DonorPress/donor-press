@@ -14,6 +14,10 @@ function donor_press_upgrade(){
 		donor_press_upgrade_005();
 	}
 
+	if (donor_upgrade_version_value($current_db_version)<donor_upgrade_version_value('0.0.6')){ 
+		donor_press_upgrade_006();
+	}
+
 	if ($current_db_version){
 		update_option( "donor_press_db_version", $donor_press_db_version );
 	}else{
@@ -55,5 +59,12 @@ function donor_press_upgrade_005(){
 	$aSQL="ALTER TABLE `".Donation::get_table_name()."`
 	CHANGE COLUMN `Gross` `Gross` DECIMAL(10,2) NOT NULL ,
 	CHANGE COLUMN `Net` `Net` DECIMAL(10,2) NULL DEFAULT NULL ;";
+	$wpdb->query( $aSQL );	
+}
+
+function donor_press_upgrade_006(){
+	$wpdb=Donor::db();
+	$aSQL="ALTER TABLE `".DonationReceipt::get_table_name()."`
+	ADD COLUMN `Subject` varchar(256);";
 	$wpdb->query( $aSQL );	
 }

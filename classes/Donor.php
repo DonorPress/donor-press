@@ -594,7 +594,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     static function summary_list_year($year){       
         ### Find what receipt haven't been sent yet
-        $SQL="SELECT `DonorId`, `Type`, `Address`, `DateSent` FROM ".DonationReceipt::get_table_name()." WHERE `KeyType`='YearEnd' AND `KeyId`='".$year."'";
+        $SQL="SELECT `DonorId`, `Type`, `Address`, `DateSent`,`Subject` FROM ".DonationReceipt::get_table_name()." WHERE `KeyType`='YearEnd' AND `KeyId`='".$year."'";
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){
             $receipts[$r->DonorId][]=new DonationReceipt($r);
@@ -789,7 +789,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             //
             if (wp_mail($_POST['Email'], $this->emailBuilder->subject,$html,array('Content-Type: text/html; charset=UTF-8'))){ 
                 $form.="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$_POST['Email']."</div>";
-                $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$_POST['Email'],"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
+                $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$_POST['Email'],"Subject"=>$this->emailBuilder->subject,"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
                 $dr->save();
                 self::display_notice($year." Year End Receipt Sent to: ".$_POST['Email']);
             }
@@ -848,7 +848,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $file=$f['file'];
         $path=$f['path'];
 
-        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$this->mailing_address(),"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
+        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$this->mailing_address(),"Subject"=>$this->emailBuilder->subject,"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
 		$dr->save();  
         if ($pdf->Output($path, 'D')){
             return true;
@@ -881,7 +881,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                     $pdf->AddPage();
                 }
                 if ($logReceipt){
-                    $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$donor->mailing_address(),"Content"=>"<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
+                    $dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$donor->mailing_address(),"Subject"=>$donor->emailBuilder->subject,"Content"=>"<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
                     $dr->save();
                 }
             }                    

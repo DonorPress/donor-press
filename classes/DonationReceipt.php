@@ -6,7 +6,7 @@ class DonationReceipt extends ModelLite {
     protected $table = 'donation_receipt';
 	protected $primaryKey = 'ReceiptId';
 	### Fields that can be passed 
-    protected $fillable = ["DonorId","KeyType","KeyId","Type","Address","DateSent","Content"];	    
+    protected $fillable = ["DonorId","KeyType","KeyId","Type","Address","DateSent","Subject","Content"];	    
 	### Default Values
 	protected $attributes = [        
         'KeyType' => 'Donation',
@@ -30,6 +30,7 @@ class DonationReceipt extends ModelLite {
             `Type` varchar(1) NOT NULL COMMENT 'e=email p=postal mail',
             `Address` text NOT NULL COMMENT 'email or postal address',
             `DateSent` datetime NOT NULL,
+            `Subject` varchar(256),
             `Content` text,
             PRIMARY KEY (`ReceiptId`)
             )"; 
@@ -44,9 +45,9 @@ class DonationReceipt extends ModelLite {
 
     static function displayReceipts($array,$columns=[]){
         if (!$array || sizeof($array)==0) return;
-        $return="<table><tr><th>Type</th><th>Address</th><th>DateSent</th></tr>";
+        $return="<table><tr><th>Type</th><th>Address</th><th>DateSent</th><th>Subject</th></tr>";
         foreach($array as $r){
-            $return.="<tr><td>".$r->show_type()."</td><td>".$r->Address."</td><td>".$r->DateSent."</td></tr>";
+            $return.="<tr><td>".$r->show_type()."</td><td>".$r->Address."</td><td>".$r->DateSent."</td><td>".$r->Subject."</td></tr>";
         }
         $return.="</table>";
         return $return;
