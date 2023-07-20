@@ -332,8 +332,9 @@ class Donation extends ModelLite
         print "Criteria: ".implode(", ",$where);
         $SQL="Select D.*,R.Type as ReceiptType,R.Address,R.DateSent,R.ReceiptId
           FROM ".Donation::get_table_name()." D
-        LEFT JOIN ".DonationReceipt::get_table_name()." R ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE ".implode(" AND ", $where)." Order BY D.Date DESC,  D.DonationId DESC;";
-   
+        LEFT JOIN ".DonationReceipt::get_table_name()." R ON KeyType='DonationId' AND R.KeyId=D.DonationId AND R.ReceiptId=(Select MAX(ReceiptId) FROM ".DonationReceipt::get_table_name()." WHERE KeyType='DonationId' AND KeyId=D.DonationId)        
+        WHERE ".implode(" AND ", $where)." Order BY D.Date DESC,  D.DonationId DESC;";
+        //print $SQL;
         $donations = $wpdb->get_results($SQL);
         foreach ($donations as $r){
             $donorIdList[$r->DonorId]++;
