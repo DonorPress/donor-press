@@ -460,6 +460,7 @@ function reportMonthly(){
 		$timestamp=strtotime($r->Date);
 		if ($r->Type<>5){ //skip autopayments / subcriptions for day/time graph
 			$graph['Month'][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);
+			$graph['YearMonth'][date("Y",$timestamp)][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);
 			$graph['WeekDay'][date("N",$timestamp)]+=($countField=="Gross"?$r->Gross:1);			
 			if (date("His",$timestamp)>0){ //ignore entries without timestamp
 				$graph['time'][date("H",$timestamp)*1]+=($countField=="Gross"?$r->Gross:1);
@@ -514,7 +515,7 @@ function reportMonthly(){
 	  var chart = new google.visualization.ColumnChart(document.getElementById("MonthlyDonationsChart"));
 	  chart.draw(data, options);
 
-<?php if ($graph['time']){?> 
+<?php if ($graph['WeekDay']){?> 
 	  var data2 = google.visualization.arrayToDataTable([
         ['Week Day', '<?php print $countField;?>']
 		<?php
@@ -532,7 +533,7 @@ function reportMonthly(){
         isStacked: true,		
       };
 	
-	  var chart2 = new google.visualization.ColumnChart(document.getElementById("Weekday"));
+	  var chart2 = new google.visualization.ColumnChart(document.getElementById("WeekDay"));
 	  chart2.draw(data2, options2);
 <?php } ?>
 
@@ -576,7 +577,27 @@ function reportMonthly(){
 	
 	  var chart4 = new google.visualization.ColumnChart(document.getElementById("MonthChart"));
 	  chart4.draw(data4, options4);
-	
+
+	  var data5 = google.visualization.arrayToDataTable([
+		  ['Year' <?php
+		 	foreach($graph['YearMonth'] as $y=>$a){
+				print ",'".$y."'";
+			}?>] 
+			<?php
+			for ($i=1;$i<=12;$i++){
+				print ", ['".$i."'";
+				foreach($graph['YearMonth'] as $y=>$a){
+					print ",".($a[$i]?$a[$i]:0);
+				}
+				print "]";
+			}?>
+		]);
+
+        var options5 = {          
+            title: 'Year Monthly Trends'			
+        };
+        var chart5 = new google.visualization.ColumnChart(document.getElementById('YearMonthChart'));
+        chart5.draw(data5, options5);
 
 	}
 	</script>
@@ -591,8 +612,12 @@ function reportMonthly(){
 			</select>
 			<button type="submit">Go</button></h3>
 			<div id="MonthlyDonationsChart" style="width: 1200px; height: 500px;"></div>
-			<div id="Weekday" style="width: 1200px; height: 500px;"></div>
+			<div id="YearMonthChart" style="width: 1200px; height: 500px;"></div>
 			<div id="MonthChart" style="width: 1200px; height: 500px;"></div>		
+			
+			<?php if ($graph['WeekDay']){?> 
+				<div id="WeekDay" style="width: 1200px; height: 500px;"></div>
+			<?php }?>
 			<div id="TimeChart" style="width: 1200px; height: 500px;"></div>
 
 	<table class="dp"><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
