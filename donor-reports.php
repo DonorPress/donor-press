@@ -459,19 +459,20 @@ function reportMonthly(){
 	foreach ($results as $r){
 		$timestamp=strtotime($r->Date);
 		if ($r->Type<>5){ //skip autopayments / subcriptions for day/time graph
-			$graph['Month'][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);
-			$graph['YearMonth'][date("Y",$timestamp)][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);
+			$graph['Month'][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);			
 			$graph['WeekDay'][date("N",$timestamp)]+=($countField=="Gross"?$r->Gross:1);			
 			if (date("His",$timestamp)>0){ //ignore entries without timestamp
 				$graph['time'][date("H",$timestamp)*1]+=($countField=="Gross"?$r->Gross:1);
 			}			
 		}
+		$graph['YearMonth'][date("Y",$timestamp)][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);
 		$yearMonth=date("Ym",$timestamp);
 		$type=$r->Type;
 		$graph['Total'][$yearMonth][$type]+=$r->Gross;
 		$graph['Count'][$yearMonth][$type]++;			
 		$graph['Type'][$type]+=$r->Gross;
 	}
+	ksort($graph['YearMonth']);
 	foreach($graph['Type'] as $type=>$total){
 		$graph['TypeDescription'][$type]=Donation::get_tiny_description('Type',$type)??$type;
 	}
