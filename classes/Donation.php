@@ -405,7 +405,7 @@ class Donation extends ModelLite
                     <button type="submit" name="Function" value="PdfLabelDonationReceipts">Generate Labels</button>
                     Labels Start At: <strong>Column:</strong> (1-3) &#8594; <input name="col" type="number" value="1"  min="1" max="3" /> &#8595; <strong>Row:</strong> (1-10)<input name="row" type="number" value="1" min="1" max="10"   />
 
-                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th><?php if (Quickbooks::is_setup()){ print "<th>Quickbooks Link</th>"; } ?></tr><?php
+                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th><th>Transaction Type</th><?php if (Quickbooks::is_setup()){ print "<th>Quickbooks Link</th>"; } ?></tr><?php
                 foreach($donations as $r){
                     $donation=new Donation($r);
                     ?><tr><td><?php
@@ -425,7 +425,8 @@ class Donation extends ModelLite
                         else print $donation->Subject;
                         ?></td>
                         <td><?php print $donation->show_field("Note")?></td>
-                        <td><?php print $donation->show_field("Type")?></td> 
+                        <td><?php print $donation->show_field("Type")?></td>
+                        <td><?php print $donation->show_field("TransactionType")?></td> 
                         <?php 
                             if (Quickbooks::is_setup()){
                                 print "<td>";
