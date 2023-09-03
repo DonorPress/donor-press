@@ -825,6 +825,14 @@ class Donation extends ModelLite
         return substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-DT'.$this->DonationId.'.pdf';
     }
 
+    public function save($time=""){
+        if ($this->CategoryId && (!$this->TransactionType || $this->TransactionType=0)){ //this is slightly problematic if we want it to be "0", but it is overwritten by the category on save. Could cause some perceived buggy behavior.      
+            $this->TransactionType=DonationCategory::get_default_transaction_type($this->CategoryId);          
+        }
+        parent::save($time);
+
+    }
+
 
     static public function create_table(){
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php');
