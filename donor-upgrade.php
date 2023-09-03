@@ -18,6 +18,10 @@ function donor_press_upgrade(){
 		donor_press_upgrade_006();
 	}
 
+	if (donor_upgrade_version_value($current_db_version)<donor_upgrade_version_value('0.0.7')){ 
+		donor_press_upgrade_007();
+	}
+
 	if ($current_db_version){
 		update_option( "donor_press_db_version", $donor_press_db_version );
 	}else{
@@ -66,5 +70,12 @@ function donor_press_upgrade_006(){
 	$wpdb=Donor::db();
 	$aSQL="ALTER TABLE `".DonationReceipt::get_table_name()."`
 	ADD COLUMN `Subject` varchar(256);";
+	$wpdb->query( $aSQL );	
+}
+
+function donor_press_upgrade_007(){
+	$wpdb=Donor::db();
+	$aSQL="ALTER TABLE `".DonationCategory::get_table_name()."`
+	ADD COLUMN `TransactionType` INT NULL DEFAULT NULL AFTER `TemplateId`;";
 	$wpdb->query( $aSQL );	
 }

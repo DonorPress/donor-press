@@ -383,10 +383,10 @@ class ModelLite{
 				return '<a href="?page='.$_GET['page'].'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - '.$label;
 				//return ($settings['idShow']?'<a href="?page='.$_GET['page'].'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
 			break;
-			// case "TransactionType":
-			// 	if (!$v) $v=0;
-			// 	return Donation::s()->tinyIntDescriptions['TransactionType'][$v];
-			// 	break;
+			case "TransactionType":
+				if (!$v) return "";
+				return $v." - ".Donation::s()->tinyIntDescriptions['TransactionType'][$v];
+				break;
 			default:
 				if ($this->tinyIntDescriptions[$fieldName]){
 					$label=self::s()->tinyIntDescriptions[$fieldName][$v];								

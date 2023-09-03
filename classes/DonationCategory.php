@@ -7,7 +7,7 @@ class DonationCategory extends ModelLite
     protected $table = 'donation_category';
 	protected $primaryKey = 'CategoryId';
 	### Fields that can be passed 
-    protected $fillable = ["Category","Description","ParentId","TemplateId","QBItemId"];	 
+    protected $fillable = ["Category","Description","ParentId","TemplateId","TransactionType","QBItemId"];	 
   	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';  
     //NOte: TemplateId links to table posts -> ID, but uses post_type='donortemplate' 
@@ -87,6 +87,16 @@ class DonationCategory extends ModelLite
                 ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->ParentId?" selected":"")?>><?php
                 print $r->Category." (".$r->CategoryId.")";?></option><?php
              }?></select></td></tr>
+             <tr><td align="right">Default Transaction Type</td><td>
+             <select name="TransactionType">
+                <option value="">--None--</option>
+                <?php
+                foreach(Donation::s()->tinyIntDescriptions["TransactionType"] as $key=>$label){
+                    ?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
+                }?>
+            </select>
+
+             </td></tr>
             <tr><td align="right">Response Template</td><td><select name="TemplateId"><option value="">default</option><?php
             $list=DonorTemplate::get(array("post_type='donortemplate'","post_parent=0"),"post_name,post_title");
             foreach($list as $t){
@@ -259,6 +269,15 @@ class DonationCategory extends ModelLite
             return $parent->getQuickBooksId(); //recursive all the way to top.
         }
         return false;
+    }
+
+    static public function get_default_transaction_type($category_id){
+        $cat=self::find($category_id);
+        if ($cat->TransactionType) return $cat->TransactionType;
+        if ($cat->ParentId){
+            $parent=self::find($cat->ParentId);
+            return $parent->TransactionType;
+        }
     }
 
 

@@ -5,10 +5,10 @@
     Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry. Syncing data to Quickbooks is also in beta.
     Author: Denver Steiner
     Author URI: https://github.com/DonorPress/donor-press
-    Version: 0.0.6
+    Version: 0.0.7
 */
 global $donor_press_db_version;
-$donor_press_db_version='0.0.6';
+$donor_press_db_version='0.0.7';
 
 ### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
 if (file_exists(__DIR__ . '/vendor/autoload.php')){

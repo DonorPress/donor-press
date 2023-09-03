@@ -413,6 +413,7 @@ class DonationUpload extends ModelLite
                                         $paypal['Subject']=""; //remove redundancy. Wouldn't have to do this if we end up using Subject for something.
                                     }                                   
                                     $entry['CategoryId']=DonationCategory::get_category_id($paypal['ItemTitle']);
+                                    if ($entry['CategoryId'] && !$entry['TranactionType'])  $entry['TranactionType']=DonationCategory::get_default_transaction_type($entry['CategoryId']);
                                     
                                 break;
                                 case "DonationDate":
