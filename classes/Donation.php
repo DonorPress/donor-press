@@ -815,7 +815,6 @@ class Donation extends ModelLite
         
         $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
         $dr->save();
-
         if ($pdf->Output($file, 'D')){
             return true;
         }else return false;
