@@ -804,7 +804,10 @@ class Donation extends ModelLite
             self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
             return false;
         }
+        ob_clean();
+        $margin=.25*72;
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf->SetMargins($margin,$margin,$margin);
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false); 
@@ -962,6 +965,7 @@ class Donation extends ModelLite
         $pad=10;
         $margin['x']=13.5;// 3/16th x
         $margin['y']=.5*$dpi;
+        ob_clean();
         $pdf = new TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false); 
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);

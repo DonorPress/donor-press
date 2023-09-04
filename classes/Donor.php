@@ -836,6 +836,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
             return false;
         }
+        ob_clean();
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         $this->year_receipt_email($year);
         $html="<h2>".$this->emailBuilder->subject."</h2>".$customMessage?$customMessage:$this->emailBuilder->body;
@@ -869,6 +870,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 return false;
             }
             $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
+            ob_clean();
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             $pdf->SetFont('helvetica', '', 12);
             $pdf->setPrintHeader(false);
@@ -912,6 +914,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $pad=10;
         $margin['x']=13.5;// 3/16th x
         $margin['y']=.5*$dpi;
+        ob_clean();
         $pdf = new TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false); 
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);
