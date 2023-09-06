@@ -484,7 +484,7 @@ class Donation extends ModelLite
         }elseif ($_GET['f']=="AddDonation"){           
             $donation=new Donation();
             if ($_GET['DonorId']){
-               $donor=Donor::get_by_id($_GET['DonorId']);
+               $donor=Donor::find($_GET['DonorId']);
                $donorText=" for Donor #".$donor->DonorId." ".$donor->Name;
                ### copy settings from the last donation...
                $lastDonation=Donation::first(['DonorId ='.$donor->DonorId],"DonationId DESC",
@@ -506,7 +506,7 @@ class Donation extends ModelLite
             $donation->edit_simple_form();           
             return true;
         }elseif ($_POST['Function']=="Cancel" && $_POST['table']=="donation"){
-            $donor=Donor::get_by_id($_POST['DonorId']);
+            $donor=Donor::find($_POST['DonorId']);
             $donor->view();
             return true;
         }elseif ($_REQUEST['DonationId']){	
@@ -526,7 +526,7 @@ class Donation extends ModelLite
                     return true;
                 }
             }
-            $donation=Donation::get_by_id($_REQUEST['DonationId']);	
+            $donation=Donation::find($_REQUEST['DonationId']);	
             $donation->full_view();
             return true;
         }elseif ($_POST['Function']=="Save" && $_POST['table']=="donation"){
@@ -558,7 +558,7 @@ class Donation extends ModelLite
             
             if ($_POST['Function']=="EmailDonationReceipts" && sizeof($_POST['EmailDonationId'])>0){               
                 foreach($_POST['EmailDonationId'] as $donationId){
-                    $donation=Donation::get_by_id($donationId);
+                    $donation=Donation::find($donationId);
                     if ($donation->FromEmailAddress){                        
                         print $donation->email_receipt($donation->FromEmailAddress);
                     }else{
@@ -722,7 +722,7 @@ class Donation extends ModelLite
         $this->emailBuilder->pageID=$page->ID;
         $organization=get_option( 'donation_Organization');
         if (!$organization) $organization=get_bloginfo('name');
-        if (!$this->Donor)  $this->Donor=Donor::get_by_id($this->DonorId);
+        if (!$this->Donor)  $this->Donor=Donor::find($this->DonorId);
         $address=$this->Donor->mailing_address();
 
         $subject=$page->post_title;

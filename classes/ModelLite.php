@@ -229,9 +229,7 @@ class ModelLite{
 	}
 
 	public static function get_by_id($id,$settings=false){		
-		$where[]=self::s()->primaryKey."='".$id."'";
-		$SQL="SELECT * FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"");			
-		return  new static((array) self::db()->get_row($SQL));
+		return  self::find($id);
 	}
 
 	public static function first($where=array(),$orderby,$settings=[]){
@@ -242,7 +240,9 @@ class ModelLite{
 	}
 
 	public static function find($id){
-		return self::get_by_id($id);			
+		$where[]=self::s()->primaryKey."='".$id."'";
+		$SQL="SELECT * FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"");			
+		return  new static((array) self::db()->get_row($SQL));		
 	}
 	
 	public static function get($where=array(),$orderby="",$settings=false){

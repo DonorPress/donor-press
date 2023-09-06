@@ -42,7 +42,7 @@ class DonorType extends ModelLite
             if ($_REQUEST['TypeId']=="new"){
                 $donorType=new self();
             }else{
-                $donorType=self::get_by_id($_REQUEST['TypeId']);
+                $donorType=self::find($_REQUEST['TypeId']);
             }           
             ?>
             <div id="pluginwrap">

@@ -52,7 +52,7 @@ class DonationCategory extends ModelLite
             if ($_REQUEST['CategoryId']=="new"){
                 $donationCategory=new self();
             }else{
-                $donationCategory=self::get_by_id($_REQUEST['CategoryId']);	
+                $donationCategory=self::find($_REQUEST['CategoryId']);	
             }          
 
             ?>

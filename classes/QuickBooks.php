@@ -254,7 +254,7 @@ class QuickBooks extends ModelLite
     }
 
     public function donation_to_payment_check($donationId){
-        $donation=Donation::get_by_id($donationId);
+        $donation=Donation::find($donationId);
        
         if (!$donation){
             self::display_error("Donation #".$donationId." not found.");
@@ -263,7 +263,7 @@ class QuickBooks extends ModelLite
         if (!$donation->QBOInvoiceId){
             self::display_error("Donation #".$donation->show_field("DonationId")." not linked to an invoice");           
         }
-        $donor=Donor::get_by_id($donation->DonorId);        
+        $donor=Donor::find($donation->DonorId);        
         if ($donor->QuickBooksId){
             $payment=$this->donation_to_payment($donation,$donor);
             $this->process_payment_obj($payment,$donation);
@@ -303,7 +303,7 @@ class QuickBooks extends ModelLite
 
 
     public function donation_to_invoice_check($donationId){
-        $donation=Donation::get_by_id($donationId);
+        $donation=Donation::find($donationId);
         if (!$donation){
             self::display_error("Donation #".$donationId." not found.");
             return;
@@ -313,7 +313,7 @@ class QuickBooks extends ModelLite
             $donation->full_view();
             return $donation->QBOInvoiceId;
         }
-        $donor=Donor::get_by_id($donation->DonorId);
+        $donor=Donor::find($donation->DonorId);
         if (!$donor->QuickBooksId){
             $donor->QuickBooksId=$this->donor_to_customer_check($donation->DonorId);
         }
@@ -359,7 +359,7 @@ class QuickBooks extends ModelLite
 
 
     public function donor_to_customer_check($donorId,$quickBookId=""){
-        $donor=Donor::get_by_id($donorId);
+        $donor=Donor::find($donorId);
         if (!$donor){
             self::display_error("Donor #".$donorId." not found.");
             return;

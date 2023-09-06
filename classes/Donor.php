@@ -333,8 +333,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             self::summary_list(array("Date BETWEEN '".$_GET['df']." 00:00:00' AND '".$_GET['dt']." 23:59:59'"),$_GET['Year']);
             return true;
         }elseif($_POST['Function']=='MergeConfirm'){ 
-            $donorA=Donor::get_by_id($_POST['MergeFrom']);
-            $donorB=Donor::get_by_id($_POST['MergedId']);
+            $donorA=Donor::find($_POST['MergeFrom']);
+            $donorB=Donor::find($_POST['MergedId']);
             if (!$donorB->DonorId){
                  self::display_error("Donor ".$_POST['MergedId']." not found.");
                  return false;
@@ -343,8 +343,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
             return true;
         }elseif($_GET['Function']=='MergeConfirm'){ 
-            $donorA=Donor::get_by_id($_GET['MergeFrom']);
-            $donorB=Donor::get_by_id($_GET['MergedId']);
+            $donorA=Donor::find($_GET['MergeFrom']);
+            $donorB=Donor::find($_GET['MergedId']);
             if (!$donorB->DonorId){
                  self::display_error("Donor ".$_GET['MergedId']." not found.");
                  return false;
@@ -354,7 +354,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             return true;
         }elseif ($_GET['DonorId']){
             if ($_GET['f']=="YearReceipt"){
-                $donor=Donor::get_by_id($_REQUEST['DonorId']);
+                $donor=Donor::find($_REQUEST['DonorId']);
                 $donor->year_receipt_form($_GET['Year']);
                 return true;
             }
@@ -366,7 +366,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 }
                 
             }
-            $donor=Donor::get_by_id($_REQUEST['DonorId']);	
+            $donor=Donor::find($_REQUEST['DonorId']);	
             ?>
             <div>
                <?php 
