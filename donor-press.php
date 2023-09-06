@@ -53,8 +53,14 @@ function donor_header_check() {
 	## download functions before page is loaded
 	if (isset($_REQUEST['Function'])){
 		switch($_REQUEST['Function']){
+			case "pdfTemplatePreview":
+				$template=new DonorTemplate($_POST);
+            	$template->post_excerpt=DonorTemplate::post_to_settings($_POST);
+				$template->settings_decode();
+				$template->pdf_preview(); 
+			break;
 			case "DonationReceiptPdf":
-				$donation=Donation::get_by_id($_REQUEST['DonationId']);	
+				$donation=Donation::find($_REQUEST['DonationId']);	
 				$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));
 			break;	
 			case 'BackupDonorPress':		
@@ -62,7 +68,7 @@ function donor_header_check() {
 				break;
 			break;
 			case "YearEndReceiptPdf":
-				$donor=Donor::get_by_id($_REQUEST['DonorId']);
+				$donor=Donor::find($_REQUEST['DonorId']);
 				$donor->year_receipt_pdf($_REQUEST['Year'],stripslashes_deep($_REQUEST['customMessage']));
 				break;
 			case 'SendYearEndPdf':

@@ -5,7 +5,9 @@ class DonorTemplate extends ModelLite {
     protected $table = 'posts';
 	protected $primaryKey = 'ID';
 	### Fields that can be passed 
-    protected $fillable = ["ID","post_type","post_content","post_title","post_name","post_date","post_author"];	    
+    protected $fillable = ["ID","post_type","post_content","post_title","post_name","post_excerpt","post_date","post_author"];	  
+    protected $settings =["fontsize"=>12,"margin"=>.25];
+
 	### Default Values
 	protected $attributes = [        
         'post_type' => 'donortemplate',
@@ -20,6 +22,36 @@ class DonorTemplate extends ModelLite {
     static public function get_by_name($name){
         $temp=self::get(array("post_name='".$name."'","post_type='donortemplate'"));
         return $temp[0];
+    }
+
+    
+    public static function find($id){
+        $r=parent::find($id);
+        ### post_excerpt is used to store settings. Use this to break apart to field post_excerpt_settingname. example: post_excerpt_fontsize,post_excerpt_margin
+        $r->settings_decode();          
+        return $r;
+    }
+    
+    public static function get($where=array(),$orderby="",$settings=false){
+        $result=parent::get($where,$orderby,$settings);
+        ### post_excerpt is used to store settings. Use this to break apart to field post_excerpt_settingname. example: post_excerpt_fontsize,post_excerpt_margin
+        foreach($result as $r){
+            $r->settings_decode();
+            $return[]=$r;            
+        }        
+        return $return;
+    }
+
+    public function settings_decode(){
+        if ($this->post_excerpt){
+            $settings=json_decode($this->post_excerpt);
+        }else{
+            $settings=$this->settings;
+        }
+        foreach($settings as $f=>$v){
+            $field="post_excerpt_".$f;
+            $this->$field=$v;
+        }
     }
 
     public function edit(){
@@ -40,8 +72,10 @@ class DonorTemplate extends ModelLite {
 
         
         <table>
-            <tr><td align="right"><strong>Template Title</strong></td><td><input style="width: 300px" type="text" name="post_name" value="<?php print $this->post_name?>"> <em>Example: donor-default</td></tr>
-            <tr><td align="right"><strong>Subject</strong></td><td><input style="width: 600px" type="text" name="post_title" value="<?php print $this->post_title?>"> <em>Appears in the subject of an e-mail, but does not print on .pdf letter export</td></tr>
+            <tr><td align="right"><strong>Template Title</strong></td><td><input style="width: 300px" type="text" name="post_name" value="<?php print $this->post_name?>"> <em>Example: donor-default</em></td></tr>
+            <tr><td align="right"><strong>Subject</strong></td><td><input style="width: 600px" type="text" name="post_title" value="<?php print $this->post_title?>"> <em>Appears in the subject of an e-mail, but does not print on .pdf letter export</em></td></tr>
+            <tr><td align="right"><strong>Default Font Size:</strong></td><td><input type="number" step=".1" name="post_excerpt_fontsize" value="<?php print $this->post_excerpt_fontsize?$this->post_excerpt_fontsize:12?>"> <em>Default font size to use on letter</em></td></tr>
+            <tr><td align="right"><strong>Default Margin:</strong></td><td><input type="number" step=".01" name="post_excerpt_margin" value="<?php print $this->post_excerpt_margin?$this->post_excerpt_margin:.25?>"> <em>Margin in Inches</em></td></tr>
             <tr><td  colspan="2"><div><strong>Message:</strong></div><?php            
             wp_editor($this->post_content, 'post_content',array("media_buttons" => false,"wpautop"=>false));
             ?></td></tr>
@@ -49,6 +83,9 @@ class DonorTemplate extends ModelLite {
             <tr><td colspan="2">
                 <button type="submit" class="primary" name="Function" value="Save">Save</button>
                 <button type="submit" name="Function" class="secondary" value="Cancel" formnovalidate="">Cancel</button>
+                
+                <button type="submit" name="Function" class="secondary" value="pdfTemplatePreview" formnovalidate="">Preview</button>
+
                 <?php if ($this->$primaryKey){ ?>
                 <button type="submit" name="Function" value="Delete">Delete</button>
                 <?php }?>
@@ -57,21 +94,49 @@ class DonorTemplate extends ModelLite {
         <?php        
     }
 
+    public function pdf_preview(){
+        //self::dd($this);
+        ob_clean();
+        $margin=($this->post_excerpt_margin?$this->post_excerpt_margin:.25)*72;
+        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf->SetMargins($margin,$margin,$margin);
+        $pdf->SetFont('helvetica', '', ($this->post_excerpt_fontsize?$this->post_excerpt_fontsize:12));
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);         
+        $pdf->AddPage();
+
+        $pdf->writeHTML($this->post_content, true, false, true, false, '');       
+        if ($pdf->Output($this->post_name.".pdf", 'D')){
+            return true;
+        }else return false;
+    }
+
+    static public function post_to_settings($post){
+        $prefix='post_excerpt_';
+        $setting=[];
+        foreach($post as $f=>$v){
+            if (substr($f,0,strlen($prefix))==$prefix){
+                $field=substr($f,strlen($prefix));
+                $settings[$field]=$v;
+            }
+        }
+        return json_encode($settings);
+    }    
+
     static public function request_handler(){        
         $wpdb=self::db();  
         if ($_POST['Function'] == 'Save' && $_POST['table']=="posts" && $_POST['post_type'] == 'donortemplate'){
-            
             $template=new self($_POST);
+            $template->post_excerpt=self::post_to_settings($_POST);          
             $template->post_modified=time();
             if ($template->save()){
                 self::display_notice("Template #".$template->ID." ".$template->post_name." saved.");
                // $template->full_view();
                 //return true;
             }
-     
 
         }elseif ($_GET['DonorTemplateId']){
-            $t=self::get_by_id($_GET['DonorTemplateId']);
+            $t=self::find($_GET['DonorTemplateId']);
             if ($_GET['edit']=="t"){  
                 //self::dump($t) ;                     
                 $t->edit();
@@ -80,7 +145,7 @@ class DonorTemplate extends ModelLite {
             }           
             return true;
         }elseif($_GET['CopyDonorTemplateId']){
-            $t=self::get_by_id($_GET['CopyDonorTemplateId']);
+            $t=self::find($_GET['CopyDonorTemplateId']);
             $t->ID='';
             $t->post_name.='-copy'.$_GET['CopyDonorTemplateId'];
             $t->edit();           
