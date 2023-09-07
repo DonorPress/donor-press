@@ -749,7 +749,9 @@ class Donation extends ModelLite
         
         $subject=trim(str_replace("##Organization##",$organization,$subject));
         $this->emailBuilder->subject=$subject;
-        $this->emailBuilder->body=$body;        
+        $this->emailBuilder->body=$body;    
+        $this->emailBuilder->fontsize=$page->post_excerpt_fontsize;
+        $this->emailBuilder->margin=$page->post_excerpt_margin; 
     }
 
     static function make_receipt_template_no_tax(){
@@ -763,6 +765,7 @@ class Donation extends ModelLite
             $postarr['post_status']='private';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='no-tax-thank-you';
+            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
             return wp_insert_post($postarr);            
         }
     }
@@ -776,6 +779,7 @@ class Donation extends ModelLite
             $postarr['post_status']='private';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='receipt-thank-you';
+            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
             return wp_insert_post($postarr);            
         }    
     }
@@ -805,15 +809,15 @@ class Donation extends ModelLite
             return false;
         }
         ob_clean();
-        $margin=.25*72;
+        $this->receipt_email();        
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
         $pdf->SetMargins($margin,$margin,$margin);
-        $pdf->SetFont('helvetica', '', 12);
+        $pdf->SetFont('helvetica', '', $this->emailBuilder->fontsize?$this->emailBuilder->fontsize:12);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false); 
         $file=$this->receipt_file_info();        
         $pdf->AddPage();
-        $this->receipt_email();
         $pdf->writeHTML($customMessage?$customMessage:$this->emailBuilder->body, true, false, true, false, '');        
         
         $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));

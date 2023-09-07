@@ -764,6 +764,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $subject=trim(str_replace("##Organization##",$organization,$subject));
         $this->emailBuilder->subject=$subject;
         $this->emailBuilder->body=$body; 
+        $this->emailBuilder->fontsize=$page->post_excerpt_fontsize;
+        $this->emailBuilder->margin=$page->post_excerpt_margin; 
         
         $variableNotFilledOut=array();
         $pageHashes=explode("##",$body); 
@@ -836,11 +838,13 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
             return false;
         }
+        $this->year_receipt_email($year);
         ob_clean();
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-        $this->year_receipt_email($year);
+        $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
+        $pdf->SetMargins($margin,$margin,$margin);
         $html="<h2>".$this->emailBuilder->subject."</h2>".$customMessage?$customMessage:$this->emailBuilder->body;
-        $pdf->SetFont('helvetica', '', 10);
+        $pdf->SetFont('helvetica', '', $this->emailBuilder->fontsize?$this->emailBuilder->fontsize:10);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
         $pdf->AddPage();
@@ -871,13 +875,15 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
             $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
             ob_clean();
-            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-            $pdf->SetFont('helvetica', '', 12);
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);            
             $pdf->setPrintHeader(false);
             $pdf->setPrintFooter(false); 				
             foreach ($donorList as $donor){
                 $donor->year_receipt_email($year);
                 $pdf->AddPage();
+                $margin=($this->emailBuilder->margin?$donor->emailBuilder->margin:.25)*72;
+                $pdf->SetMargins($margin,$margin,$margin);
+                $pdf->SetFont('helvetica', '', $donor->emailBuilder->fontsize?$this->emailBuilder->fontsize:12);                
                 $pdf->writeHTML("<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body, true, false, true, false, '');
                 if ($blankBlack && $pdf->PageNo()%2==1){ //add page number check
                     $pdf->AddPage();
@@ -887,7 +893,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                     $dr->save();
                 }
             }                    
-            $pdf->Output('YearEndReceipts2022.pdf', 'D');
+            $pdf->Output('YearEndReceipts'.$year.'.pdf', 'D');
             return true;
         }
     }
@@ -984,7 +990,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $postarr['post_title']='##Organization## ##Year## Year End Receipts';
             $postarr['post_status']='private';
             $postarr['post_type']='donortemplate';
-            $postarr['post_name']='donor-receiptyear';           
+            $postarr['post_name']='donor-receiptyear';  
+            $postarr['post_excerpt']='{"fontsize":"10","margin":".2"}';         
             return wp_insert_post($postarr);            
         }
     }
