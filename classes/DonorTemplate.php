@@ -95,10 +95,13 @@ class DonorTemplate extends ModelLite {
     }
 
     public function pdf_preview(){
-        //self::dd($this);
+        if (!class_exists("TCPDF")){
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+            return false;
+        }
         ob_clean();
-        $margin=($this->post_excerpt_margin?$this->post_excerpt_margin:.25)*72;
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $margin=($this->post_excerpt_margin?$this->post_excerpt_margin:.25)*72;
         $pdf->SetMargins($margin,$margin,$margin);
         $pdf->SetFont('helvetica', '', ($this->post_excerpt_fontsize?$this->post_excerpt_fontsize:12));
         $pdf->setPrintHeader(false);
