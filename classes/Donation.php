@@ -329,7 +329,7 @@ class Donation extends ModelLite
         if ($settings['unsent']){
             $where[]="R.ReceiptId IS NULL";           
         }
-        print "Criteria: ".implode(", ",$where);
+        print "<div><strong>Criteria:</strong> ".implode(", ",$where)."</div>";
         $SQL="Select D.*,R.Type as ReceiptType,R.Address,R.DateSent,R.ReceiptId
           FROM ".Donation::get_table_name()." D
         LEFT JOIN ".DonationReceipt::get_table_name()." R ON KeyType='DonationId' AND R.KeyId=D.DonationId AND R.ReceiptId=(Select MAX(ReceiptId) FROM ".DonationReceipt::get_table_name()." WHERE KeyType='DonationId' AND KeyId=D.DonationId)        
@@ -397,7 +397,11 @@ class Donation extends ModelLite
 
             }else{
                 $qbAction=[];
-                $qb=new QuickBooks();
+                if(Quickbooks::is_setup()){
+                    $qb=new QuickBooks();
+                    $qb->authenticate();
+                }
+                
                 ?>
                 <form method="post">
                     <button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
@@ -466,8 +470,7 @@ class Donation extends ModelLite
                 }
                 ?></table>
                 <?php
-                if (sizeof($qbAction)>0 && Quickbooks::is_setup()){
-                    $qb = new Quickbooks();
+                if (sizeof($qbAction)>0 && $qb){
                     if ($qb->authenticate()){
                         if ($qbAction['newCustomerFromDonor']){
                             print sizeof($qbAction['newCustomerFromDonor'])." Customers Need created in QB. <input type=\"hidden\" name=\"DonorsToCreateInQB\" value=\"".implode("|",$qbAction['newCustomerFromDonor'])."\"/> <button name='Function' value='QBDonorToCustomerCheck'>Create Customer in QB</button> ";
