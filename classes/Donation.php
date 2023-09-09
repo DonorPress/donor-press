@@ -435,11 +435,10 @@ class Donation extends ModelLite
                                     $category=DonationCategory::find($donation->CategoryId);
                                     $QBItemId=$category?$category->getQuickBooksId():null;
                                     if ($QBItemId){
-                                        $item=item_find($QBItemId);
-                                        print "Item match: ".$QBItemId;
+                                        print "Item match: ".QuickBooks::qbLink('Item',$QBItemId);
                                         if ($qb->accessTokenObj){
                                             $item=$qb->item_find($QBItemId);
-                                            print $item->Description;
+                                            print " - ".$item->Name;
                                         }
                                     }
                                 }else{
