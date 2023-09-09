@@ -440,7 +440,7 @@ class Donation extends ModelLite
                                     $QBItemId=$category?$category->getQuickBooksId():null;
                                     if ($QBItemId){
                                         print "Item match: ".QuickBooks::qbLink('Item',$QBItemId);                                        
-                                        if ($qb && $qb->authenticate()){
+                                        if ($qb && $qb->authenticate() && false){
                                             if (!$item_cahche[$QBItemId]) $item_cahche[$QBItemId]=$qb->findById('Item', $QBItemId);
                                             print " - ".$item_cahche[$QBItemId]->Name;
                                         }
@@ -448,8 +448,6 @@ class Donation extends ModelLite
                                 }else{
                                     $QBItemId=null;
                                 }
-                        
-                                
 
                                 $return=Quickbooks::donation_process_check($donation,$donors[$donation->DonorId]);
                                 if (isset($return['newCustomerFromDonor'])){ 
