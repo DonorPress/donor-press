@@ -996,6 +996,14 @@ class QuickBooks extends ModelLite
         }
 	}
 
+    function findById($table,$id){
+        $entity=$this->dataService->FindById($table,$id);
+        if($this->check_dateService_error()){
+            return $entity;
+        }        
+    }
+   
+
     function showQBfield($entity,$field){
         //example: $entity,'PrimaryPhone_FreeFormNumber' returns $entity->PrimaryPhone->FreeFormNumber 
         $pieces=explode("_",$field);
