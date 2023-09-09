@@ -18,7 +18,7 @@ class Donation extends ModelLite
         "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer","10"=>"Paypal","11"=>"Givebutter"],
         "Type"=>[0=>"Other",1=>"Donation Payment",2=>"Website Payment",5=>"Subscription Payment",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
         "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"],
-        "TransactionType"=>["0"=>"Tax Deductible","1"=>"Not Tax Deductible (Donor Advised fund, etc)","2"=>"Service (Not Tax Deductible)","-1"=>"Expense"]
+        "TransactionType"=>["0"=>"Tax Deductible","1"=>"Not Tax Deductible (Donor Advised fund, etc)","3"=>"IRA Qualified Charitable Distribution (QCD)","100"=>"Service (Not Tax Deductible)","-1"=>"Expense"]
     ];
 
     public $dateFields=[
@@ -702,14 +702,21 @@ class Donation extends ModelLite
                 if (!$page){ ### Make the template page if it doesn't exist.
                     self::make_receipt_template_no_tax();
                     $page = DonorTemplate::get_by_name('no-tax-thank-you');  
-                    self::display_notice("Page /no-tax-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                    self::display_notice("Email Template /no-tax-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                }
+            }elseif ($this->TransactionType==3){                   
+                $page = DonorTemplate::get_by_name('ira-qcd');  
+                if (!$page){ ### Make the template page if it doesn't exist.
+                    self::make_receipt_template_ira_qcd();
+                    $page = DonorTemplate::get_by_name('ira-qcd');  
+                    self::display_notice("Email Template /ira-qcd created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
                 }
             }else{
                 $page = DonorTemplate::get_by_name('receipt-thank-you');  
                 if (!$page){ ### Make the template page if it doesn't exist.
                     self::make_receipt_template_thank_you();
                     $page = DonorTemplate::get_by_name('receipt-thank-you');  
-                    self::display_notice("Page /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                    self::display_notice("Email Template /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
                 }
             }
         }
@@ -769,6 +776,23 @@ class Donation extends ModelLite
             return wp_insert_post($postarr);            
         }
     }
+
+    static function make_receipt_template_ira_qcd(){
+        $page = DonorTemplate::get_by_name('ira-qcd');  
+        if (!$page){
+            $postarr['ID']=0;
+
+            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_ira_qcd.html";          
+            $postarr['post_content']=file_get_contents($tempLoc);            
+            $postarr['post_title']='Thank You For IRA Qualified Charitable Distribution To ##Organization##';
+            $postarr['post_status']='private';
+            $postarr['post_type']='donortemplate';
+            $postarr['post_name']='ira-qcd';
+            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
+            return wp_insert_post($postarr);            
+        }
+    }
+
     static function make_receipt_template_thank_you(){
         $page = DonorTemplate::get_by_name('receipt-thank-you');  
         if (!$page){
@@ -832,7 +856,7 @@ class Donation extends ModelLite
     }
 
     public function save($time=""){
-        if ($this->CategoryId && (!$this->TransactionType || $this->TransactionType=0)){ //this is slightly problematic if we want it to be "0", but it is overwritten by the category on save. Could cause some perceived buggy behavior.      
+        if ($this->CategoryId && (!$this->TransactionType || $this->TransactionType==0)){ //this is slightly problematic if we want it to be "0", but it is overwritten by the category on save. Could cause some perceived buggy behavior.      
             $this->TransactionType=DonationCategory::get_default_transaction_type($this->CategoryId);          
         }
         parent::save($time);
@@ -869,7 +893,7 @@ class Donation extends ModelLite
                 `PaymentSource` tinyint(4) DEFAULT NULL,
                 `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `TransactionType` tinyint(4) DEFAULT '0' COMMENT '0=Tax Deductible 1=Not Tax Deductible, 2=Service, -1=Expense',
+                `TransactionType` tinyint(4) DEFAULT '0' COMMENT '0=Tax Deductible 1=Not Tax Deductible, 3=IRA QCD 100=Service, -1=Expense',
                 QBOInvoiceId int(11) DEFAULT NULL,
                 QBOPaymentId int(11) DEFAULT NULL,
                 PRIMARY KEY (`DonationId`)

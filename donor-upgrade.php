@@ -22,6 +22,10 @@ function donor_press_upgrade(){
 		donor_press_upgrade_007();
 	}
 
+	if (donor_upgrade_version_value($current_db_version)<donor_upgrade_version_value('0.0.8')){ 
+		donor_press_upgrade_008();
+	}
+
 	if ($current_db_version){
 		update_option( "donor_press_db_version", $donor_press_db_version );
 	}else{
@@ -78,4 +82,11 @@ function donor_press_upgrade_007(){
 	$aSQL="ALTER TABLE `".DonationCategory::get_table_name()."`
 	ADD COLUMN `TransactionType` INT NULL DEFAULT NULL AFTER `TemplateId`;";
 	$wpdb->query( $aSQL );	
+}
+
+function donor_press_upgrade_008(){
+	//Transasition expenses to the 100 range.
+	$wpdb=Donor::db();
+	$uSQL="UPDATE `".Donation::get_table_name()."` SET TransactionType=100 WHERE TransactionType=2";
+	$wpdb->query( $uSQL );		
 }

@@ -25,7 +25,6 @@ class ModelLite{
 	}
 	
 	public function fill(array $attributes){
-		//self::dump($attributes);
 		$fields=$this->get_viewable_fields();		
 		
 		if (is_array($attributes)){ ### flip array to object
@@ -98,8 +97,11 @@ class ModelLite{
 				$data[$field]=substr($this->$field,0,$this->fieldLimits[$field]);
 			}else{
 				$data[$field]=$this->$field;
-			}			
-		}		
+				if ($field=="TransactionType"){
+					print $field."->".$data[$field]."|".$this->TransactionType."|".$this->$field."--".$this->fieldLimits[$field]."--".(isset($this->fieldLimits[$field])?"true":"false")."<br>";
+				}
+			}	
+		}
 		if (static::UPDATED_AT && !$data[static::UPDATED_AT]){
 			$data[static::UPDATED_AT]= $time;
 		}
@@ -107,8 +109,7 @@ class ModelLite{
 		if ($this->$keyField>0){
 			if (!$wpdb->update($this->get_table(),$data,array($keyField=>$this->$keyField))){
 				print $wpdb->print_error();
-				dump($data,"WHERE ".$keyField."=".$this->$keyField);
-				
+				self::dump($data,"WHERE ".$keyField."=".$this->$keyField);
 			}
 		}else{
 			if (static::CREATED_AT && !$data[static::CREATED_AT]){
@@ -117,7 +118,7 @@ class ModelLite{
 			//dump($data);		 	
 			if (!$wpdb->insert($this->get_table(),$data)){				
 				print $wpdb->print_error();
-				dump($data);
+				self::dump($data);
 			}			
 			$this->$keyField=$wpdb->insert_id;
 			$insert=true;
@@ -219,11 +220,16 @@ class ModelLite{
         return $instance;
 	}
 	
-	static public function dump($obj){
-		print "<pre>"; var_dump($obj); print "</pre>";
+	static public function dump(...$objs){
+		foreach($objs as $obj){
+			if(function_exists('dump')){
+				dump($obj);
+			}else{
+				print "<pre>"; var_dump($obj); print "</pre>";
+			}
+		}
 	}
-
-	public static function dd($obj){
+	public static function dd(...$obj){
 		self::dump($obj);
 		exit();
 	}
