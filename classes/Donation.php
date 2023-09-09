@@ -409,12 +409,12 @@ class Donation extends ModelLite
                             $qbInvoices[]=$donation->QBOInvoiceId;
                         }
                         if (sizeof($qbInvoices)>0){
-                            $qbInvoiceResult=$qb->get_all_entity($table,"Id IN (".implode(",",$qbInvoices).")");
+                            $qbInvoiceResult=$qb->get_all_entity('Invoice',"Id IN (".implode(",",$qbInvoices).")");
                             foreach($qbInvoiceResult as $qbInv){
                                 if($qbInv->Line[0] && $qbInv->Line[0]->SalesItemLineDetail->ItemRef){
                                     $qbInvoiceItem[$qbInv->Id]=$qbInv->Line[0]->SalesItemLineDetail->ItemRef;
                                 }
-                                print "checked: ".$qbInv->Id." ->".$qbInvoiceItem[$qbInv->Id]."<br>";
+                                //print "checked: ".$qbInv->Id." ->".$qbInvoiceItem[$qbInv->Id]."<br>";
                             }
                             //Line_0_SalesItemLineDetail_ItemRef
                         }
