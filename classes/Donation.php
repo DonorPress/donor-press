@@ -577,6 +577,13 @@ class Donation extends ModelLite
                     return true;
                 }
             }
+            if ($_POST['syncDonationToInvoiceQB']){
+                $qb = new QuickBooks();
+                $invoice_id=$qb->donation_to_invoice_check($_REQUEST['DonationId'],$_REQUEST['ItemId']); //ItemId
+                if ($invoice_id) self::display_notice("Quickbooks Invoice: ".QuickBooks::qbLink('Invoice',$invoice_id) ." added to Donation #".$donation->show_field("DonationId")." saved.");
+                
+            }
+
             $donation=Donation::find($_REQUEST['DonationId']);	
             $donation->full_view();
             return true;
@@ -976,13 +983,17 @@ class Donation extends ModelLite
 
 
         if (Quickbooks::is_setup() && $this->QBOInvoiceId>=0){
-            if ($donor->QuickBooksId>0){            
+            if ($donor->QuickBooksId>0){
+                ?><form method="post">
+                <input type="hidden" name="syncDonationToInvoiceQB" value="t"/>
+                <?php              
+
                 if ($this->QBOInvoiceId==0){
                     $qb=new QuickBooks();
                     $items=$qb->item_list("",false);
                     $QBItemId=$qb->default_item_id($this,$donor);
                     if ($items && sizeof($items)>0){?>                    
-                        <strong>Item:</strong> <select name="QBItemId_<?php print $donation->DonationId?>">
+                        <strong>Item:</strong> <select name="ItemId">
                              <option value="">-not set-</option><?php                    
                                 foreach($items as $item){
                                     print '<option value="'.$item->Id.'"'.($item->Id==$QBItemId?" selected":"").'>'.$item->FullyQualifiedName.' (#'.$item->Id.')</option>';
@@ -994,7 +1005,11 @@ class Donation extends ModelLite
                         }
                     }
                     
-                    print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
+                   // print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
+                    ?>
+                    <button type="submit" style="background-color:lightgreen;">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation=<?php print $donation->DonationId?>">Ignore/Don't Sync to QB</a>
+                    </form>
+                    <?php
                 }elseif(!$this->QBOPaymentId){
                     print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
                     print '<a href="?page=donor-quickbooks&syncDonationPaid='.$this->DonationId.'">Sync Payment to QuickBooks</a>';

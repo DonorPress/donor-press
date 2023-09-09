@@ -518,7 +518,7 @@ class QuickBooks extends ModelLite
                 return $result; 
             }  
         }else {
-            print " Must connect to Quickbooks before setting Quickbook Items";
+            print " Must connect to Quickbooks before using Quickbook features.";
             if($exitOnFail) die();
             return false;
         }          
