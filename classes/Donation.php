@@ -399,7 +399,7 @@ class Donation extends ModelLite
                 $qbAction=[];
                 if(Quickbooks::is_setup()){
                     $qb=new QuickBooks();
-                    $qb->authenticate();
+                    $items=$qb->item_list("",false);
                 }
                 
                 ?>
@@ -439,7 +439,17 @@ class Donation extends ModelLite
                                     $category=DonationCategory::find($donation->CategoryId);
                                     $QBItemId=$category?$category->getQuickBooksId():null;
                                     if ($QBItemId){
-                                        print "Item match: ".QuickBooks::qbLink('Item',$QBItemId);                                        
+                                        print "Item match: ".QuickBooks::qbLink('Item',$QBItemId);
+                                        if (sizeof($items)>0){?>                        
+                                        <select name="QBItemId_<?php print $donation->DonationId?>">
+                                        <option value="">-not set-</option><?php                    
+                                        foreach($items as $item){
+                                            print '<option value="'.$item->Id.'"'.($item->Id==$QBItemId?" selected":"").'>'.$item->FullyQualifiedName.' (#'.$item->Id.')</option>';
+                                        }
+                                        ?></select> 
+                                        <?php 
+                                        }
+                                                                              
                                         if ($qb && $qb->authenticate() && false){
                                             if (!$item_cahche[$QBItemId]) $item_cahche[$QBItemId]=$qb->findById('Item', $QBItemId);
                                             print " - ".$item_cahche[$QBItemId]->Name;
