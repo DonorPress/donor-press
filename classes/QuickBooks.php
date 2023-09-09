@@ -511,7 +511,7 @@ class QuickBooks extends ModelLite
                 return $entities; 
             }  
         }else {
-            print "Must connect to Quickbooks before editing Categories.";
+            print " Must connect to Quickbooks before setting Quickbook Items";
             if($exitOnFail) die();
             return false;
         }          
@@ -523,6 +523,25 @@ class QuickBooks extends ModelLite
         }else{
             return false;
         }
+    }
+
+    public function default_item_id($donation,$donor=null){
+        if ($donation->QBItemId){ //not actually a variable we store, but can be set manually when posting
+            $QBItemId=$donation->QBItemId;
+        }else{
+            $QBItemId=$category?$category->getQuickBooksId():null;
+        }
+        if (!$QBItemId && !$donor){
+            $donor=Donor::find($donation->DonorId); 
+        }     
+        if (!$QBItemId && $donor->TypeId){
+            $donorType=DonorType::find($donor->TypeId);            
+            $QBItemId=$donorType->QBItemId;
+        }
+        if (!$QBItemId){
+            $QBItemId=CustomVariables::get_option('DefaultQBItemId');
+        }
+        return $QBItemId;
     }
 
     public function donation_to_invoice($donation,$donor){
@@ -546,20 +565,10 @@ class QuickBooks extends ModelLite
         if ($donation->CategoryId){
             $category=DonationCategory::find($donation->CategoryId);
         }
-
-       
         //$lineDetail->UnitPrice        = 1;
         //$lineDetail->Qty              = $donation->Gross;
-        $QBItemId=$category?$category->getQuickBooksId():null;
-       
 
-        if (!$QBItemId && $donor->TypeId){
-            $donorType=DonorType::find($donor->TypeId);            
-            $QBItemId=$donorType->QBItemId;
-        }
-        if (!$QBItemId){
-            $QBItemId=CustomVariables::get_option('DefaultQBItemId');
-        }
+        $QBItemId=$this->default_item_id($donation,$donor);
         if (!$QBItemId){
             self::display_error("Quickbook <a href='?page=donor-settings'>Default Item Id Not Set</a> and <a href='?page=donor-settings&tab=type'>Donor Type</a> not set.");
             return;

@@ -438,7 +438,8 @@ class Donation extends ModelLite
                                 print "<td>";
                                 if ($donation->CategoryId){
                                     $category=DonationCategory::find($donation->CategoryId);
-                                    $QBItemId=$category?$category->getQuickBooksId():null;
+                                    $QBItemId=$qb->default_item_id($donation,$donor);
+                                    //$QBItemId=$category?$category->getQuickBooksId():null;
                                     if ($QBItemId){
                                         print "<strong>QB Item:</strong> ";
                                     }
@@ -571,10 +572,10 @@ class Donation extends ModelLite
             return true;         
             
         }elseif($_POST['Function']=="QBDonationToInvoice" && $_POST['DonationsToCreateInQB']){
-            $donationIds=explode("|",$_POST['DonationsToCreateInQB']);
-            
+            $donationIds=explode("|",$_POST['DonationsToCreateInQB']);            
             $donations=self::get(["DonationId IN ('".implode("','",$donationIds)."')"]);            
             foreach($donations as $donation){
+                $donation->QBItemId=$_POST['QBItemId_'.$donation->DonationId];
                 $donation->send_to_QB(['silent'=>true]);
             }
             self::display_notice(sizeof($donations)." invoices/payments created in QuickBooks.");  
@@ -1045,7 +1046,7 @@ class Donation extends ModelLite
 
     }
 
-    public function send_to_QB(){
+    public function send_to_QB($settings=[]){
         $qb = new Quickbooks();
         return $qb->donation_to_invoice_process($this);
     }
