@@ -737,13 +737,15 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         if (!$organization) $organization=get_bloginfo('name');
         $subject=$page->post_title;
         $body=$page->post_content;
-        
-        ### custom variables
-        $body=trim(str_replace("##Organization##",$organization,$body));
-        $body=trim(str_replace("##FederalId##", get_option( 'donation_FederalId' ),$body)); 
-        $body=trim(str_replace("##ContactName##", get_option( 'donation_ContactName' ),$body)); 
-        $body=trim(str_replace("##ContactTitle##", get_option( 'donation_ContactTitle' ),$body)); 
-        $body=trim(str_replace("##ContactEmail##", get_option( 'donation_ContactEmail' ),$body)); 
+
+        ### replace custom variables.
+        foreach(CustomVariables::variables as $var){
+            if (substr($var,0,strlen("Quickbooks"))=="Quickbooks") continue;
+            if (substr($var,0,strlen("Paypal"))=="Paypal") continue;
+            $body=str_replace("##".$var."##", get_option( 'donation_'.$var),$body);
+            $subject=str_replace("##".$var."##",get_option( 'donation_'.$var),$subject);                   
+        }
+
         ### generated variables
         $body=str_replace("##Name##",$this->name_combine(),$body);
         $body=str_replace("##Year##",$year,$body);

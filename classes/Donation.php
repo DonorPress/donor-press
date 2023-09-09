@@ -727,34 +727,31 @@ class Donation extends ModelLite
             self::display_notice("Page /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
-        $organization=get_option( 'donation_Organization');
-        if (!$organization) $organization=get_bloginfo('name');
+       
         if (!$this->Donor)  $this->Donor=Donor::find($this->DonorId);
         $address=$this->Donor->mailing_address();
-
         $subject=$page->post_title;
         $body=$page->post_content;
-        $body=trim(str_replace("##Organization##",$organization,$body));
+
         $body=str_replace("##Name##",$this->Donor->name_combine(),$body);
-        //$body=str_replace("##Year##",$year,$body);
         $body=str_replace("##Gross##","$".number_format($this->Gross,2),$body);
-       // $body=str_replace("<p>##ReceiptTable##</p>",$ReceiptTable,$body);
-        //$body=str_replace("##ReceiptTable##",$ReceiptTable,$body);
         if (!$address){ //remove P
             $body=str_replace("<p>##Address##</p>",$address,$body);
         }
         $body=str_replace("##Address##",$address,$body);
-
         $body=str_replace("##Date##",date("F j, Y",strtotime($this->Date)),$body);
-        $body=trim(str_replace("##FederalId##", get_option( 'donation_FederalId' ),$body)); 
-        $body=trim(str_replace("##ContactName##", get_option( 'donation_ContactName' ),$body)); 
-        $body=trim(str_replace("##ContactTitle##", get_option( 'donation_ContactTitle' ),$body)); 
-        $body=trim(str_replace("##ContactEmail##", get_option( 'donation_ContactEmail' ),$body)); 
+        $body=str_replace("##Year##",date("Y",strtotime($this->Date)),$body);
+
+        ### replace custom variables.
+        foreach(CustomVariables::variables as $var){
+            if (substr($var,0,strlen("Quickbooks"))=="Quickbooks") continue;
+            if (substr($var,0,strlen("Paypal"))=="Paypal") continue;
+            $body=str_replace("##".$var."##", get_option( 'donation_'.$var),$body);
+            $subject=str_replace("##".$var."##",get_option( 'donation_'.$var),$subject);                   
+        }   
 
         $body=str_replace("<!-- wp:paragraph -->",'',$body);
         $body=str_replace("<!-- /wp:paragraph -->",'',$body);
-        
-        $subject=trim(str_replace("##Organization##",$organization,$subject));
         $this->emailBuilder->subject=$subject;
         $this->emailBuilder->body=$body;    
         $this->emailBuilder->fontsize=$page->post_excerpt_fontsize;

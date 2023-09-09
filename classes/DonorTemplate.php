@@ -91,6 +91,34 @@ class DonorTemplate extends ModelLite {
                 <?php }?>
                 </td></tr>
 		    </table>
+                <div>The following are Available Tags for Donor Templates:</div>
+                <table class="dp">
+                <tr><th>Tag</th><th>Description/Example</th></tr>
+                <tr><th colspan=2>Donor Fields</th></tr>   
+                <tr><td>##Name##</td><td>Donor Name(s)</td></tr>
+                <tr><td>##Address##</td><td>If filled out</td></tr>
+                <tr><th colspan=2>Donation Response Fields</th></tr>
+                <tr><td>##Gross##</td><td>Total Amount (before frees removed)</td></tr>                
+                <tr><td>##Date##</td><td>Date Sent or on Check</td></tr>
+                <tr><td>##Year##</td><td>Year Sent or on Check</td></tr>
+                <tr><th colspan=2>Year End Response Fields</th></tr>
+                <tr><td>##ReceiptTable##</td><td>Table of Receipts for the year</td></tr>
+                <tr><td>##DonationTotal##</td><td>Donation total for the year</td></tr> 
+                <tr><td>##Year##</td><td>Year being summarized</td></tr>    
+                <tr><td>##Date## </td><td>Today's date</td></tr>        
+
+                <tr><th colspan=2>Setting Fields - <a target="settings" href="?page=donor-settings&tab=cv">edit these here</a></th></tr>
+                <?php
+                foreach(CustomVariables::variables as $var){
+                    if (substr($var,0,strlen("Quickbooks"))=="Quickbooks") continue;
+                    if (substr($var,0,strlen("Paypal"))=="Paypal") continue;                    
+                    ?>
+                <tr><td>##<?php print $var;?>##</td><td>Currently Set to: <strong><?php print get_option( 'donation_'.$var)?></strong></td></tr>
+                <?php }
+                ?>
+                </table>
+
+
         <?php        
     }
 
