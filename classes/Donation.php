@@ -975,9 +975,25 @@ class Donation extends ModelLite
         }
 
 
-        if (CustomVariables::get_option('QuickbooksClientId',true) && $this->QBOInvoiceId>=0){
+        if (Quickbooks::is_setup() && $this->QBOInvoiceId>=0){
             if ($donor->QuickBooksId>0){            
                 if ($this->QBOInvoiceId==0){
+                    $qb=new QuickBooks();
+                    $items=$qb->item_list("",false);
+                    $QBItemId=$qb->default_item_id($this,$donor);
+                    if ($items && sizeof($items)>0){?>                    
+                        <strong>Item:</strong> <select name="QBItemId_<?php print $donation->DonationId?>">
+                             <option value="">-not set-</option><?php                    
+                                foreach($items as $item){
+                                    print '<option value="'.$item->Id.'"'.($item->Id==$QBItemId?" selected":"").'>'.$item->FullyQualifiedName.' (#'.$item->Id.')</option>';
+                                }
+                        ?></select>                    
+                        <?php
+                        if ($QBItemId){
+                            print " ".QuickBooks::qbLink('Item',$QBItemId)." ";
+                        }
+                    }
+                    
                     print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
                 }elseif(!$this->QBOPaymentId){
                     print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
