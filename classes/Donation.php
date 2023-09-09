@@ -401,6 +401,22 @@ class Donation extends ModelLite
                 if(Quickbooks::is_setup()){
                     $qb=new QuickBooks();
                     $items=$qb->item_list("",false);
+                    if ($items){
+                        $qbInvoiceItem=[];
+                        //Check Items on Invoice against QB??
+                        $qbInvoices=[];
+                        foreach($donations as $r){
+                            $qbInvoices[]=$donation->QBOInvoiceId;
+                        }
+                        if (sizeof($qbInvoices)>0){
+                            $qbInvoiceResult=$qb->get_all_entity($table,"Id IN (".implode(",",$qbInvoices).")");
+                            foreach($qbInvoiceResult as $qbInv){
+                                if($qbInv->Line[0] && $qbInv->Line[0]->SalesItemLineDetail->ItemRef)
+                                $qbInvoiceItem[$qbInv->Id]=$qbInv->Line[0]->SalesItemLineDetail->ItemRef;
+                            }
+                            //Line_0_SalesItemLineDetail_ItemRef
+                        }
+                    }
                 }
                 
                 ?>
@@ -436,7 +452,11 @@ class Donation extends ModelLite
                         <?php 
                             if (Quickbooks::is_setup()){
                                 print "<td>";
-                                if(!$donation->QBOInvoiceId){
+                                if ($donation->QBOInvoiceId){
+                                    if ($qbInvoiceItem[$donation->QBOInvoiceId]){
+                                        print "<strong>QB Item:</strong> ".$items[$qbInvoiceItem[$donation->QBOInvoiceId]]->FullyQualifiedName.' (#'.$qbInvoiceItem[$donation->QBOInvoiceId].')';
+                                    }
+                                }else{
                                     $QBItemId=$qb->default_item_id($donation,$donors[$donation->DonorId]);
                                     if ($QBItemId){
                                         print "<strong>QB Item:</strong> ";

@@ -511,7 +511,11 @@ class QuickBooks extends ModelLite
         if ($this->authenticate()){            
             $entities =$this->dataService->Query("SELECT * FROM Item".($where?" WHERE ".$where." ":" ")." Orderby FullyQualifiedName");
             if($this->check_dateService_error()){
-                return $entities; 
+                $result=[];
+                foreach($entities as $r){
+                    $result[$r->Id]=$r;
+                }
+                return $result; 
             }  
         }else {
             print " Must connect to Quickbooks before setting Quickbook Items";
