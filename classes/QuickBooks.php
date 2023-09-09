@@ -1292,7 +1292,8 @@ class QuickBooks extends ModelLite
         $return->count =$this->dataService->Query("SELECT count(*) FROM ".$table.($where?" WHERE ".$where:""));
         # get past Quickbook limit of 1000 results.
         for($i=0;$i<ceil($return->count/$max);$i++){
-            $SQL="SELECT * FROM ".$table.($where?" WHERE ".$where:"")." STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max;           
+            $SQL="SELECT * FROM ".$table.($where?" WHERE ".$where:"")." STARTPOSITION ".($i*$max+1)." MAXRESULTS ".$max; 
+            print $SQL."<BR>";         
             $chunks[] =$this->dataService->Query($SQL);
         }
 
