@@ -504,10 +504,6 @@ class QuickBooks extends ModelLite
         }          
     }
 
-    public function item_find($id){
-        return $this->item_list("Id = ".$id)[0];
-    }
-
     public function item_list($where="",$exitOnFail=true){       
         if ($this->authenticate()){            
             $entities =$this->dataService->Query("SELECT * FROM Item".($where?" WHERE ".$where." ":" ")." Orderby FullyQualifiedName");
