@@ -424,7 +424,7 @@ class Donation extends ModelLite
                     }
                     dump("Items:",$items);
                 }
-                dump("I did something");
+                dump($qbInvoiceItem);
                 
                 ?>
                 <form method="post">
