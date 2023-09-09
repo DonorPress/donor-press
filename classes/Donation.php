@@ -436,30 +436,27 @@ class Donation extends ModelLite
                         <?php 
                             if (Quickbooks::is_setup()){
                                 print "<td>";
-                                if ($donation->CategoryId){
-                                    $category=DonationCategory::find($donation->CategoryId);
-                                    $QBItemId=$qb->default_item_id($donation,$donor);
-                                    //$QBItemId=$category?$category->getQuickBooksId():null;
+                                if(!$donation->QBOInvoiceId){
+                                    $QBItemId=$qb->default_item_id($donation,$donors[$donation->DonorId]);
                                     if ($QBItemId){
                                         print "<strong>QB Item:</strong> ";
+                                    }else{
+                                        $QBItemId=null;                                   
                                     }
-                                }else{
-                                    $QBItemId=null;                                   
-                                }
-                                if ($items && sizeof($items)>0){?>                        
-                                    <select name="QBItemId_<?php print $donation->DonationId?>">
-                                    <option value="">-not set-</option><?php                    
-                                    foreach($items as $item){
-                                        print '<option value="'.$item->Id.'"'.($item->Id==$QBItemId?" selected":"").'>'.$item->FullyQualifiedName.' (#'.$item->Id.')</option>';
+                                    if ($items && sizeof($items)>0){?>                        
+                                        <select name="QBItemId_<?php print $donation->DonationId?>">
+                                        <option value="">-not set-</option><?php                    
+                                        foreach($items as $item){
+                                            print '<option value="'.$item->Id.'"'.($item->Id==$QBItemId?" selected":"").'>'.$item->FullyQualifiedName.' (#'.$item->Id.')</option>';
+                                        }
+                                        ?></select> 
+                                        <?php 
+                                        
                                     }
-                                    ?></select> 
-                                    <?php 
-                                    
-                                }
-
-                                if ($QBItemId){
-                                    print " ".QuickBooks::qbLink('Item',$QBItemId)." ";
-                                }
+                                    if ($QBItemId){
+                                        print " ".QuickBooks::qbLink('Item',$QBItemId)." ";
+                                    }
+                                }               
                                 print "<div>";
                                 $return=Quickbooks::donation_process_check($donation,$donors[$donation->DonorId]);
                                 if (isset($return['newCustomerFromDonor'])){ 
