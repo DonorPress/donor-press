@@ -225,7 +225,7 @@ class QuickBooks extends ModelLite
             }elseif($_GET['syncDonationPaid']){
                 $this->donation_to_payment_check($_GET['syncDonationPaid']);
             }elseif($_GET['syncDonation']){
-                $this->donation_to_invoice_check($_GET['syncDonation']);
+                $this->donation_to_invoice_check($_GET['syncDonation'],$_GET['ItemId']); //ItemId
                 return true;
             }elseif ($_POST['Function']=='SaveQuickBooks' && $_POST['quickbooks_table'] && $_POST['quickbooks_id']){
                 ### Get Current entry
@@ -302,11 +302,14 @@ class QuickBooks extends ModelLite
     }
 
 
-    public function donation_to_invoice_check($donationId){
+    public function donation_to_invoice_check($donationId,$itemId=""){
         $donation=Donation::find($donationId);
         if (!$donation){
             self::display_error("Donation #".$donationId." not found.");
             return;
+        }
+        if ($itemId){
+            $donation->QBItemId=$itemId; //overide Item match option
         }
         if ($donation->QBOInvoiceId){
             self::display_error("Donation #".$donation->show_field("DonationId")." already linked to Invoice #".$donation->show_field("QBOInvoiceId"));
@@ -526,17 +529,19 @@ class QuickBooks extends ModelLite
     }
 
     public function default_item_id($donation,$donor=null){
-        if ($donation->QBItemId){ //not actually a variable we store, but can be set manually when posting
-            $QBItemId=$donation->QBItemId;
-        }else{
+        if ($donation->QBItemId>0){ //not actually a variable we store, but can be set manually when posting
+            return $donation->QBItemId;
+        }elseif($donation->CategoryId){
+            $category=DonationCategory::find($donation->CategoryId);
             $QBItemId=$category?$category->getQuickBooksId():null;
+            if ($QBItemId) return $QBItemId;
         }
-        if (!$QBItemId && !$donor){
+        if (!$donor){
             $donor=Donor::find($donation->DonorId); 
         }     
-        if (!$QBItemId && $donor->TypeId){
+        if ($donor->TypeId){
             $donorType=DonorType::find($donor->TypeId);            
-            $QBItemId=$donorType->QBItemId;
+            if ($donorType->QBItemId) return $donorType->QBItemId;
         }
         if (!$QBItemId){
             $QBItemId=CustomVariables::get_option('DefaultQBItemId');
@@ -1221,7 +1226,7 @@ class QuickBooks extends ModelLite
                 }
             }elseif($donor->QuickBooksId>0){ //dont' create on ignored entries.
                 $return['newInvoicesFromDonation'][]=$donation->DonationId;
-                print ' | <a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonation='.$donation->DonationId.'">Create Invoice & Payment In QB</a> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId.'">Ignore/Don\'t Sync to QB</a>';
+                print ' | <button type="button" style="background-color:lightgreen;" onclick="syncDonationToQb(\''.$donation->DonationId.'\');">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId.'">Ignore/Don\'t Sync to QB</a>';
             }
         }else{
             print '<a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonorId='.$donation->DonorId.'">Create Donor in QB</a>';

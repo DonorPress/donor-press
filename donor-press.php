@@ -101,7 +101,7 @@ function donor_header_check() {
 	## add style
 	wp_enqueue_style('donorPressPluginStylesheet', plugins_url( '/css/style.css', __FILE__ ), false);
 	//wp_enqueue_style('donorPressPluginAutoComplete', plugins_url( '/css/autocomplete.min.css', __FILE__ ), false);
-	//wp_enqueue_script('donorPressPluginAutoComplete', plugins_url( '/js/autocomplete.min.js', __FILE__ ), false);
+	wp_enqueue_script('donorPressPluginDefault', plugins_url( '/js/donorpress.js', __FILE__ ), false);
 }
 
 //wp_register_style( 'donorPressPluginStylesheet', plugins_url( '/css/style.css', __FILE__ ) );

@@ -458,9 +458,9 @@ class Donation extends ModelLite
                                 }
 
                                 if ($QBItemId){
-                                    print " ".QuickBooks::qbLink('Item',$QBItemId);
+                                    print " ".QuickBooks::qbLink('Item',$QBItemId)." ";
                                 }
-
+                                print "<div>";
                                 $return=Quickbooks::donation_process_check($donation,$donors[$donation->DonorId]);
                                 if (isset($return['newCustomerFromDonor'])){ 
                                     foreach($return['newCustomerFromDonor'] as $donorId){
@@ -473,6 +473,7 @@ class Donation extends ModelLite
                                         $qbAction['newInvoicesFromDonation'][]=$donationId;
                                     }
                                 }
+                                print "</div>";
            
                                 print "</td>";
                         }?>             
