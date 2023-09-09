@@ -47,7 +47,7 @@ function donor_header_check() {
 	}
 
 	if (isset($_GET['redirect'])){
-		$qb=new Quickbooks();
+		$qb=new QuickBooks();
 		$qb->check_redirects($_GET['redirect']);
 	}
 	## download functions before page is loaded

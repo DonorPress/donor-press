@@ -1,6 +1,6 @@
 <?php
 require_once 'classes/QuickBooks.php';
-$qb=new Quickbooks();
+$qb=new QuickBooks();
 ?>
 <div id="pluginwrap">
     <h2>Quickbooks Sync</h2><?php  

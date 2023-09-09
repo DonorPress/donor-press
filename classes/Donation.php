@@ -577,8 +577,8 @@ class Donation extends ModelLite
                     return true;
                 }
             }
-            if ($_POST['syncDonationToInvoiceQB']){
-                $qb = new QuickBooks();
+            if ($_POST['syncDonationToInvoiceQB']=="true"){
+                $qb=new QuickBooks();
                 $invoice_id=$qb->donation_to_invoice_check($_REQUEST['DonationId'],$_REQUEST['ItemId']); //ItemId
                 if ($invoice_id) self::display_notice("Quickbooks Invoice: ".QuickBooks::qbLink('Invoice',$invoice_id) ." added to Donation #".$donation->show_field("DonationId")." saved.");
                 
@@ -595,7 +595,7 @@ class Donation extends ModelLite
             }
             return true;
         }elseif ($_POST['Function']=="QBDonorToCustomerCheck" && $_POST['DonorsToCreateInQB']){
-            $qb = new QuickBooks();
+            $qb=new QuickBooks();
             $qb->DonorToCustomer(explode("|",$_POST['DonorsToCreateInQB']));  
             return true;         
             
@@ -985,7 +985,8 @@ class Donation extends ModelLite
         if (Quickbooks::is_setup() && $this->QBOInvoiceId>=0){
             if ($donor->QuickBooksId>0){
                 ?><form method="post">
-                <input type="hidden" name="syncDonationToInvoiceQB" value="t"/>
+                    <input type="hidden" name="syncDonationToInvoiceQB" value="t"/>
+                <input type="hidden" name="DonationId" value="<?php print $this->DonationId?>"/>
                 <?php              
 
                 if ($this->QBOInvoiceId==0){
@@ -1099,7 +1100,7 @@ class Donation extends ModelLite
     }
 
     public function send_to_QB($settings=[]){
-        $qb = new Quickbooks();
+        $qb=new QuickBooks();
         return $qb->donation_to_invoice_process($this);
     }
 }
