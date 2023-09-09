@@ -97,9 +97,6 @@ class ModelLite{
 				$data[$field]=substr($this->$field,0,$this->fieldLimits[$field]);
 			}else{
 				$data[$field]=$this->$field;
-				if ($field=="TransactionType"){
-					print $field."->".$data[$field]."|".$this->TransactionType."|".$this->$field."--".$this->fieldLimits[$field]."--".(isset($this->fieldLimits[$field])?"true":"false")."<br>";
-				}
 			}	
 		}
 		if (static::UPDATED_AT && !$data[static::UPDATED_AT]){
