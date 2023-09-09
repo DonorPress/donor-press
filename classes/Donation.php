@@ -397,6 +397,7 @@ class Donation extends ModelLite
 
             }else{
                 $qbAction=[];
+                $qb=new QuickBooks();
                 ?>
                 <form method="post">
                     <button type="submit" name="Function" value="EmailDonationReceipts">Send E-mail Receipts</button>
@@ -430,6 +431,23 @@ class Donation extends ModelLite
                         <?php 
                             if (Quickbooks::is_setup()){
                                 print "<td>";
+                                if ($donation->CategoryId){
+                                    $category=DonationCategory::find($donation->CategoryId);
+                                    $QBItemId=$category?$category->getQuickBooksId():null;
+                                    if ($QBItemId){
+                                        $item=item_find($QBItemId);
+                                        print "Item match: ".$QBItemId;
+                                        if ($qb->accessTokenObj){
+                                            $item=$qb->item_find($QBItemId);
+                                            print $item->Description;
+                                        }
+                                    }
+                                }else{
+                                    $QBItemId=null;
+                                }
+                        
+                                
+
                                 $return=Quickbooks::donation_process_check($donation,$donors[$donation->DonorId]);
                                 if (isset($return['newCustomerFromDonor'])){ 
                                     foreach($return['newCustomerFromDonor'] as $donorId){
