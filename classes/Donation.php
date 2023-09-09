@@ -410,6 +410,7 @@ class Donation extends ModelLite
                         }
                         if (sizeof($qbInvoices)>0){
                             $qbInvoiceResult=$qb->get_all_entity('Invoice',"Id IN (".implode(",",$qbInvoices).")");
+                            dump($qbInvoiceResult);
                             foreach($qbInvoiceResult as $qbInv){
                                 if($qbInv->Line[0] && $qbInv->Line[0]->SalesItemLineDetail->ItemRef){
                                     $qbInvoiceItem[$qbInv->Id]=$qbInv->Line[0]->SalesItemLineDetail->ItemRef;
