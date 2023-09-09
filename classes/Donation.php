@@ -408,6 +408,7 @@ class Donation extends ModelLite
                         foreach($donations as $r){
                             $qbInvoices[]=$donation->QBOInvoiceId;
                         }
+                        dump($qbInvoices);
                         if (sizeof($qbInvoices)>0){
                             $qbInvoiceResult=$qb->get_all_entity('Invoice',"Id IN (".implode(",",$qbInvoices).")");
                             dump($qbInvoiceResult);
