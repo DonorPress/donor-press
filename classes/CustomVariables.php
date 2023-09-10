@@ -11,7 +11,7 @@ class CustomVariables extends ModelLite
     const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","DefaultCountry","QuickbooksBase"];	
     const variables_protected = ["PaypalClientId","PaypalSecret","QuickbooksClientId","QuickbooksSecret"];
 
-    const variables_manual=["DefaultQBItemId"];
+    const variables_manual=["DefaultQBItemId","QBPaymentMethod"];
     const partialTables = [
         ['TABLE'=>'posts','WHERE'=>"post_type='donortemplate'",'COLUMN_IGNORE'=>'ID'],
         ['TABLE'=>'options','WHERE'=>"option_name LIKE 'donation_%'",'COLUMN_IGNORE'=>'option_id']
@@ -89,8 +89,14 @@ class CustomVariables extends ModelLite
                     <?php print $vals->$fullVal?"<span style='color:green;'> - set</span> ":" <span style='color:red;'>- not set</span>";
                     ?></td></tr>
                   <?php
-                }                
-                if (Quickbooks::is_setup()){                
+                }
+                ?>
+                </table><?php               
+                if (Quickbooks::is_setup()){  
+                ?>
+                <h3>Quickbook Integration Setup</h3>
+                <table>
+                <?php
                     $qb=new QuickBooks();
                     if ($items=$qb->item_list("",false)){
                         $var="DefaultQBItemId";
@@ -98,7 +104,7 @@ class CustomVariables extends ModelLite
                         $val=$vals->$fullVal?$vals->$fullVal->option_value:"";                            
                         ?>  
                   
-                        <tr><td align="right">Default Quickbooks Item Id</td><td><select name="DefaultQBItemId"><option value="0">[--None--]</option><?php               
+                        <tr><td>Default Quickbooks Item Id</td><td><select name="DefaultQBItemId"><option value="0">[--None--]</option><?php               
                         foreach($items as $item){
                             print '<option value="'.$item->Id.'"'.($item->Id==$val?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
                         }
@@ -107,7 +113,31 @@ class CustomVariables extends ModelLite
 
                         <input type="hidden" name="<?php print $var?>_was" value="<?php print $val?>"/> </td></tr>
                     <?php
-                    } 
+                    }
+                    if ($paymentMethod=$qb->payment_method_list("",false)){
+                        foreach(Donation::s()->tinyIntDescriptions["PaymentSource"] as $key=>$label){
+                            $var="QBPaymentMethod_".$key;
+                            $fullVal=self::base."_".$var;
+                            $val=$vals->$fullVal?$vals->$fullVal->option_value:""; 
+                            if($key==0) continue;
+                            ?> 
+                            
+                            <tr><td>Payment Method: <?php print $label?></td><td><select name="<?php print $var?>"><option value="">[--Not Set--]</option><?php               
+                            foreach($paymentMethod as $pm){
+                                print '<option value="'.$pm->Id.'"'.($pm->Id==$val?" selected":"").'>'.$pm->Name.'</option>';
+                            }
+                            ?></select>
+                            <input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/>    
+                            <input type="hidden" name="<?php print $var?>_was" value="<?php print $val?>"/> </td></tr>
+                            <?php
+                            
+                        }   
+
+                    }
+                    
+                    
+
+
             } ?>
                 
             </table>           
@@ -313,46 +343,37 @@ class CustomVariables extends ModelLite
 		
         if ($_POST['Function'] == 'Save' && $_POST['table']=="CustomVariables"){
             foreach(self::variables as $var){
-                if ($_POST[$var]!=$_POST[$var.'_was']){
-                    if ($_POST[$var.'_id']){
-                        //update
-                        print "update ".$var."<br>";
-                        update_option( self::base."_".$var, $_POST[$var], true);
-                    }else{
-                        print "insert ".$var." <br>";
-                        //insert
-                        add_option( self::base."_".$var, $_POST[$var]);
-                    }
-                }   
+                self::evaluate_post_save($var);   
             }
             foreach(self::variables_protected as $var){
                 if ($_POST[$var]!=""){
-                    if ($_POST[$var.'_id']){
-                        //update
-                        print "update ".$var."<br>";
-                        update_option( self::base."_".$var, self::encode($_POST[$var]), true);
-                    }else{
-                        print "insert ".$var." <br>";
-                        //insert
-                        add_option( self::base."_".$var, self::encode($_POST[$var]));
-                    }
+                    self::evaluate_post_save($var,true);                   
                 }
             }
 
             foreach(self::variables_manual as $var){
-                if ($_POST[$var]!=$_POST[$var.'_was']){
-                    if ($_POST[$var.'_id']){
-                        //update
-                        print "update ".$var."<br>";
-                        update_option( self::base."_".$var, $_POST[$var], true);
-                    }else{
-                        print "insert ".$var." <br>";
-                        //insert
-                        //dump(self::base."_".$var, $_POST[$var]);
-                        add_option( self::base."_".$var, $_POST[$var]);
-                    }
-                }   
+                self::evaluate_post_save($var);                
+            }
+
+            ### handle Quickbook Settings - number of fields could change.
+            if (isset($_POST['QBPaymentMethod_1'])){ //assumes locally there is always a one.
+                foreach(Donation::s()->tinyIntDescriptions["PaymentSource"] as $key=>$label){                  
+                    self::evaluate_post_save("QBPaymentMethod_".$key);
+                }
+
             }
         }
     }
+
+    static public function evaluate_post_save($var,$encode=false){
+        if ($_POST[$var]!=$_POST[$var.'_was']){
+            if ($_POST[$var.'_id']){             
+                print "update ".$var."<br>";
+                update_option( self::base."_".$var, $encode?self::encode($_POST[$var]):$_POST[$var], true);
+            }else{
+                print "insert ".$var." <br>";              
+                add_option( self::base."_".$var, $encode?self::encode($_POST[$var]):$_POST[$var]);
+            }
+        }  
+    } 
 }

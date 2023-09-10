@@ -529,6 +529,23 @@ class QuickBooks extends ModelLite
         }          
     }
 
+    public function payment_method_list($where="",$exitOnFail=true){       
+        if ($this->authenticate()){            
+            $entities =$this->dataService->Query("SELECT * FROM PaymentMethod".($where?" WHERE ".$where." ":" ")." Orderby Name");
+            if($this->check_dateService_error()){
+                $result=[];
+                foreach($entities as $r){
+                    $result[$r->Id]=$r;
+                }
+                return $result; 
+            }  
+        }else {
+            print " Must connect to Quickbooks before using Quickbook features.";
+            if($exitOnFail) die();
+            return false;
+        }          
+    }
+
     static function is_setup(){ 
         if (CustomVariables::get_option('QuickbooksClientId') && CustomVariables::get_option('QuickbooksSecret')){
             return true;
@@ -626,10 +643,9 @@ class QuickBooks extends ModelLite
         $payment->TxnDate = date('Y-m-d', strtotime($donation->DateDeposited));
         //$payment->DepositToAccountRef =  1;// new stdClass() ->value=1
         $payment->ProcessPayment = false;
-        $paymentSourceMap=["2"=>"1","1"=>"2","10"=>"4"]; //paymentSource to PaymentMethod on QB
-        //"PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer","10"=>"Paypal"]
-        if ($paymentSourceMap[$donation->PaymentSource]){
-            $payment->PaymentMethodRef=$paymentSourceMap[$donation->PaymentSource];
+        $paymentMethodId=CustomVariables::get_option('QBPaymentMethod_'.$donation->PaymentSource);
+        if ($paymentMethodId && $paymentMethodId>0){
+            $payment->PaymentMethodRef=$paymentMethodId;
         }        
         $payment->PaymentRefNum=$donation->TransactionID;
 
@@ -639,68 +655,9 @@ class QuickBooks extends ModelLite
 
         $l = new IPPLine();      
         $l->Amount           = $donation->Gross;
-        $l->LinkedTxn = $linkedTxn;    
-
-       
+        $l->LinkedTxn = $linkedTxn;
         $l->DetailType = "PaymentLineDetail";
-        
-        $payment->Line[]=$l; 
-        //dd($paymenet);
-        //$detail=new IPPPaymentLineDetail();
-        /*
-        "Line": [
-      {
-        "Amount": 55.0, 
-        "LineEx": {
-          "any": [
-            {
-              "name": "{http://schema.intuit.com/finance/v3}NameValue", 
-              "nil": false, 
-              "value": {
-                "Name": "txnId", 
-                "Value": "70"
-              }, 
-              "declaredType": "com.intuit.schema.finance.v3.NameValue", 
-              "scope": "javax.xml.bind.JAXBElement$GlobalScope", 
-              "globalScope": true, 
-              "typeSubstituted": false
-            }, 
-            {
-              "name": "{http://schema.intuit.com/finance/v3}NameValue", 
-              "nil": false, 
-              "value": {
-                "Name": "txnOpenBalance", 
-                "Value": "71.00"
-              }, 
-              "declaredType": "com.intuit.schema.finance.v3.NameValue", 
-              "scope": "javax.xml.bind.JAXBElement$GlobalScope", 
-              "globalScope": true, 
-              "typeSubstituted": false
-            }, 
-            {
-              "name": "{http://schema.intuit.com/finance/v3}NameValue", 
-              "nil": false, 
-              "value": {
-                "Name": "txnReferenceNumber", 
-                "Value": "1024"
-              }, 
-              "declaredType": "com.intuit.schema.finance.v3.NameValue", 
-              "scope": "javax.xml.bind.JAXBElement$GlobalScope", 
-              "globalScope": true, 
-              "typeSubstituted": false
-            }
-          ]
-        }, 
-        "LinkedTxn": [
-          {
-            "TxnId": "70", 
-            "TxnType": "Invoice"
-          }
-        ]
-      }
-    ],
-    */
-        
+        $payment->Line[]=$l;
 
         return $payment;
     }
