@@ -15,13 +15,22 @@ $clientSecret=CustomVariables::get_option('PaypalSecret');
         $response=$paypal->get_transactions_date_range($_POST['date_from'],$_POST['date_to']);
         $process=$paypal->process_response($response,$_POST['date_to']); 
         if ($response){
-            Paypal::display_notice(
-                sizeof($response->transaction_details)." records retrieved. <ul>".
-                "<li>".($process['DonorsAdded']?sizeof($process['DonorsAdded']):"0")." New Donor Entries Created.</li>".
-                ($process['DonationsMatched'] && sizeof($process['DonationsMatched'])>0?"<li>".sizeof($process['DonationsMatched'])." donations already created.</li>":"").
-                ($process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",strtotime($process['time'])))."'>View These Donations/Send Acknowledgements</a></li>":"").
-                "</ul>"
-            );
+            if ($response->transaction_details){
+                Paypal::display_notice(
+                    ($response->transaction_details?sizeof($response->transaction_details):"0")." records retrieved. <ul>".
+                    "<li>".($process['DonorsAdded']?sizeof($process['DonorsAdded']):"0")." New Donor Entries Created.</li>".
+                    ($process['DonationsMatched'] && sizeof($process['DonationsMatched'])>0?"<li>".sizeof($process['DonationsMatched'])." donations already created.</li>":"").
+                    ($process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",strtotime($process['time'])))."'>View These Donations/Send Acknowledgements</a></li>":"").
+                    "</ul>"
+                );
+            }else{
+                if ($response->message){                    
+                    Paypal::display_error("<strong>".$response->name."</strong> ".$response->message);
+                    foreach($response->details as $d){
+                        Paypal::display_error("<strong>".$d->issue."</strong> ".$d->description);
+                    }
+                }
+            }
         }
     }
 
