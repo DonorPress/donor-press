@@ -691,7 +691,7 @@ class Donation extends ModelLite
             ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t&raw=t">Edit Raw</a></div><?php
         }?>
         
-        <form method="post" action="?page=donor-reports&DonationId=<?php print $this->DonationId?>" style="border: 1px solid #999; padding:20px; width:90%;">
+        <form method="post" action="?page=donor-index&DonationId=<?php print $this->DonationId?>" style="border: 1px solid #999; padding:20px; width:90%;">
         <input type="hidden" name="table" value="donation">
         <?php foreach ($hiddenFields as $field){?>
 		    <input type="hidden" name="<?php print $field?>" value="<?php print $this->$field?>"/>
