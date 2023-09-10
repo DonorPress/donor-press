@@ -577,10 +577,10 @@ class Donation extends ModelLite
                     return true;
                 }
             }
-            if ($_POST['syncDonationToInvoiceQB']=="true"){
+            if ($_POST['syncDonationToInvoiceQB']=="t"){
                 $qb=new QuickBooks();
-                $invoice_id=$qb->donation_to_invoice_check($_REQUEST['DonationId'],$_REQUEST['ItemId']); //ItemId
-                if ($invoice_id) self::display_notice("Quickbooks Invoice: ".QuickBooks::qbLink('Invoice',$invoice_id) ." added to Donation #".$donation->show_field("DonationId")." saved.");
+                $invoice_id=$qb->donation_to_invoice_check($_POST['DonationId'],$_POST['ItemId']); //ItemId
+                if ($invoice_id) self::display_notice("Quickbooks Invoice: ".QuickBooks::qbLink('Invoice',$invoice_id) ." added to Donation #".$_POST['DonationId']." saved.");
                 
             }
 
@@ -985,7 +985,6 @@ class Donation extends ModelLite
         if (Quickbooks::is_setup() && $this->QBOInvoiceId>=0){
             if ($donor->QuickBooksId>0){
                 ?><form method="post">
-                    <input type="hidden" name="syncDonationToInvoiceQB" value="t"/>
                 <input type="hidden" name="DonationId" value="<?php print $this->DonationId?>"/>
                 <?php              
 
@@ -1008,7 +1007,7 @@ class Donation extends ModelLite
                     
                    // print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
                     ?>
-                    <button type="submit" style="background-color:lightgreen;">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation=<?php print $donation->DonationId?>">Ignore/Don't Sync to QB</a>
+                    <button type="submit" name="syncDonationToInvoiceQB" value="t" style="background-color:lightgreen;">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation=<?php print $donation->DonationId?>">Ignore/Don't Sync to QB</a>
                     </form>
                     <?php
                 }elseif(!$this->QBOPaymentId){

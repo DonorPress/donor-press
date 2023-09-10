@@ -322,19 +322,24 @@ class QuickBooks extends ModelLite
         }
         if ($donor->QuickBooksId){
             $invoice=$this->donation_to_invoice($donation,$donor);
-            if (!$invoice) return false; //errored out earlier        
-            $resultObj=$this->dataService->Add($invoice);
-            if($this->check_dateService_error()){
-                if ($resultObj->Id){
-                    $donation->QBOInvoiceId=$resultObj->Id;
-                    $donation->save();
-                    self::display_notice("Quick Books Invoice Id #".$donation->show_field('QBOInvoiceId')." created and linked to Donation #".$donation->show_field('DonationId'));
-                     //dd($resultObj,$invoice,$donation,$donor);
-                    
-                     $payment=$this->donation_to_payment($donation,$donor);
-                     $this->process_payment_obj($payment,$donation);
-                    
-                     return $donation->QBOInvoiceId;
+            if (!$invoice) return false; //errored out earlier 
+            if ($this->authenticate()){            
+                $resultObj=$this->dataService->Add($invoice);
+                if($this->check_dateService_error()){
+                    if ($resultObj->Id){
+                        $donation->QBOInvoiceId=$resultObj->Id;
+                        $donation->save();
+                        self::display_notice("Quick Books Invoice Id #".$donation->show_field('QBOInvoiceId')." created and linked to Donation #".$donation->show_field('DonationId'));
+                        //dd($resultObj,$invoice,$donation,$donor);
+                        
+                        $payment=$this->donation_to_payment($donation,$donor);
+                        $this->process_payment_obj($payment,$donation);
+                        
+                        return $donation->QBOInvoiceId;
+                    }
+                }else{
+                    print self::display_error("Could not Authenticate with QuickBooks");
+                    return null;
                 }
             }
             //dd($invoice,$donation,$donor);
