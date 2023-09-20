@@ -264,7 +264,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         <h2>Donation List</h2>
 		<?php
 		$results=Donation::get(array("DonorId='".$this->DonorId."'"),"Date DESC");
-		print Donation::show_results($results,"",["DonationId","Date","DateDeposited","Name","Type","Gross","FromEmailAddress","CategoryId","Subject","Note","PaymentSource","TransactionID"]);		
+		print Donation::show_results($results,"",["DonationId","Date","DateDeposited","Name","Type","Gross","FromEmailAddress","CategoryId","Subject","Note","PaymentSource","TransactionID","TransactionType"]);		
     }
 
     function quick_books_link(){

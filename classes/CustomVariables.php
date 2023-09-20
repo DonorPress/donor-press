@@ -175,6 +175,13 @@ class CustomVariables extends ModelLite
                     $version=$json->VERSION;
                 }elseif ($json->TABLE && sizeof($json->RECORDS)>0){
                     print "<h2>Restoring to ".$wpdb->prefix.$json->TABLE." ".sizeof($json->RECORDS)." records.</h2>";
+                    //$json->COLUMNS;
+                    $columns=[];
+                    $results=$wpdb->get_results("SELECT COLUMN_NAME,IS_NULLABLE,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
+                            WHERE table_name = '".$wpdb->prefix.$json->TABLE."'");
+                     foreach($results as $r){
+                        $columns[$r->COLUMN_NAME]=$r;
+                     }
                     
                     $chunk=array_chunk($json->RECORDS,$chunksize); //insert 500 rows at a time                    
                     foreach($chunk as $rows){
@@ -184,15 +191,26 @@ class CustomVariables extends ModelLite
                         foreach($rows as $row){
                             $c=0;
                             if ($r>0) $iSQL.=",\r\n";                            
-                            $iSQL.="(";
+                            $iSQL.="(";                           
                             foreach($row as $col){
                                 if ($c>0) $iSQL.=", ";
-                                $iSQL.="'".self::mysql_escape_mimic($col)."'";
+                                $column=$json->COLUMNS[$c];
+                                switch( $columns[$column]->DATA_TYPE){
+                                    case "int":
+                                        if (!$col && $columns[$column]->IS_NULLABLE=="YES") $iSQL.="NULL";
+                                        else $iSQL.="'".self::mysql_escape_mimic($col)."'";
+                                    break;
+                                    default:
+                                        $iSQL.="'".self::mysql_escape_mimic($col)."'";
+                                    break;
+                                }                              
+                                
                                 $c++;
                             }
                             $iSQL.=")";
                             $r++;
                         }
+                        //if ($json->TABLE=="donation_category") print $iSQL;
                         print "<div>Table: ".$wpdb->prefix.$json->TABLE." - Chunk size: ".sizeof($rows)."</div>";//<pre>".$iSQL."</pre>";
                         $wpdb->query($iSQL);
 

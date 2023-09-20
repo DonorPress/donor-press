@@ -1,5 +1,5 @@
 <?php
-$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression"];
+$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression",'tax'=>"Tax"];
 $active_tab=Donor::show_tabs($tabs,$active_tab);
 ?>
 <div id="pluginwrap">
@@ -44,6 +44,9 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 			report_top();
 			report_current_monthly();
 			reportMonthly();
+		break;
+		case "tax":
+			report_tax();
 		break;
 	}
 	?>	
@@ -136,9 +139,86 @@ function report_donors(){
 	//print "survived";
 }
 
+function report_tax(){
+	$taxYear=$_GET['TaxYear']?$_GET['TaxYear']:date("Y")-1;
+	$taxMonthStart=$_GET['TaxMonthStart']?$_GET['TaxMonthStart']:1;
+	?>
+	<div>These reports are meant to be an aid when filling out a <strong>990 form</strong>. They are only as good as the data provided, and we recommend review by a tax professional to make sure you are meeting the current tax reporting year requirements.</div>
+
+	<form method="get" style="font-size:90%;">
+	<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
+		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
+		<strong>Tax year:</strong> <input type="number" min="2000" max="<?php print date("Y")?>" name="TaxYear" value="<?php print $taxYear;?>"/> 
+		<!-- <strong>Tax Period Starting Month:</strong> <input type="number" min="1" max="12" name="TaxMonthStart" value="<?php print $taxYear;?>"/> -->
+		<button>Go</button>
+	</form>
+	<h3>Public Support Test</h3>
+	<div>Reviews giving for the past 5 years, and anybody who gave over 2% of the 5 year total. 
+	
+	<?php
+	### GET Qualifying Yearly Totals (TransationType ID between 0 to 99 are gifts)
+	$SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
+		FROM ".Donation::get_table_name()."
+		WHERE YEAR(Date) BETWEEN ".($taxYear-5)." AND ".$taxYear." AND TransactionType Between 0 AND 99
+		Group By YEAR(Date) 
+		Order BY YEAR(Date)";
+	 $results = Donation::db()->get_results($SQL);	
+	 foreach ($results as $r){
+		$total['donated']['year'][$r->TaxYear]+=$r->Gross;
+		$total['donated']['total']+=$r->Gross;		
+	 }
+
+	### Product Service Income (TransationType ID between 100+ )
+	 $SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
+		FROM ".Donation::get_table_name()."
+		WHERE YEAR(Date) BETWEEN ".($taxYear-5)." AND ".$taxYear." AND TransactionType >= 100
+		Group By YEAR(Date) 
+		Order BY YEAR(Date)";
+	 $results = Donation::db()->get_results($SQL);	
+	 foreach ($results as $r){
+		$total['service']['year'][$r->TaxYear]+=$r->Gross;
+		$total['service']['total']+=$r->Gross;		
+	 }
+	 $twoPercent=round($total['donated']['total']*.02,0);
+	 //dump($total,$twoPercent);
+	 $SQL="Select D.DonorId,D.Name,D.Name2, YEAR(DT.Date) as TaxYear,SUM(DT.Gross) as Gross
+	  FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-5)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 99 AND 
+		D.DonorId IN (
+			Select DonorId FROM ".Donation::get_table_name()." WHERE YEAR(Date) BETWEEN ".($taxYear-5)." AND ".$taxYear." AND TransactionType Between 0 AND 99 Group By DonorId Having SUM(Gross)>'".$twoPercent."' ) 
+			Group By D.DonorId, YEAR(DT.Date),D.Name,D.Name2 Order BY D.Name,YEAR(DT.Date) ";
+		print $SQL;
+	$results = Donation::db()->get_results($SQL);	
+	foreach ($results as $r){
+		$donors[$r->DonorId]['info']=$r;
+		$donors[$r->DonorId]['year'][$r->TaxYear]+=$r->Gross;
+		$donors[$r->DonorId]['total']+=$r->Gross;	
+
+		//dump($r);
+		//print $r->DonorId." ".$r->TaxYear." ".$r->Gross."<br>";
+	}
+
+	?><table class="dp"><tr><th>Donor</th><?php
+	for($y=$taxYear-5;$y<=$taxYear;$y++) print "<th>".$y."</th>";
+	?><th>Total</th><th>Excess contributions (Total minus 2% limitation)</th></tr>
+	<?php
+	foreach($donors as $donorId => $a){
+		?><tr><td><?php print $a['info']->Name.($a['info']->Name2?" and ".$a['info']->Name2:"")?> (<?php print $donorId;?>)</td><?php
+		for($y=$taxYear-5;$y<=$taxYear;$y++) print "<td>".($a['year'][$y]?round($a['year'][$y]):"")."</td>";
+		print "<td>".round($a['total'])."</td>";
+		print "<td>".round($a['total']-$twoPercent)."</td></tr>";
+
+	}?></table><?php
+		
+	//SELECT DonorId, YEAR(Date) as TaxYear, SUM(Gross) as Gross FROM wordpress.dwp_donation WHERE
+
+	
+
+}
+
 function report_donations(){ 
 	$top=is_int($_GET['top'])?$_GET['top']:1000;	
-	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';		?>
+	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';?>
 
 
 	<form method="get" style="font-size:90%;">
@@ -179,7 +259,7 @@ function report_donations(){
 			<option value="">--All--</option>
 			<?php
 			foreach(Donation::s()->tinyIntDescriptions["TransactionType"] as $key=>$label){
-				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
+				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['TransactionType']?" selected":""?>><?php print $key." - ".$label?></option><?php
 			}?>
 		</select>
 		<button name="f" value="Go">Go</button>
@@ -214,7 +294,8 @@ function report_donations(){
 
 		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-        WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId LIMIT ".$top;      
+        WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId LIMIT ".$top; 
+		//print $SQL;     
         $results = Donation::db()->get_results($SQL);
         ?><table class="dp"><tr><th>DonationId</th><th>Name</th><th>Transaction</th><th>Amount</th><th>Date</th><th>Deposit Date</th><th>Transaction Type</th><th>Category</th><th>Subject</th><th>Note</th></tr><?php
         foreach ($results as $r){

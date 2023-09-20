@@ -41,6 +41,15 @@ class DonationCategory extends ModelLite
             if ($_POST['CategoryId']=='new'){
                 unset($_POST['CategoryId']);
             }
+
+            if ($_GET['ChangeTypeTo']&& $_GET['ChangeTypeFrom']){
+                $uSQL="UPDATE ".Donation::get_table_name()." SET TransactionType='".($_GET['ChangeTypeTo']=='ZERO'?0:$_GET['ChangeTypeTo'])."' WHERE CategoryId='".$_GET['CategoryId']."' AND TransactionType='".($_GET['ChangeTypeFrom']=='ZERO'?0:$_GET['ChangeTypeFrom'])."'";
+                $wpdb->get_results($uSQL);
+                print self::display_notice("TransactionType Changed from ".$_GET['ChangeTypeFrom']." to ".$_GET['ChangeTypeTo']." for Category ".$_GET['CategoryId']);
+
+            }
+
+
             if ($_POST['Function']=="Save" && $_POST['table']=="donation_category"){                
                 
                 $donationCategory=new self($_POST);
@@ -64,6 +73,23 @@ class DonationCategory extends ModelLite
                 }else{
                     ?><div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?php
                     $donationCategory->view(); 
+                    if ($donationCategory->TransactionType){
+                        $SQL="SELECT TransactionType,COUNT(*) as C  FROM ".Donation::get_table_name()." WHERE CategoryId='".$donationCategory->CategoryId."' AND TransactionType<>'".$donationCategory->TransactionType."' Group BY TransactionType";
+                        //print $SQL;
+                        $results = $wpdb->get_results($SQL);
+                        if (sizeof($results)>0){
+                            ?><h4>Donations Exist with Alternative Transaction Types</h4>
+                            <table class="dp"><tr><th>Transaction Type</th><th>Count</th><th></th></tr>
+                            <?php
+                            foreach($results as $r){
+                                print "<tr><td>".$r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]."</td><td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=".$donationCategory->CategoryId."&TransactionType=".($r->TransactionType?$r->TransactionType:"ZERO")."&f=Go'>".$r->C."</td><td><a href='?page=".$_GET['page']."&tab=".$_GET['tab']."&CategoryId=".$_GET['CategoryId']."&ChangeTypeTo=".($donationCategory->TransactionType?$donationCategory->TransactionType:"ZERO")."&ChangeTypeFrom=".($r->TransactionType?$r->TransactionType:"ZERO")."'>Change All To: ".$donationCategory->TransactionType." (".Donation::s()->tinyIntDescriptions["TransactionType"][$donationCategory->TransactionType].")</a></td></tr>";
+
+                            }?>
+                            </table>
+                            <?php 
+                        }
+                        
+                    }
                 }
             ?></div><?php
             return true;
@@ -200,9 +226,9 @@ class DonationCategory extends ModelLite
         ?>
         <h2>Donation Categories</h2>
         <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=new&edit=t">Add Category</a>
-        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>ParentId</th>
+        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>Transaction Type</th><th>ParentId</th>
         <?php if (Quickbooks::is_setup()) print  "<th>QuickBooks Item Id</th>";?>
-        <th>Total</th></tr><?php
+        <th>Total Donations</th><th></th></tr><?php
          self::show_children(0,$parent,0);         
         ?></table>	
         <?php
@@ -212,13 +238,15 @@ class DonationCategory extends ModelLite
         if (!$parent[$parentId]) return;
         foreach ($parent[$parentId] as $r){
             ?><tr>
-                <td style="padding-left:<?php print $level*20?>px"><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $r->CategoryId?>&edit=t"><?php print $r->CategoryId?></a></td>
+                <td style="padding-left:<?php print $level*20?>px"><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $r->CategoryId?>"><?php print $r->CategoryId?></a></td>
                 <td><?php print $r->Category?></td>
                 <td><?php print $r->Description?></td>
+                <td><?php print $r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]?></td>
                 <td><?php print $r->ParentId?></td>
                 <?php if (Quickbooks::is_setup()) print  "<td>".($r->QBItemId>0?Quickbooks::qbLink('Item',$r->QBItemId):"")."</td>";?>
 
-                <td><?php print $r->donation_count?></td>
+                <td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=<?php print $r->CategoryId;?>&f=Go'><?php print $r->donation_count?></a></td>
+                <td><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $r->CategoryId?>&edit=t">edit</a></td>
             </tr>
             <?php
             self::show_children($r->CategoryId,$parent,$level+1);
@@ -314,6 +342,7 @@ class DonationCategory extends ModelLite
             `Description` varchar(250) DEFAULT NULL,
             `ParentId` int(11) DEFAULT NULL,
             `TemplateId` int(11) DEFAULT NULL,
+            `TransactionType` int(11) DEFAULT NULL,
             `QBItemId` int(11) DEFAULT NULL,
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
