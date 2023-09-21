@@ -445,7 +445,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
       
         if ($settings['DefaultCountry'] && $settings['DefaultCountry']==$this->Country){}
         elseif($address) $address.=" ".$this->Country;   
-        if ($address&&$include_name){
+        if (($address&&$include_name) || $settings['NameOnlyOkay']){
             $nameLine=$this->name_combine();
             $address=$nameLine.(trim($address)?$seperator.$address:"");
         }

@@ -150,10 +150,25 @@ function report_tax(){
 		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
 		<strong>Tax year:</strong> <input type="number" min="2000" max="<?php print date("Y")?>" name="TaxYear" value="<?php print $taxYear;?>"/> 
 		<!-- <strong>Tax Period Starting Month:</strong> <input type="number" min="1" max="12" name="TaxMonthStart" value="<?php print $taxYear;?>"/> -->
+		Schedule A Part II 
+		Lines 2-3 (tax levied, gov help) Total: <input type="number" name="extraIncome23" value="<?php print $_GET['extraIncome23']?>"/>
+		Lines 8-10 (other income) Total: <input type="number" name="extraIncome810" value="<?php print $_GET['extraIncome810']?>"/>
+		<strong>Extra Income (like interest) that needs added to for 2% calc:</strong> 	
+		
+		<strong>Extra Income (like interest) that needs added to for 2% calc:</strong> 		
+		<input type="number" name="extraIncome" value="<?php print $_GET['extraIncome']?>"/>
 		<button>Go</button>
+		<?php 
+		$ignore=is_array($_GET['ignore'])?$_GET['ignore']:[];
+		if (sizeof($ignore)>0){
+			print "<br>Ignoring DonorIds: ";
+			foreach($ignore as $ig){
+				?><label><input type="checkbox" name="ignore[]" value="<?php print $ig?>" checked/>  <?php print $ig?></label><?php
+			}
+		}?>
 	</form>
 	<h3>Public Support Test</h3>
-	<div>Reviews giving for the past 5 years, and anybody who gave over 2% of the 5 year total. 
+	<div>Reviews giving for the past 5 years, and anybody who gave over 2% of the 5 year total.</div>
 	
 	<?php
 	### GET Qualifying Yearly Totals (TransationType ID between 0 to 99 are gifts)
@@ -168,6 +183,11 @@ function report_tax(){
 		$total['donated']['total']+=$r->Gross;		
 	 }
 
+	### Find first donation record to guess number of years
+	$SQL="Select MIN(YEAR(Date)) as startYear FROM ".Donation::get_table_name();
+	$results = Donation::db()->get_results($SQL);
+	$firstYear=$results[0]->startYear;
+
 	### Product Service Income (TransationType ID between 100+ )
 	 $SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
 		FROM ".Donation::get_table_name()."
@@ -179,15 +199,15 @@ function report_tax(){
 		$total['service']['year'][$r->TaxYear]+=$r->Gross;
 		$total['service']['total']+=$r->Gross;		
 	 }
-	 $twoPercent=round($total['donated']['total']*.02,0);
+	 $totalSupport=$total['donated']['total']+$_GET['extraIncome23']+$_GET['extraIncome810'];
+	 $twoPercent=round($totalSupport*.02,0);
 	 //dump($total,$twoPercent);
 	 $SQL="Select D.DonorId,D.Name,D.Name2, YEAR(DT.Date) as TaxYear,SUM(DT.Gross) as Gross
 	  FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 99 AND 
+		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 99 AND ".(sizeof($ignore)>0?" D.DonorId NOT IN (".implode(",",$ignore).") AND ":"")."
 		D.DonorId IN (
 			Select DonorId FROM ".Donation::get_table_name()." WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType Between 0 AND 99 Group By DonorId Having SUM(Gross)>'".$twoPercent."' ) 
-			Group By D.DonorId, YEAR(DT.Date),D.Name,D.Name2 Order BY D.Name,YEAR(DT.Date) ";
-		print $SQL;
+			Group By D.DonorId, YEAR(DT.Date),D.Name,D.Name2 Order BY D.Name,YEAR(DT.Date) ";		
 	$results = Donation::db()->get_results($SQL);	
 	foreach ($results as $r){
 		$donors[$r->DonorId]['info']=$r;
@@ -198,24 +218,122 @@ function report_tax(){
 		//print $r->DonorId." ".$r->TaxYear." ".$r->Gross."<br>";
 	}
 
-	?><div>Donated Total: <?php print round($total['donated']['total']);?></div>
+	?><div>Total Support: <strong><?php print number_format($totalSupport)?></strong>  2% threshold = <strong><?php print number_format($twoPercent) ?></strong></div>
 	<style>td.r {text-align:right;}</style>
 	<table class="dp"><tr><th>Donor</th><?php
 	for($y=$taxYear-4;$y<=$taxYear;$y++) print "<th>".$y."</th>";
 	?><th>Total</th><th>Excess contributions (Total minus 2% limitation)</th></tr>
 	<?php
 	foreach($donors as $donorId => $a){
-		?><tr><td><?php print $a['info']->Name.($a['info']->Name2?" and ".$a['info']->Name2:"")?> (<?php print $donorId;?>)</td><?php
-		for($y=$taxYear-4;$y<=$taxYear;$y++) print "<td>".($a['year'][$y]?round($a['year'][$y]):"")."</td>";
-		print "<td class='r'>".round($a['total'])."</td>";
-		print "<td class='r'>".round($a['total']-$twoPercent)."</td></tr>";
+		?><tr><td><?php print $a['info']->Name.($a['info']->Name2?" and ".$a['info']->Name2:"")?> (<a target="lookup" href="?page=donor-index&DonorId=<?php print $donorId;?>"><?php print $donorId;?></a>) 
+		<a href="<?php print basename($_SERVER['REQUEST_URI'])?>&ignore[]=<?php print $donorId?>">ignore</a>
+		</td><?php
+		for($y=$taxYear-4;$y<=$taxYear;$y++) print "<td class='r'>".($a['year'][$y]?number_format($a['year'][$y]):"")."</td>";
+		print "<td class='r'>".number_format($a['total'])."</td>";
+		print "<td class='r'>".number_format($a['total']-$twoPercent)."</td></tr>";
 		$total['excess']+=$a['total']-$twoPercent;
 
 	}?>
-	<tr><td colspan=7>Total.</td><td class='r'><?php print round($total['excess'])?></td></tr>
+	<tr><td colspan=7>Total</td><td class='r'><?php print number_format($total['excess'])?></td></tr>
 
-	</table><?php
-		
+	</table>
+	<?php
+	if ($sheduleBThreshold=$twoPercent<5000?$twoPercent:5000);
+	$i=0;
+	?>
+	<h2>Schedule A (Form 990)</h2>
+	<h3>Part II - Section A. Public Support</h3>
+	<div>The donor system does not currently distinguish between tax revenues, or government services. 
+	<table class="dp">
+		<tr><th colspan=2>Calendar year (or fiscal year beginning in)</th><?php
+	for($y=$taxYear-4;$y<=$taxYear;$y++){ 		
+		print "<th>(".chr($i+97).") ".$y."</th>";
+		$i++;
+	}
+	?><th>(f) Total</th></tr>
+	<tr><td>1</td><td>Gifts, grants, contributions, and membership fees received. (Do not include any "unusual grants."")</td>
+	<?php
+	for($y=$taxYear-4;$y<=$taxYear;$y++){ 		
+		print "<td class='r'>".($total['donated']['year'][$y]?number_format($total['donated']['year'][$y]):"")."</td>";
+		$i++;
+	}print "<td class='r'>".($total['donated']['total']?number_format($total['donated']['total']):"")."</td>";
+	?></tr>
+	<tr><td>2-3</td><td>Tax revenues levied for the
+organization’s benefit and either paid to
+or expended on its behalf.<br> The value of services or facilities
+furnished by a governmental unit to the
+organization without charge .
+</td>
+	<?php
+	for($y=$taxYear-4;$y<=$taxYear;$y++){ 		
+		print "<td class='r'></td>";
+	}print "<td class='r'>".$_GET['extraIncome23']."</td>";
+	?></tr>
+	<tr><td>4</td><td>Total. Add lines 1 through 3</td>
+	<?php
+	for($y=$taxYear-4;$y<=$taxYear;$y++){ 		
+		print "<td class='r'></td>";
+	}print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total'])."</td>";
+	?></tr>
+	<tr><td>5</td><td colspan=6>The portion of total contributions by each person (other than a governmental unit or publicly supported organization) included on line 1 that exceeds 2% of the amount shown on line 11, column (f)</td>
+	<?php
+	print "<td class='r'>".($total['excess']?number_format($total['excess']):"")."</td>";
+	?></tr>
+	<tr><td>6</td><td colspan=6>Public support. Subtract line 5 from line 4</td>
+	<?php
+	print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total']-$total['excess'])."</td>";
+	?></tr>
+	<tr><td>7</td><td colspan=6>Amounts from line 4</td>
+	<?php
+	print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total'])."</td>";
+	?></tr>
+	<tr><td>8-10</td><td  colspan=6>Interest, unrelated business income, Other total</td>
+	<?php
+	print "<td class='r'>".number_format($_GET['extraIncome810'])."</td>";
+	?></tr>
+	<tr><td>11</td><td colspan=6>Total Support</td>
+	<?php
+	print "<td class='r'>".number_format($totalSupport)."</td>";
+	?></tr>
+	<tr><td>12</td><td colspan=6>Gross receipts from related activities, etc.</td>
+	<?php	print "<td class='r'>".number_format($totalSupport)."</td>";?></tr>
+	<tr><td>13</td><td colspan=6>First 5 years. If the Form 990 is for the organization’s first, second, third, fourth, or fifth tax year as a section 501(c)(3)
+organization, check this box and stop here</td>
+	<?php	print "<td>".($taxYear-$firstYear+1>5?"No":"Yes")." (".($taxYear-$firstYear+1)." estimated reporting years)</td>";?></tr>
+	<tr><td>14</td><td colspan=6>Public support percentage for <?=$taxYear?> (line 6, column (f), divided by line 11, column (f))</td>
+	<?php	print "<td>".number_format(100*($_GET['extraIncome23']+$total['donated']['total']-$total['excess'])/$totalSupport,2)."%</td>";?></tr>
+	$_GET['extraIncome23']+$total['donated']['total']-$total['excess']
+	</table>
+	
+	<h2>Schedule B (Form 990)</h2>
+	<div>Top Donors needing reported because they are over $5,000 for the <?php print $taxYear?> tax year OR over the 2% Threshold: <?php print number_format($twoPercent)?></div>
+	<table class="dp">
+		<tr>
+			<th>(a)<br>No.</th>
+			<th>(b)<br>Name, address, and ZIP + 4</th>
+			<th>(c)<br>Total contributions</th>
+		</tr>
+	<?php
+	$i=0;
+	 $SQL="Select D.DonorId, D.Name, D.Name2, D.Address1, D.Address2, D.City, D.Region, D.PostalCode, D.Country, SUM(DT.Gross) as Gross
+	 FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+	   WHERE YEAR(DT.Date) = ".$taxYear." AND DT.TransactionType Between 0 AND 99  	  
+		   Group By D.DonorId, D.Name, D.Name2, D.Address1, D.Address2, D.City, D.Region, D.PostalCode, D.Country
+		   HAVING SUM(DT.Gross) > ".$sheduleBThreshold."
+		   Order BY SUM(DT.Gross) DESC  ";
+		   //print $SQL;
+	$results = Donation::db()->get_results($SQL);	
+	foreach ($results as $r){
+		$i++;
+		$donor=new Donor($r);
+		?><tr>
+			<td><?php print $i?></td>
+			<td><?php print $donor->mailing_address("<br>",true,['NameOnlyOkay'=>true])?></td>
+			<td class="r"><?php print number_format($r->Gross)?></td>
+		</tr>
+		<?php
+	}
+	?></table><?php
 	//SELECT DonorId, YEAR(Date) as TaxYear, SUM(Gross) as Gross FROM wordpress.dwp_donation WHERE
 
 	
