@@ -575,6 +575,8 @@ class Donation extends ModelLite
                     self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
                     $donation->full_view();
                     return true;
+                }else{
+                    print "problem saving";
                 }
             }
             if ($_POST['syncDonationToInvoiceQB']=="t"){
@@ -592,6 +594,8 @@ class Donation extends ModelLite
             if ($donation->save()){
                 self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
                 $donation->full_view();
+            }else{
+                print "problem saving on insert";
             }
             return true;
         }elseif ($_POST['Function']=="QBDonorToCustomerCheck" && $_POST['DonorsToCreateInQB']){
@@ -691,7 +695,7 @@ class Donation extends ModelLite
             ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t&raw=t">Edit Raw</a></div><?php
         }?>
         
-        <form method="post" action="?page=donor-index&DonationId=<?php print $this->DonationId?>" style="border: 1px solid #999; padding:20px; width:90%;">
+        <form method="post" action="?page=donor-index<?php print ($this->DonationId?'&DonationId='.$this->DonationId:'')?>" style="border: 1px solid #999; padding:20px; width:90%;">
         <input type="hidden" name="table" value="donation">
         <?php foreach ($hiddenFields as $field){?>
 		    <input type="hidden" name="<?php print $field?>" value="<?php print $this->$field?>"/>
@@ -914,7 +918,7 @@ class Donation extends ModelLite
         if ($this->CategoryId && (!$this->TransactionType || $this->TransactionType==0)){ //this is slightly problematic if we want it to be "0", but it is overwritten by the category on save. Could cause some perceived buggy behavior.      
             $this->TransactionType=DonationCategory::get_default_transaction_type($this->CategoryId);          
         }
-        parent::save($time);
+        return parent::save($time);
 
     }
 
