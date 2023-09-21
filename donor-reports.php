@@ -159,7 +159,7 @@ function report_tax(){
 	### GET Qualifying Yearly Totals (TransationType ID between 0 to 99 are gifts)
 	$SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
 		FROM ".Donation::get_table_name()."
-		WHERE YEAR(Date) BETWEEN ".($taxYear-5)." AND ".$taxYear." AND TransactionType Between 0 AND 99
+		WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType Between 0 AND 99
 		Group By YEAR(Date) 
 		Order BY YEAR(Date)";
 	 $results = Donation::db()->get_results($SQL);	
@@ -171,7 +171,7 @@ function report_tax(){
 	### Product Service Income (TransationType ID between 100+ )
 	 $SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
 		FROM ".Donation::get_table_name()."
-		WHERE YEAR(Date) BETWEEN ".($taxYear-5)." AND ".$taxYear." AND TransactionType >= 100
+		WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType >= 100
 		Group By YEAR(Date) 
 		Order BY YEAR(Date)";
 	 $results = Donation::db()->get_results($SQL);	
@@ -183,9 +183,9 @@ function report_tax(){
 	 //dump($total,$twoPercent);
 	 $SQL="Select D.DonorId,D.Name,D.Name2, YEAR(DT.Date) as TaxYear,SUM(DT.Gross) as Gross
 	  FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-5)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 99 AND 
+		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 99 AND 
 		D.DonorId IN (
-			Select DonorId FROM ".Donation::get_table_name()." WHERE YEAR(Date) BETWEEN ".($taxYear-5)." AND ".$taxYear." AND TransactionType Between 0 AND 99 Group By DonorId Having SUM(Gross)>'".$twoPercent."' ) 
+			Select DonorId FROM ".Donation::get_table_name()." WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType Between 0 AND 99 Group By DonorId Having SUM(Gross)>'".$twoPercent."' ) 
 			Group By D.DonorId, YEAR(DT.Date),D.Name,D.Name2 Order BY D.Name,YEAR(DT.Date) ";
 		print $SQL;
 	$results = Donation::db()->get_results($SQL);	
@@ -198,17 +198,23 @@ function report_tax(){
 		//print $r->DonorId." ".$r->TaxYear." ".$r->Gross."<br>";
 	}
 
-	?><table class="dp"><tr><th>Donor</th><?php
-	for($y=$taxYear-5;$y<=$taxYear;$y++) print "<th>".$y."</th>";
+	?><div>Donated Total: <?php print round($total['donated']['total']);?></div>
+	<style>td.r {text-align:right;}</style>
+	<table class="dp"><tr><th>Donor</th><?php
+	for($y=$taxYear-4;$y<=$taxYear;$y++) print "<th>".$y."</th>";
 	?><th>Total</th><th>Excess contributions (Total minus 2% limitation)</th></tr>
 	<?php
 	foreach($donors as $donorId => $a){
 		?><tr><td><?php print $a['info']->Name.($a['info']->Name2?" and ".$a['info']->Name2:"")?> (<?php print $donorId;?>)</td><?php
-		for($y=$taxYear-5;$y<=$taxYear;$y++) print "<td>".($a['year'][$y]?round($a['year'][$y]):"")."</td>";
-		print "<td>".round($a['total'])."</td>";
-		print "<td>".round($a['total']-$twoPercent)."</td></tr>";
+		for($y=$taxYear-4;$y<=$taxYear;$y++) print "<td>".($a['year'][$y]?round($a['year'][$y]):"")."</td>";
+		print "<td class='r'>".round($a['total'])."</td>";
+		print "<td class='r'>".round($a['total']-$twoPercent)."</td></tr>";
+		$total['excess']+=$a['total']-$twoPercent;
 
-	}?></table><?php
+	}?>
+	<tr><td colspan=7>Total.</td><td class='r'><?php print round($total['excess'])?></td></tr>
+
+	</table><?php
 		
 	//SELECT DonorId, YEAR(Date) as TaxYear, SUM(Gross) as Gross FROM wordpress.dwp_donation WHERE
 
