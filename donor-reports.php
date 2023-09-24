@@ -312,7 +312,7 @@ similar sources</td>
 	print "<td class='r'>".number_format($totalSupport)."</td>";
 	?></tr>
 	<tr><td>12</td><td colspan=6>Gross receipts from related activities, etc.</td>
-	<?php	print "<td class='r'>".number_format($totalSupport)."</td>";?></tr>
+	<?php	print "<td class='r'>".number_format($total[$key]['total'])."</td>";?></tr>
 	<tr><td>13</td><td colspan=6>First 5 years. If the Form 990 is for the organization’s first, second, third, fourth, or fifth tax year as a section 501(c)(3)
 organization, check this box and stop here</td>
 	<?php	print "<td>".($taxYear-$firstYear+1>5?"No":"Yes")." (".($taxYear-$firstYear+1)." estimated reporting years)</td>";?></tr>
