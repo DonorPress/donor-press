@@ -150,13 +150,13 @@ function report_tax(){
 		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
 		<strong>Tax year:</strong> <input type="number" min="2000" max="<?php print date("Y")?>" name="TaxYear" value="<?php print $taxYear;?>"/> 
 		<!-- <strong>Tax Period Starting Month:</strong> <input type="number" min="1" max="12" name="TaxMonthStart" value="<?php print $taxYear;?>"/> -->
-		Schedule A Part II 
+		<br>
+		<strong>Schedule A Part II</strong>
 		Lines 2-3 (tax levied, gov help) Total: <input type="number" name="extraIncome23" value="<?php print $_GET['extraIncome23']?>"/>
-		Lines 8-10 (other income) Total: <input type="number" name="extraIncome810" value="<?php print $_GET['extraIncome810']?>"/>
-		<strong>Extra Income (like interest) that needs added to for 2% calc:</strong> 	
-		
-		<strong>Extra Income (like interest) that needs added to for 2% calc:</strong> 		
-		<input type="number" name="extraIncome" value="<?php print $_GET['extraIncome']?>"/>
+		<br>
+		Lines 9-10 (other income) Total: <input type="number" name="extraIncome810" value="<?php print $_GET['extraIncome810']?>"/>
+		<strong>Extra Income (like interest) that needs added to for 2% calc:</strong> 			
+
 		<button>Go</button>
 		<?php 
 		$ignore=is_array($_GET['ignore'])?$_GET['ignore']:[];
@@ -188,23 +188,32 @@ function report_tax(){
 	$results = Donation::db()->get_results($SQL);
 	$firstYear=$results[0]->startYear;
 
-	### Product Service Income (TransationType ID between 100+ )
-	 $SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
-		FROM ".Donation::get_table_name()."
-		WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType >= 100
-		Group By YEAR(Date) 
-		Order BY YEAR(Date)";
-	 $results = Donation::db()->get_results($SQL);	
-	 foreach ($results as $r){
-		$total['service']['year'][$r->TaxYear]+=$r->Gross;
-		$total['service']['total']+=$r->Gross;		
-	 }
-	 $totalSupport=$total['donated']['total']+$_GET['extraIncome23']+$_GET['extraIncome810'];
+	### Other Income: 90=interest, Product Service Income (100,101)
+	$SQL="SELECT TransactionType,YEAR(Date) as TaxYear,SUM(Gross) as Gross
+	 FROM ".Donation::get_table_name()."
+	 WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType >= 90 
+	 Group By TransactionType, YEAR(Date) 
+	 Order BY TransactionType,YEAR(Date)";
+	$results = Donation::db()->get_results($SQL);	
+	foreach ($results as $r){
+		switch($r->TransactionType){
+			case 90: $key='interest'; break;
+			case 100:
+			case 101: $key='service'; break;
+			default: $key='other'; break;
+		}
+		$total[$key]['year'][$r->TaxYear]+=$r->Gross;
+		$total[$key]['total']+=$r->Gross;		
+	}
+
+
+
+	 $totalSupport=$total['donated']['total']+$total['interest']['total']+$_GET['extraIncome23']+$_GET['extraIncome810'];
 	 $twoPercent=round($totalSupport*.02,0);
 	 //dump($total,$twoPercent);
 	 $SQL="Select D.DonorId,D.Name,D.Name2, YEAR(DT.Date) as TaxYear,SUM(DT.Gross) as Gross
 	  FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 99 AND ".(sizeof($ignore)>0?" D.DonorId NOT IN (".implode(",",$ignore).") AND ":"")."
+		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 89 AND ".(sizeof($ignore)>0?" D.DonorId NOT IN (".implode(",",$ignore).") AND ":"")."
 		D.DonorId IN (
 			Select DonorId FROM ".Donation::get_table_name()." WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType Between 0 AND 99 Group By DonorId Having SUM(Gross)>'".$twoPercent."' ) 
 			Group By D.DonorId, YEAR(DT.Date),D.Name,D.Name2 Order BY D.Name,YEAR(DT.Date) ";		
@@ -213,11 +222,7 @@ function report_tax(){
 		$donors[$r->DonorId]['info']=$r;
 		$donors[$r->DonorId]['year'][$r->TaxYear]+=$r->Gross;
 		$donors[$r->DonorId]['total']+=$r->Gross;	
-
-		//dump($r);
-		//print $r->DonorId." ".$r->TaxYear." ".$r->Gross."<br>";
 	}
-
 	?><div>Total Support: <strong><?php print number_format($totalSupport)?></strong>  2% threshold = <strong><?php print number_format($twoPercent) ?></strong></div>
 	<style>td.r {text-align:right;}</style>
 	<table class="dp"><tr><th>Donor</th><?php
@@ -287,7 +292,18 @@ organization without charge .
 	<?php
 	print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total'])."</td>";
 	?></tr>
-	<tr><td>8-10</td><td  colspan=6>Interest, unrelated business income, Other total</td>
+	
+	<tr><td>8</td><td>Gross income from interest, dividends,
+payments received on securities loans,
+rents, royalties, and income from
+similar sources</td>
+	<?php
+	for($y=$taxYear-4;$y<=$taxYear;$y++){ 		
+		print "<td class='r'>".($total['interest']['year'][$y]?number_format($total['interest']['year'][$y]):"")."</td>";
+		$i++;
+	}print "<td class='r'>".($total['interest']['total']?number_format($total['interest']['total']):"")."</td>";
+	?></tr>
+	<tr><td>9-10</td><td  colspan=6>Interest, unrelated business income, Other total</td>
 	<?php
 	print "<td class='r'>".number_format($_GET['extraIncome810'])."</td>";
 	?></tr>
