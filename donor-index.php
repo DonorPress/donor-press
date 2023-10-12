@@ -55,37 +55,21 @@
 				
 	}?>
 
-
-<div style="border:1px solid gray; padding: 20px; margin-top:10px;">
-<div>File Upload Options:</div>
-<form action="" method="post" enctype="multipart/form-data">
-	<h4>Add From Paypal (.csv method)  </h4>
-	<div><em>Note: it is recommended setting up Paypal API integration access instead</em></div>
-	Import Paypal Exported File: (.csv)
-  <input type="file" name="fileToUpload" id="fileToUpload" accept=".csv"> 
-  <input type="hidden" name="uploadSummary" value="true" checked/>
-
-  <?php submit_button('Upload','primary','submit',false) ?>
-  <br><a target="help" href="https://www.paypal.com/us/smarthelp/article/how-do-i-download-my-transaction-history-faq1007">Read how to download .csv transaction history from Paypal</a>
- 
-  
-</form>
-
-<!-- <form action="" method="post" enctype="multipart/form-data">
-	<h4>Upload From Template (Non Paypal)</h4>
-  <input type="file" name="fileToUpload" id="fileToUpload" accept=".csv"> 
-  <input type="hidden" name="uploadSummary" value="true" checked/>
-  <?php submit_button('Upload NonPaypal','primary','submit',false) ?>
- <a href="<?php print plugin_dir_url( __FILE__ )?>resources/SampleNonPaypalFileUpload.csv">Download Non Paypal Template</a> - Must keep this structure intact!
-  
-</form> -->
-
-<form action="" method="post" enctype="multipart/form-data">
-	<h4>Upload Generic .csv file</h4>
+<form action="" method="post" enctype="multipart/form-data" style="border:1px solid gray; padding: 20px; margin-top:10px;">
+	<h2>Upload Generic CSV file</h2>
   <input type="file" name="fileToUpload" accept=".csv,.xls,.xlsx"> 
   <input type="hidden" name="uploadGenericFile" value="true" checked/>
   <?php submit_button('Upload File','primary','submit',false) ?>
  </form>
-</div>
+	
+<form action="" method="post" enctype="multipart/form-data" style="border:1px solid gray; padding: 20px; margin-top:10px;">
+	<h2>Paypal CSV File</h2>	
+	<div><em>Note: it is recommended setting up Paypal API integration access instead</em></div>
+	Import Paypal Exported File: (.csv)
+<input type="file" name="fileToUpload" id="fileToUpload" accept=".csv"> 
+<input type="hidden" name="uploadSummary" value="true" checked/>
 
-</div>
+<?php submit_button('Upload','primary','submit',false) ?>
+<br><a target="help" href="https://www.paypal.com/us/smarthelp/article/how-do-i-download-my-transaction-history-faq1007">Read how to download .csv transaction history from Paypal</a>	
+</form>
+
