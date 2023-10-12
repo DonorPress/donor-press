@@ -160,6 +160,7 @@ function report_tax(){
 		<button>Go</button>
 		<?php 
 		$ignore=is_array($_GET['ignore'])?$_GET['ignore']:[];
+		$unusual=is_array($_GET['unusual'])?$_GET['unusual']:[]; 
 		if (sizeof($ignore)>0){
 			print "<br>Ignoring DonorIds: ";
 			foreach($ignore as $ig){
@@ -175,6 +176,7 @@ function report_tax(){
 	$SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
 		FROM ".Donation::get_table_name()."
 		WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType Between 0 AND 99
+		".(sizeof($unusual)>0?" AND DonorId NOT IN (".implode(",",$unusual).")":"")."
 		Group By YEAR(Date) 
 		Order BY YEAR(Date)";
 	 $results = Donation::db()->get_results($SQL);	
@@ -232,6 +234,9 @@ function report_tax(){
 	foreach($donors as $donorId => $a){
 		?><tr><td><?php print $a['info']->Name.($a['info']->Name2?" and ".$a['info']->Name2:"")?> (<a target="lookup" href="?page=donor-index&DonorId=<?php print $donorId;?>"><?php print $donorId;?></a>) 
 		<a href="<?php print basename($_SERVER['REQUEST_URI'])?>&ignore[]=<?php print $donorId?>">ignore</a>
+		| <?php if (in_array($donorId,$unusual) ) print "<strong>Unusual Grant*</strong>";
+		else {?> <a href="<?php print basename($_SERVER['REQUEST_URI'])?>&unusual[]=<?php print $donorId?>">Unusual Grant</a>
+		<?php } ?>
 		</td><?php
 		for($y=$taxYear-4;$y<=$taxYear;$y++) print "<td class='r'>".($a['year'][$y]?number_format($a['year'][$y]):"")."</td>";
 		print "<td class='r'>".number_format($a['total'])."</td>";
@@ -243,6 +248,9 @@ function report_tax(){
 
 	</table>
 	<?php
+	if (sizeof($unusual)>0){
+		print "<div>* Usual Grants are not currently saved to the database, but are only active via this page link for 'what if' scenerios.</div>";
+	}
 	if ($sheduleBThreshold=$twoPercent<5000?$twoPercent:5000);
 	$i=0;
 	?>
