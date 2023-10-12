@@ -158,7 +158,7 @@ class ModelLite{
 			$value=$row->$field;
 			switch($field){
 				case "Gross":
-					$value*=1;
+					$value=(float)$value*1;
 				break;
 				default:
 					$value=strtoupper($value);
