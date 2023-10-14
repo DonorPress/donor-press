@@ -242,10 +242,14 @@ function report_tax(){
 		print "<td class='r'>".number_format($a['total'])."</td>";
 		print "<td class='r'>".number_format($a['total']-$twoPercent)."</td></tr>";
 		$total['excess']+=$a['total']-$twoPercent;
+		if (!in_array($donorId,$unusual)) $total['excessMinusUnusual']+=$a['total']-$twoPercent;
 
 	}?>
 	<tr><td colspan=7>Total</td><td class='r'><?php print number_format($total['excess'])?></td></tr>
-
+	<?php 
+	if($total['excessMinusUnusual']!=$total['excess']){
+		?><tr><td colspan=7>Total Minus Unusual</td><td class='r'><?php print number_format($total['excessMinusUnusual'])?></td></tr><?php
+	}?>
 	</table>
 	<?php
 	if (sizeof($unusual)>0){
@@ -290,11 +294,11 @@ organization without charge .
 	?></tr>
 	<tr><td>5</td><td colspan=6>The portion of total contributions by each person (other than a governmental unit or publicly supported organization) included on line 1 that exceeds 2% of the amount shown on line 11, column (f)</td>
 	<?php
-	print "<td class='r'>".($total['excess']?number_format($total['excess']):"")."</td>";
+	print "<td class='r'>".($total['excessMinusUnusual']?number_format($total['excessMinusUnusual']):"")."</td>";
 	?></tr>
 	<tr><td>6</td><td colspan=6>Public support. Subtract line 5 from line 4</td>
 	<?php
-	print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total']-$total['excess'])."</td>";
+	print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total']-$total['excessMinusUnusual'])."</td>";
 	?></tr>
 	<tr><td>7</td><td colspan=6>Amounts from line 4</td>
 	<?php
@@ -325,8 +329,8 @@ similar sources</td>
 organization, check this box and stop here</td>
 	<?php	print "<td>".($taxYear-$firstYear+1>5?"No":"Yes")." (".($taxYear-$firstYear+1)." estimated reporting years)</td>";?></tr>
 	<tr><td>14</td><td colspan=6>Public support percentage for <?=$taxYear?> (line 6, column (f), divided by line 11, column (f))</td>
-	<?php	print "<td>".number_format(100*($_GET['extraIncome23']+$total['donated']['total']-$total['excess'])/$totalSupport,2)."%</td>";?></tr>
-	$_GET['extraIncome23']+$total['donated']['total']-$total['excess']
+	<?php	print "<td>".number_format(100*($_GET['extraIncome23']+$total['donated']['total']-$total['excessMinusUnusual'])/$totalSupport,2)."%</td>";?></tr>
+	$_GET['extraIncome23']+$total['donated']['total']-$total['excessMinusUnusual']
 	</table>
 	
 	<h2>Schedule B (Form 990)</h2>
