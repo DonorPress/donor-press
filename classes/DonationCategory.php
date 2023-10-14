@@ -87,7 +87,11 @@ class DonationCategory extends ModelLite
                             }?>
                             </table>
                             <?php 
-                        }                        
+                        }else{
+                            print "Query came up empty: ".$SQL;
+                        }                       
+                    }else{
+                        print "Type not found";
                     }
                 }
             ?></div><?php
