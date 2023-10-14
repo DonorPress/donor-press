@@ -87,8 +87,7 @@ class DonationCategory extends ModelLite
                             }?>
                             </table>
                             <?php 
-                        }
-                        
+                        }                        
                     }
                 }
             ?></div><?php
