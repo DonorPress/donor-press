@@ -60,10 +60,10 @@ class DonorTemplate extends ModelLite {
         ?><h2>Editing Donor Template #<?php print $this->ID?></h2>
         <?php 
         }else{
-            ?><h2>New Donor Template <?php print $_GET['CopyDonorTemplateId']?" Copy of #".$_GET['CopyDonorTemplateId']:""?></h2>
+            ?><h2>New Donor Template <?php print self::input('CopyDonorTemplateId','get')?" Copy of #".self::input('CopyDonorTemplateId','get'):""?></h2>
         <?php
         }?>
-        <form method="post" action="?page=<?php print $_GET['page']?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>&tab=<?php print $_GET['tab']?>">
+        <form method="post" action="?page=<?php print self::input('page','get')?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>&tab=<?php print self::input('tab','get')?>">
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
 		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
         <input type="hidden" name="post_type" value="donortemplate"/>
@@ -156,7 +156,7 @@ class DonorTemplate extends ModelLite {
 
     static public function request_handler(){        
         $wpdb=self::db();  
-        if ($_POST['Function'] == 'Save' && $_POST['table']=="posts" && $_POST['post_type'] == 'donortemplate'){
+        if (self::input('Function','post') == 'Save' && self::input('table','post')=="posts" && self::input('post_type','post') == 'donortemplate'){
             $template=new self($_POST);
             $template->post_excerpt=self::post_to_settings($_POST);          
             $template->post_modified=time();
@@ -166,19 +166,19 @@ class DonorTemplate extends ModelLite {
                 //return true;
             }
 
-        }elseif ($_GET['DonorTemplateId']){
-            $t=self::find($_GET['DonorTemplateId']);
-            if ($_GET['edit']=="t"){  
+        }elseif (self::input('DonorTemplateId','get')){
+            $t=self::find(self::input('DonorTemplateId','get'));
+            if (self::input('edit','get')=="t"){  
                 //self::dump($t) ;                     
                 $t->edit();
             }else{
                 $t->view();
             }           
             return true;
-        }elseif($_GET['CopyDonorTemplateId']){
-            $t=self::find($_GET['CopyDonorTemplateId']);
+        }elseif(self::input('CopyDonorTemplateId','get')){
+            $t=self::find(self::input('CopyDonorTemplateId','get'));
             $t->ID='';
-            $t->post_name.='-copy'.$_GET['CopyDonorTemplateId'];
+            $t->post_name.='-copy'.self::input('CopyDonorTemplateId','get');
             $t->edit();           
             return true;
         }    
@@ -192,10 +192,10 @@ class DonorTemplate extends ModelLite {
         <table class="dp"><tr><th>Template</th><th>Subject</th><th>Body</th><th></th></tr>
         <?php
         foreach ($results as $r){ 
-            ?><tr><td><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&DonorTemplateId=<?php print $r->ID?>&edit=t"><?php print $r->post_name?></a></td>
+            ?><tr><td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&DonorTemplateId=<?php print $r->ID?>&edit=t"><?php print $r->post_name?></a></td>
                 <td><?php print $r->post_title;?></td>
                 <td><?php print substr(strip_tags($r->post_content,array('<p>','<br>')),0,160)?>...</td>
-                <td><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CopyDonorTemplateId=<?php print $r->ID?>&edit=t">Copy</a></td>
+                <td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CopyDonorTemplateId=<?php print $r->ID?>&edit=t">Copy</a></td>
             </tr><?php
         }
         ?></table><?php

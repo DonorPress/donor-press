@@ -229,7 +229,7 @@ class Donation extends ModelLite
             if (sizeof($results)>0){
                 ?><table class="dp"><tr><th><?php print $gfa?></th><th>Total</th><th>Donations</th><th>Donors</th></tr><?php
                 foreach ($results as $r){
-                    ?><tr><td><?php print $r->$gfa.($tinyInt[$gf][$r->$gfa]?" - ". $tinyInt[$gf][$r->$gfa]:"")?></td>
+                    ?><tr><td><?php print $r->$gfa.(isset($tinyInt[$gf][$r->$gfa])?" - ". $tinyInt[$gf][$r->$gfa]:"")?></td>
                     <td align=right>$<?php print number_format($r->TotalRaised,2)?></td>
                     <td align=right><?php print number_format($r->TotalDonations)?></td>
                     <td align=right><?php print number_format($r->TotalDonors)?></td>
@@ -284,7 +284,7 @@ class Donation extends ModelLite
     }
 
     static public function donation_upload_groups(){
-        $limit=is_int($_GET['limit'])?$_GET['limit']:20;
+        $limit=is_int(self::input('limit','get'))?self::input('limit','get'):20;
         $wpdb=self::db();  
         $SQL="SELECT `CreatedAt`,MIN(`DateDeposited`) as DepositedMin, MAX(`DateDeposited`) as DepositedMax,COUNT(*) as C,Count(R.ReceiptId) as ReceiptSentCount
         FROM ".Donation::get_table_name()." D
@@ -292,15 +292,15 @@ class Donation extends ModelLite
         ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE 1
         Group BY `CreatedAt` Order BY `CreatedAt` DESC LIMIT ".$limit;
          $results = $wpdb->get_results($SQL);
-         $linkBase="?page=".$_GET['page']."&tab=".$_GET['tab']."&limit=".$limit."&dateField=CreatedAt&SummaryView=f";
+         $linkBase="?page=".self::input('page','get')."&tab=".self::input('tab','get')."&limit=".$limit."&dateField=CreatedAt&SummaryView=f";
          ?><h2>Upload Groups</h2>
          <form method="get" action="">
-            <input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-            <input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
+            <input type="hidden" name="page" value="<?php print self::input('page','get')?>" />
+            <input type="hidden" name="tab" value="<?php print self::input('tab','get')?>" />
             Limit: <input type="number" name="limit" value="<?php print $limit?>"/>
-			Summary From <input type="date" name="df" value="<?php print $_GET['df']?>"/> to <input type="date" name="dt" value="<?php print $_GET['dt']?>"/> Date Field: <select name="dateField">
+			Summary From <input type="date" name="df" value="<?php print self::input('df','get')?>"/> to <input type="date" name="dt" value="<?php print self::input('dt','get')?>"/> Date Field: <select name="dateField">
             <?php foreach (self::s()->dateFields as $field=>$label){?>
-                <option value="<?php print $field?>"<?php print $_GET['dateField']==$field?" selected":""?>><?php print $label?> Date</option>
+                <option value="<?php print $field?>"<?php print self::input('dateField','get')==$field?" selected":""?>><?php print $label?> Date</option>
             <?php } ?>
             </select>
             <button type="submit" name="ActionView" value="t">View action List</button>
@@ -314,7 +314,7 @@ class Donation extends ModelLite
 
          <table class="dp"><tr><th>Upload Date</th><th>Donation Deposit Date Range</th><th>Count</th><th></th></tr><?php
          foreach ($results as $r){?>
-             <tr><td><?php print $r->CreatedAt?></td><td align=right><?php print $r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?php print $r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?php print $_GET['page']?>&UploadDate=<?php print urlencode($r->CreatedAt)?>">View All</a> <?php print ($r->ReceiptSentCount<$r->C?" | <a href='?page=".$_GET['page']."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?php print $_GET['page']?>&SummaryView=t&UploadDate=<?php print urlencode($r->CreatedAt)?>">View Summary</a></td></tr><?php
+             <tr><td><?php print $r->CreatedAt?></td><td align=right><?php print $r->DepositedMin.($r->DepositedMax!==$r->DepositedMin?" to ".$r->DepositedMax:"")?></td><td><?php print $r->ReceiptSentCount." of ".$r->C?></td><td><a href="?page=<?php print self::input('page','get')?>&UploadDate=<?php print urlencode($r->CreatedAt)?>">View All</a> <?php print ($r->ReceiptSentCount<$r->C?" | <a href='?page=".self::input('page','get')."&UploadDate=".$r->CreatedAt."&unsent=t'>View Unsent</a>":"")?>| <a href="?page=<?php print self::input('page','get')?>&SummaryView=t&UploadDate=<?php print urlencode($r->CreatedAt)?>">View Summary</a></td></tr><?php
             
          }?></table><?php
     }
@@ -526,16 +526,15 @@ class Donation extends ModelLite
     }
 
     static public function request_handler(){
-        if (!isset($_GET['f'])) $_GET['f']=null;
         if(isset($_FILES['fileToUpload'])){
             DonationUpload::csv_upload_check();
             return true;
-        }elseif($_POST['Function']=="ProcessMapFile"){
+        }elseif(self::input('Function','post')=="ProcessMapFile"){
             DonationUpload::process_map_file($_POST);
-        }elseif ($_GET['f']=="AddDonation"){           
+        }elseif (self::input('f','get')=="AddDonation"){           
             $donation=new Donation();
-            if ($_GET['DonorId']){
-               $donor=Donor::find($_GET['DonorId']);
+            if (self::input('DonorId','get')){
+               $donor=Donor::find(self::input('DonorId','get'));
                $donorText=" for Donor #".$donor->DonorId." ".$donor->Name;
                ### copy settings from the last donation...
                $lastDonation=Donation::first(['DonorId ='.$donor->DonorId],"DonationId DESC",
@@ -556,12 +555,12 @@ class Donation extends ModelLite
 
             $donation->edit_simple_form();           
             return true;
-        }elseif ($_POST['Function']=="Cancel" && $_POST['table']=="donation"){
-            $donor=Donor::find($_POST['DonorId']);
+        }elseif (self::input('Function','post')=="Cancel" && self::input('table','post')=="donation"){
+            $donor=Donor::find(self::input('DonorId','post'));
             $donor->view();
             return true;
-        }elseif ($_REQUEST['DonationId']){	
-            if ($_POST['Function']=="Delete" && $_POST['table']=="donation"){
+        }elseif (self::input('DonationId','request')){	
+            if (self::input('Function','post')=="Delete" && self::input('table','post')=="donation"){
                 $donation=new Donation($_POST);
                 if ($donation->delete()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." for $".$donation->Gross." from ".$donation->Name." on ".$donation->Date." deleted");
@@ -569,7 +568,7 @@ class Donation extends ModelLite
                     return true;
                 }
             }
-            if ($_POST['Function']=="Save" && $_POST['table']=="donation"){
+            if (self::input('Function','post')=="Save" && self::input('table','post')=="donation"){
                 $donation=new Donation($_POST);
                 if ($donation->save()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
@@ -579,17 +578,17 @@ class Donation extends ModelLite
                     print "problem saving";
                 }
             }
-            if ($_POST['syncDonationToInvoiceQB']=="t"){
+            if (self::input('syncDonationToInvoiceQB','post')=="t"){
                 $qb=new QuickBooks();
-                $invoice_id=$qb->donation_to_invoice_check($_POST['DonationId'],$_POST['ItemId']); //ItemId
-                if ($invoice_id) self::display_notice("Quickbooks Invoice: ".QuickBooks::qbLink('Invoice',$invoice_id) ." added to Donation #".$_POST['DonationId']." saved.");
+                $invoice_id=$qb->donation_to_invoice_check(self::input('DonationId','post'),self::input('ItemId','post')); //ItemId
+                if ($invoice_id) self::display_notice("Quickbooks Invoice: ".QuickBooks::qbLink('Invoice',$invoice_id) ." added to Donation #".self::input('DonationId','post')." saved.");
                 
             }
 
-            $donation=Donation::find($_REQUEST['DonationId']);	
+            $donation=Donation::find(self::input('DonationId','request'));	
             $donation->full_view();
             return true;
-        }elseif ($_POST['Function']=="Save" && $_POST['table']=="donation"){
+        }elseif (self::input('Function','post')=="Save" && self::input('table','post')=="donation"){
             $donation=new Donation($_POST);            
             if ($donation->save()){
                 self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
@@ -598,13 +597,13 @@ class Donation extends ModelLite
                 print "problem saving on insert";
             }
             return true;
-        }elseif ($_POST['Function']=="QBDonorToCustomerCheck" && $_POST['DonorsToCreateInQB']){
+        }elseif (self::input('Function','post')=="QBDonorToCustomerCheck" && self::input('DonorsToCreateInQB','post')){
             $qb=new QuickBooks();
-            $qb->DonorToCustomer(explode("|",$_POST['DonorsToCreateInQB']));  
+            $qb->DonorToCustomer(explode("|",self::input('DonorsToCreateInQB','post')));  
             return true;         
             
-        }elseif($_POST['Function']=="QBDonationToInvoice" && $_POST['DonationsToCreateInQB']){
-            $donationIds=explode("|",$_POST['DonationsToCreateInQB']);            
+        }elseif(self::input('Function','post')=="QBDonationToInvoice" && self::input('DonationsToCreateInQB','post')){
+            $donationIds=explode("|",self::input('DonationsToCreateInQB','post'));            
             $donations=self::get(["DonationId IN ('".implode("','",$donationIds)."')"]);            
             foreach($donations as $donation){
                 $donation->QBItemId=$_POST['QBItemId_'.$donation->DonationId];
@@ -612,14 +611,14 @@ class Donation extends ModelLite
             }
             self::display_notice(sizeof($donations)." invoices/payments created in QuickBooks.");  
             return true;     
-        }elseif($_GET['UploadDate'] || $_GET['SummaryView'] || $_GET['ActionView']){    
-            if ($_POST['Function']=="LinkMatchQBtoDonorId"){
+        }elseif(self::input('UploadDate','get') || self::input('SummaryView','get') || self::input('ActionView','get')){    
+            if (self::input('Function','post')=="LinkMatchQBtoDonorId"){
                 $qb=new QuickBooks();
-                $qb->process_customer_match($_POST['match'],$_POST['rmatch']);                    
+                $qb->process_customer_match(self::input('match','post'),self::input('rmatch','post'));                    
             }
             
-            if ($_POST['Function']=="EmailDonationReceipts" && sizeof($_POST['EmailDonationId'])>0){               
-                foreach($_POST['EmailDonationId'] as $donationId){
+            if (self::input('Function','post')=="EmailDonationReceipts" && sizeof(self::input('EmailDonationId','post'))>0){               
+                foreach(self::input('EmailDonationId','post') as $donationId){
                     $donation=Donation::find($donationId);
                     if ($donation->FromEmailAddress){                        
                         print $donation->email_receipt($donation->FromEmailAddress);
@@ -630,24 +629,24 @@ class Donation extends ModelLite
             }
             ?>
              <div>
-                    <div><a href="?page=<?php print $_GET['page']?>">Return</a></div><?php
+                    <div><a href="?page=<?php print self::input('page','get')?>">Return</a></div><?php
                     $where=[];
-                    if ($_GET['UploadDate']){
-                        $where[]="`CreatedAt`='".$_GET['UploadDate']."'";
+                    if (self::input('UploadDate','get')){
+                        $where[]="`CreatedAt`='".self::input('UploadDate','get')."'";
                     }
                     
-                    $dateField=(self::s()->dateFields[$_GET['dateField']]?$_GET['dateField']:key(self::s()->dateFields));
-                    if ($_GET['df']){
-                        $where[]="DATE(`$dateField`)>='".$_GET['df']."'";
+                    $dateField=(self::s()->dateFields[self::input('dateField','get')]?self::input('dateField','get'):key(self::s()->dateFields));
+                    if (self::input('df','get')){
+                        $where[]="DATE(`$dateField`)>='".self::input('df','get')."'";
                     }
-                    if ($_GET['dt']){
-                        $where[]="DATE(`$dateField`)<='".$_GET['dt']."'";
+                    if (self::input('dt','get')){
+                        $where[]="DATE(`$dateField`)<='".self::input('dt','get')."'";
                     } 
                     //dd($where);                   
                     self::view_donations($where,
                         array(
-                            'unsent'=>$_GET['unsent']=="t"?true:false,
-                            'summary'=>$_GET['SummaryView']=="t"?true:false
+                            'unsent'=>self::input('unsent','get')=="t"?true:false,
+                            'summary'=>self::input('SummaryView','get')=="t"?true:false
                             )
                         );                    
              ?></div><?php
@@ -662,12 +661,12 @@ class Donation extends ModelLite
         <div>
             <form method="get">
                 <input type="hidden" name="page" value="donor-index"/>
-                <div><a href="?page=<?php print $_GET['page']?>">Home</a> |
+                <div><a href="?page=<?php print self::input('page','get')?>">Home</a> |
                 <a href="?page=donor-index&DonorId=<?php print $this->DonorId?>">View Donor</a> | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>
             </form>
             <h1>Donation #<?php print $this->DonationId?></h1><?php
-            if ($_REQUEST['edit']){
-                if ($_REQUEST['raw']) $this->edit_form();
+            if (self::input('edit','request')){
+                if (self::input('raw','request')) $this->edit_form();
                 else{ $this->edit_simple_form(); }
             }else{
                 ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t">Edit Donation</a></div><?php
@@ -752,7 +751,7 @@ class Donation extends ModelLite
     }
 
     function receipt_email(){
-        if ($this->emailBuilder) return;
+        if (isset($this->emailBuilder) && $this->emailBuilder) return;
         $this->emailBuilder=new stdClass();
 
         if ($this->CategoryId){
@@ -790,7 +789,7 @@ class Donation extends ModelLite
         }
         $this->emailBuilder->pageID=$page->ID;
        
-        if (!$this->Donor)  $this->Donor=Donor::find($this->DonorId);
+        if (!isset($this->Donor) || !$this->Donor)  $this->Donor=Donor::find($this->DonorId);
         $address=$this->Donor->mailing_address();
         $subject=$page->post_title;
         $body=$page->post_content;
@@ -867,7 +866,8 @@ class Donation extends ModelLite
         }    
     }
 
-    public function email_receipt($email="",$customMessage=null,$subject=null){      
+    public function email_receipt($email="",$customMessage=null,$subject=null){ 
+        $notice="";     
         $this->receipt_email();
         if (!$email){
             return false;         
@@ -964,23 +964,23 @@ class Donation extends ModelLite
     public function receipt_form(){  
         $donor=Donor::find($this->DonorId); 
         $this->receipt_email();            
-        if ($_POST['Function']=="SendDonationReceipt" && $_POST['Email']){
-            print $this->email_receipt($_POST['Email'],stripslashes_deep($_POST['customMessage']),stripslashes_deep($_POST['EmailSubject']));
+        if (self::input('Function','post')=="SendDonationReceipt" && self::input('Email','post')){
+            print $this->email_receipt(self::input('Email','post'),stripslashes_deep(self::input('customMessage','post')),stripslashes_deep(self::input('EmailSubject','post')));
             
         }
         $file=$this->receipt_file_info();
                
-        print "<div class='no-print'><a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
+        print "<div class='no-print'><a href='?page=".self::input('page','get')."'>Home</a> | <a href='?page=".self::input('page','get')."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","KeyType='DonationId'","KeyId='".$this->DonationId."'"));
         $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
-        $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
-        $bodyContent=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']):$bodyContent; //Post value overrides this though.
+        $bodyContent=isset($receipts[$lastReceiptKey]) && $receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
+        $bodyContent=self::input('customMessage','post')?stripslashes_deep(self::input('customMessage','post')):$bodyContent; //Post value overrides this though.
         
-        $subject=$_POST['EmailSubject']?stripslashes_deep($_POST['EmailSubject']):$this->emailBuilder->subject;
+        $subject=self::input('EmailSubject','post')?stripslashes_deep(self::input('EmailSubject','post')):$this->emailBuilder->subject;
 
         //dump($receipts[$lastReceiptKey]);
 
-        if ($_GET['resetLetter']=="t"){
+        if (self::input('resetLetter','get')=="t"){
             $subject=$this->emailBuilder->subject;
             $bodyContent=$this->emailBuilder->body;
         }
@@ -1028,9 +1028,9 @@ class Donation extends ModelLite
    
         print DonationReceipt::show_results($receipts,"You have not sent this donor a Receipt.");
 
-        $emailToUse=($_POST['Email']?$_POST['Email']:$this->FromEmailAddress);
+        $emailToUse=(self::input('Email','post')?self::input('Email','post'):$this->FromEmailAddress);
         if (!$emailToUse) $emailToUse=$this->Donor->Email;
-        ?><form method="post" action="?page=<?php print $_GET['page']?>&DonationId=<?php print $this->DonationId?>">
+        ?><form method="post" action="?page=<?php print self::input('page','get')?>&DonationId=<?php print $this->DonationId?>">
             <h2>Send Receipt</h2>
             <input type="hidden" name="DonationId" value="<?php print $this->DonationId?>">
             <div>Send Receipt to: <input type="email" name="Email" value="<?php print $emailToUse?>">

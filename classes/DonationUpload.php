@@ -181,7 +181,7 @@ class DonationUpload extends ModelLite
             if (!$donation->Net) $donation->Net=$donation->Gross + $donation->Fee;
             //dd($donor,$post,$r);
             if ($donor->Name){
-                $key=$donor->flat_key($_POST['donorKey']);
+                $key=$donor->flat_key(self::input('donorKey','post'));
                 $donors[$key]['donor']=$donor;
                 $donors[$key]['donations'][$donation->flat_key()]=$donation;
             }else{
@@ -194,11 +194,11 @@ class DonationUpload extends ModelLite
         //dd($donors[key($donors)]);
         $stats=[];
         ### get donor keys for ALL donors -> if this gets big, might run into memory errors with this.
-        $SQL="SELECT DonorId,MergedId,".(implode(",",$_POST['donorKey']))." FROM ".Donor::s()->get_table();
+        $SQL="SELECT DonorId,MergedId,".(implode(",",self::input('donorKey','post')))." FROM ".Donor::s()->get_table();
 		$all=self::db()->get_results($SQL);
         foreach($all as $r){
             $donor=new Donor($r);
-            $existingDonors[$donor->flat_key($_POST['donorKey'])]=$r->MergedId>0?$r->MergedId:$r->DonorId; //if the match has been merged, then return the merged to entry.
+            $existingDonors[$donor->flat_key(self::input('donorKey','post'))]=$r->MergedId>0?$r->MergedId:$r->DonorId; //if the match has been merged, then return the merged to entry.
         }
 
         foreach($donors as $key=>$a){
@@ -488,10 +488,10 @@ class DonationUpload extends ModelLite
            
             if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
                 self::display_notice("The file ". $originalFile. " has been uploaded.");               
-                if ($_REQUEST['submit']=="Upload File"){
+                if (self::input('submit','request')=="Upload File"){
                     $result=self::csv_read_file_map($originalFile,$firstLineColumns=true,$timeNow);
                     return; 
-                }elseif ($_REQUEST['submit']=="Upload NonPaypal"){
+                }elseif (self::input('submit','request')=="Upload NonPaypal"){
                     $result=self::csv_read_file_check($target_file,$firstLineColumns=true);                               
                 }else{              
                     $result=self::csv_read_file($target_file,$firstLineColumns=true,$timeNow);                   
@@ -507,7 +507,7 @@ class DonationUpload extends ModelLite
                      print "<h2>The following changes are suggested</h2><form method='post'>";
                      print "<table border='1'><tr><th>#</th><th>Name</th><th>Change</th></tr>";
                      foreach ($suggest_donor_changes as $donorId => $changes){
-                         print "<tr><td><a target='lookup' href='?page=".$_GET['page']."&DonorId=".$donorId."'>".$donorId."</td><td>".$changes['Name']['c']."</td><td>";
+                         print "<tr><td><a target='lookup' href='?page=".self::input('page','get')."&DonorId=".$donorId."'>".$donorId."</td><td>".$changes['Name']['c']."</td><td>";
                          foreach($changes as $field=>$values){
                             if ($values['n']){                               
                                 //krsort($values['n']);

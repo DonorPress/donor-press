@@ -12,7 +12,7 @@
 </style>
 <?php
 $tabs=['cv'=>'Site Variables','email'=>'Email Templates','cat'=>'Donation Categories','type'=>'Donor Types','bak'=>'Backup/Restore'];
-$active_tab=Donor::show_tabs($tabs,$active_tab);
+$active_tab=Donor::show_tabs($tabs);
 
 ?>
 <div id="pluginwrap">

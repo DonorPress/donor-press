@@ -237,8 +237,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     public function view(){ ?>
         <div>
-            <a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&edit=t">Edit Donor</a> | 
-            <a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=AddDonation">Add Donation</a>
+            <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&edit=t">Edit Donor</a> | 
+            <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&f=AddDonation">Add Donation</a>
         </div>
         <?php
         $this->var_view();
@@ -246,9 +246,9 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $this->merge_form();
         ?>
         <h2>Donation Summary</h2>
-        <div>Year End Receipt: <a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")?>"><?php print date("Y")?></a> | <a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")-1?>"><?php print date("Y")-1?></a> | <a href="?page=<?php print $_GET['page']?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")-2?>"><?php print date("Y")-2?></a></div>
+        <div>Year End Receipt: <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")?>"><?php print date("Y")?></a> | <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")-1?>"><?php print date("Y")-1?></a> | <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")-2?>"><?php print date("Y")-2?></a></div>
         <?php
-         $totals=[];
+         $totals=['Count'=>0,'Total'=>0];
         $SQL="SELECT  `Type`,	SUM(`Gross`) as Total,Count(*) as Count FROM ".Donation::get_table_name()." 
         WHERE DonorId='".$this->DonorId."'  Group BY `Type`";
         $results = self::db()->get_results($SQL);
@@ -276,26 +276,26 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     static public function request_handler(){      
-        if ($_POST['table']=='donor' && $_POST['DonorId'] && $_POST['Function']=="Delete"){
+        if (self::input('table','post')=='donor' && self::input('DonorId','post') && self::input('Function','post')=="Delete"){
             //check if any donations connected to this account or merged ids..
-            $donations=Donation::get(array('DonorId='.$_POST['DonorId']));
+            $donations=Donation::get(array('DonorId='.self::input('DonorId','post')));
             if (sizeof($donations)>0){
-                self::display_error("Can't delete Donor #".$_POST['DonorId'].". There are ".sizeof($donations)." donation(s) attached to this.");           
+                self::display_error("Can't delete Donor #".self::input('DonorId','post').". There are ".sizeof($donations)." donation(s) attached to this.");           
                 return false;
             }
-            $donors=Donation::get(array('MergedId='.$_POST['DonorId']));
+            $donors=Donation::get(array('MergedId='.self::input('DonorId','post')));
             if (sizeof($donors)>0){
-                self::display_error("Can't delete Donor #".$_POST['DonorId'].". There are ".sizeof($donors)." donors merged to this entry.");                           
+                self::display_error("Can't delete Donor #".self::input('DonorId','post').". There are ".sizeof($donors)." donors merged to this entry.");                           
                 return false;
             }else{
-                $dSQL="DELETE FROM ".Donor::get_table_name()." WHERE `DonorId`='".$_POST['DonorId']."'";
+                $dSQL="DELETE FROM ".Donor::get_table_name()." WHERE `DonorId`='".self::input('DonorId','post')."'";
                 self::db()->query($dSQL);
-                self::display_notice("Deleted Donor #".$_POST['DonorId'].".");                           
+                self::display_notice("Deleted Donor #".self::input('DonorId','post').".");                           
                 return true;
             }
 
 
-        }elseif ($_POST['Function']=='MergeDonor' && $_POST['DonorId']){
+        }elseif (self::input('Function','post')=='MergeDonor' && self::input('DonorId','post')){
             //self::dump($_POST);            
             $data=array();
             foreach(self::s()->fillable as $field){
@@ -305,80 +305,80 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
             if (sizeof($data)>0){
                 ### Update Master Entry with Fields from merged details
-                self::db()->update(self::s()->get_table(),$data,array('DonorId'=>$_POST['DonorId']));
+                self::db()->update(self::s()->get_table(),$data,array('DonorId'=>self::input('DonorId','post')));
             }
-            $mergeUpdate['MergedId']=$_POST['DonorId'];
-            foreach($_POST['donorIds'] as $oldId){
-                if ($oldId!=$_POST['DonorId']){
+            $mergeUpdate['MergedId']=self::input('DonorId','post');
+            foreach(self::input('donorIds','post') as $oldId){
+                if ($oldId!=self::input('DonorId','post')){
                     ### Set MergedId on Old Donor entry
                     self::db()->update(self::s()->get_table(),$mergeUpdate,array('DonorId'=>$oldId));
                     ### Update all donations on old donor to new donor
-                    $uSQL="UPDATE ".Donation::s()->get_table()." SET DonorId='".$_POST['DonorId']."' WHERE DonorId='".$oldId."'";  
+                    $uSQL="UPDATE ".Donation::s()->get_table()." SET DonorId='".self::input('DonorId','post')."' WHERE DonorId='".$oldId."'";  
                     self::db()->query($uSQL);
-                    self::display_notice("Donor #<a href='?page=".$_GET['page']."&DonorId=".$oldId."'>".$oldId."</a> merged to #<a href='?page=".$_GET['page']."&DonorId=".$_POST['DonorId']."'>".$_POST['DonorId']."</a>");
+                    self::display_notice("Donor #<a href='?page=".self::input('page','get')."&DonorId=".$oldId."'>".$oldId."</a> merged to #<a href='?page=".self::input('page','get')."&DonorId=".self::input('DonorId','post')."'>".self::input('DonorId','post')."</a>");
                 }
             }  
-            $_GET['DonorId']=$_POST['DonorId']; 
+            $_GET['DonorId']=self::input('DonorId','post'); 
 
         }
-        if ($_GET['f']=="AddDonor"){
+        if (self::input('f','get')=="AddDonor"){
             $donor=new Donor;
-            if ($_REQUEST['dsearch'] && !$donor->DonorId && !$donor->Name){
-                $donor->Name=$_REQUEST['dsearch'];
+            if (self::input('dsearch','request') && !$donor->DonorId && !$donor->Name){
+                $donor->Name=self::input('dsearch','request');
             }          
             print "<h2>Add Donor</h2>";            
             $donor->edit_form();           
             return true;
-        }elseif($_GET['f']=="summary_list" && $_GET['dt'] && $_GET['df']){            
-            self::summary_list(array("Date BETWEEN '".$_GET['df']." 00:00:00' AND '".$_GET['dt']." 23:59:59'"),$_GET['Year']);
+        }elseif(self::input('f','get')=="summary_list" && self::input('dt','get') && self::input('df','get')){            
+            self::summary_list(array("Date BETWEEN '".self::input('df','get')." 00:00:00' AND '".self::input('dt','get')." 23:59:59'"),self::input('Year','get'));
             return true;
-        }elseif($_POST['Function']=='MergeConfirm'){ 
-            $donorA=Donor::find($_POST['MergeFrom']);
-            $donorB=Donor::find($_POST['MergedId']);
+        }elseif(self::input('Function','post')=='MergeConfirm'){ 
+            $donorA=Donor::find(self::input('MergeFrom','post'));
+            $donorB=Donor::find(self::input('MergedId','post'));
             if (!$donorB->DonorId){
-                 self::display_error("Donor ".$_POST['MergedId']." not found.");
+                 self::display_error("Donor ".self::input('MergedId','post')." not found.");
                  return false;
             }else{
                 $donorB->merge_form_compare($donorA);
             }
             return true;
-        }elseif($_GET['Function']=='MergeConfirm'){ 
-            $donorA=Donor::find($_GET['MergeFrom']);
-            $donorB=Donor::find($_GET['MergedId']);
+        }elseif(self::input('Function','get')=='MergeConfirm'){ 
+            $donorA=Donor::find(self::input('MergeFrom','get'));
+            $donorB=Donor::find(self::input('MergedId','get'));
             if (!$donorB->DonorId){
-                 self::display_error("Donor ".$_GET['MergedId']." not found.");
+                 self::display_error("Donor ".self::input('MergedId','get')." not found.");
                  return false;
             }else{
                 $donorB->merge_form_compare($donorA);
             }
             return true;
-        }elseif ($_GET['DonorId']){
-            if ($_GET['f']=="YearReceipt"){
-                $donor=Donor::find($_REQUEST['DonorId']);
-                $donor->year_receipt_form($_GET['Year']);
+        }elseif (self::input('DonorId','get')){
+            if (self::input('f','get')=="YearReceipt"){
+                $donor=Donor::find(self::input('DonorId','request'));
+                $donor->year_receipt_form(self::input('Year','get'));
                 return true;
             }
             
-            if ($_POST['Function']=="Save" && $_POST['table']=="donor"){
+            if (self::input('Function','post')=="Save" && self::input('table','post')=="donor"){
                 $donor=new Donor($_POST);
                 if ($donor->save()){			
                     self::display_notice("Donor #".$donor->show_field("DonorId")." saved.");
                 }
                 
             }
-            $donor=Donor::find($_REQUEST['DonorId']);	
+            $donor=Donor::find(self::input('DonorId','request'));	
             ?>
             <div>
                <?php 
                 $donor->donor_header();
-                if ($_REQUEST['edit']){
+                if (self::input('edit','request')){
                     $donor->edit_form();
                 }else{             
                     $donor->view();                    
                 }
             ?></div><?php            
             return true;
-        }elseif ($_POST['Function']=="Save" && $_POST['table']=="donor"){
+        }elseif (self::input('Function','post')=="Save" && self::input('table','post')=="donor"){
             $donor=new Donor($_POST);
             if ($donor->save()){			
                 self::display_notice("Donor #".$donor->show_field("DonorId")." saved.");
@@ -386,15 +386,15 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
             return true;
             
-        }elseif($_POST['Function']=='MakeDonorChanges'){            
+        }elseif(self::input('Function','post')=='MakeDonorChanges'){            
             self::db()->show_errors();
-            foreach($_POST['changes'] as $line){
+            foreach(self::input('changes','post') as $line){
                 $v=explode("||",$line); //$donorId."||".$field."||".$value
                 $changes[$v[0]][$v[1]]=$v[2];
             }
             if (sizeof($changes)>0){
                 foreach($changes as $donorId=>$change){
-                    $ulinks[]='<a target="lookup" href="?page='.$_GET['page'].'&DonorId='.$donorId.'">'.$donorId.'</a>';
+                    $ulinks[]='<a target="lookup" href="?page='.self::input('page','get').'&DonorId='.$donorId.'">'.$donorId.'</a>';
                     self::db()->update(self::get_table_name(),$change,array("DonorId"=>$donorId));
 
                 }
@@ -407,12 +407,12 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
     function donor_header(){?>
         <form method="get">
-        <input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
-        <div><a href="?page=<?php print $_GET['page']?>">Home</a> 
-        <?php if ($_REQUEST['edit']){?> | <a href="?page=donor-index&DonorId=<?php print $this->DonorId?>">View Donor</a> <?php }?>
+        <input type="hidden" name="page" value="<?php print self::input('page','get')?>"/>
+        <div><a href="?page=<?php print self::input('page','get')?>">Home</a> 
+        <?php if (self::input('edit','request')){?> | <a href="?page=donor-index&DonorId=<?php print $this->DonorId?>">View Donor</a> <?php }?>
          | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>        
     </form>                
-    <h1>Donor Profile #<?php print $_REQUEST['DonorId']?> <?php print $this->Name?></h1>
+    <h1>Donor Profile #<?php print self::input('DonorId','request')?> <?php print $this->Name?></h1>
     <?php
     }
     function name_combine(){
@@ -443,7 +443,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         if ($this->Address2) $address.=$this->Address2.$seperator;
         if ($this->City || $this->Region) $address.=$this->City." ".$this->Region." ".$this->PostalCode;
       
-        if ($settings['DefaultCountry'] && $settings['DefaultCountry']==$this->Country){}
+        if (isset($settings['DefaultCountry']) && $settings['DefaultCountry']==$this->Country){}
         elseif($address) $address.=" ".$this->Country;   
         if (($address&&$include_name) || $settings['NameOnlyOkay']){
             $nameLine=$this->name_combine();
@@ -561,7 +561,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         ." Order BY ".$settings['orderBy'];
 
         $results = self::db()->get_results($SQL);
-        ?><div><a href="?page=<?php print $_GET['page']?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
+        ?><div><a href="?page=<?php print self::input('page','get')?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
         <table class="dp">
             <thead>
                 <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr>
@@ -571,7 +571,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $donor=new self($r);
             ?>
             <tr>
-                <td><a target="donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
+                <td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
                 <td><?php print $donor->display_email()?></td>    
                 <td><?php print $donor->phone()?></td> 
                 <td><?php print $donor->mailing_address(', ',false)?></td>          
@@ -623,13 +623,13 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $donor=new self($r);
             $donorTotal=$r->Total;
             ?>
-            <tr><td><a target="donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> 
-            <a target="donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&edit=t">edit</a></td>
+            <tr><td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> 
+            <a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>&edit=t">edit</a></td>
             <td><?php print $donor->name_check()?></td>
             <td><?php print $donor->display_email()?></td> 
             <td><?php print $donor->mailing_address("<br>",false)?></td>             
             <td><?php print $r->donation_count?></td>
-            <td align=right><?php print number_format($r->Total,2)?></td><td><a target="donor" href="?page=<?php print $_GET['page']?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
+            <td align=right><?php print number_format($r->Total,2)?></td><td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
             <td><?php
              if (filter_var($r->Email, FILTER_VALIDATE_EMAIL) && $r->EmailStatus>=0) {
                 ?><input name="emails[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId] ?"":" checked")?>/><?php
@@ -653,7 +653,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             </tr><?php
             $total+=$donorTotal;
         }?><tr><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td><td></td></table>
-        Limit: <Input type="number" name="limit" value="<?php print $_REQUEST['limit']?>" style="width:50px;"/>
+        Limit: <Input type="number" name="limit" value="<?php print self::input('limit')?>" style="width:50px;"/>
         <button type="submit" name="Function" value="SendYearEndEmail">Send Year End E-mails</button>
         <button type="submit" name="Function" value="SendYearEndPdf">Send Year End Pdf</button> <label><input type="checkbox" name="blankBack" value="t"> Print Blank Back</label>
         <label><input type="checkbox" name="preview" value="t"> Preview Only - Don't mark .pdf as sent</label>
@@ -788,28 +788,28 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     function year_receipt_form($year){       
         $this->year_receipt_email($year);  
         $form="";      
-        if ($_POST['Function']=="SendYearReceipt" && $_POST['Email']){
-            $html=$_POST['customMessage']?stripslashes_deep($_POST['customMessage']) :$this->emailBuilder->body;
+        if (self::input('Function','post')=="SendYearReceipt" && self::input('Email','post')){
+            $html=self::input('customMessage','post')?stripslashes_deep(self::input('customMessage','post')) :$this->emailBuilder->body;
             //
-            if (wp_mail($_POST['Email'], $this->emailBuilder->subject,$html,array('Content-Type: text/html; charset=UTF-8'))){ 
-                $form.="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$_POST['Email']."</div>";
-                $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$_POST['Email'],"Subject"=>$this->emailBuilder->subject,"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
+            if (wp_mail(self::input('Email','post'), $this->emailBuilder->subject,$html,array('Content-Type: text/html; charset=UTF-8'))){ 
+                $form.="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".self::input('Email','post')."</div>";
+                $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>self::input('Email','post'),"Subject"=>$this->emailBuilder->subject,"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
                 $dr->save();
-                self::display_notice($year." Year End Receipt Sent to: ".$_POST['Email']);
+                self::display_notice($year." Year End Receipt Sent to: ".self::input('Email','post'));
             }
         }        
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","`KeyType`='YearEnd'","`KeyId`='".$year."'"));
         $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;        
         
         
-        $homeLinks="<a href='?page=".$_GET['page']."'>Home</a> | <a href='?page=".$_GET['page']."&DonorId=".$this->DonorId."'>Return to Donor Overview</a>";
+        $homeLinks="<a href='?page=".self::input('page','get')."'>Home</a> | <a href='?page=".self::input('page','get')."&DonorId=".$this->DonorId."'>Return to Donor Overview</a>";
 
-        if ($_REQUEST['reset']){
+        if (self::input('reset','request')){
             $bodyContent=$this->emailBuilder->body;
         }else{
             $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body;
             if ($receipts &&$bodyContent!=$this->emailBuilder->body){
-                $homeLinks.= "| <a href='?page=donor-index&DonorId=".$_REQUEST['DonorId']."&f=YearReceipt&Year=".$_REQUEST['Year']."&reset=t'>Update/Reset Letter with latest information</a>";
+                $homeLinks.= "| <a href='?page=donor-index&DonorId=".self::input('DonorId','request')."&f=YearReceipt&Year=".self::input('Year')."&reset=t'>Update/Reset Letter with latest information</a>";
             }
         }
 
@@ -823,7 +823,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
         
         ### Form View
-        print '<div class="no-print"><hr>Send Receipt to: <input type="email" name="Email" value="'.($_POST['Email']?$_POST['Email']:$this->Email).'"/><button type="submit" name="Function" value="SendYearReceipt">Send E-mail</button>
+        print '<div class="no-print"><hr>Send Receipt to: <input type="email" name="Email" value="'.(self::input('Email','post')?self::input('Email','post'):$this->Email).'"/><button type="submit" name="Function" value="SendYearReceipt">Send E-mail</button>
         <button type="submit" name="Function" value="YearEndReceiptPdf">Generate PDF</button>';
        
         print DonationReceipt::show_results($receipts);

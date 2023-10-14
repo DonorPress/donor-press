@@ -293,7 +293,7 @@ class CustomVariables extends ModelLite
     static public function nuke_confirm(){
         ?><h2>You are about to remove all donor/donations records from the database</h2>
         <div style='color:red;'>This will be permanent. Please back up anything important before proceeding.</div>
-        <form method="post" action="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>">
+        <form method="post" action="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>">
             <label><input type="checkbox" name="backup" value="t" checked>Backup Existing Donor Press Records to a flat file</label><br>  
             <label><input type="checkbox" name="droptable" value="t" checked>Drop All Tables Data and Structures (Donor, Donation, Categories)</label><br>           
             <label><input type="checkbox" name="dropfields" value="t" checked>Drop All Custom Fields (Letter Templates, settings)</label><br>
@@ -332,7 +332,7 @@ class CustomVariables extends ModelLite
 
     static public function request_handler(){
         $wpdb=self::db();         
-        switch($_POST['Function']){
+        switch(self::input('Function','post')){
             case 'BackupDonorPress': 
                 self::backup();
                 break;
@@ -359,7 +359,7 @@ class CustomVariables extends ModelLite
         }		
 
 		
-        if ($_POST['Function'] == 'Save' && $_POST['table']=="CustomVariables"){
+        if (self::input('Function','post') == 'Save' && self::input('table','post')=="CustomVariables"){
             foreach(self::variables as $var){
                 self::evaluate_post_save($var);   
             }
@@ -374,7 +374,7 @@ class CustomVariables extends ModelLite
             }
 
             ### handle Quickbook Settings - number of fields could change.
-            if (isset($_POST['QBPaymentMethod_1'])){ //assumes locally there is always a one.
+            if (self::input('QBPaymentMethod_1','post')){ //assumes locally there is always a one.
                 foreach(Donation::s()->tinyIntDescriptions["PaymentSource"] as $key=>$label){                  
                     self::evaluate_post_save("QBPaymentMethod_".$key);
                 }

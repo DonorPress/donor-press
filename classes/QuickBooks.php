@@ -214,22 +214,22 @@ class QuickBooks extends ModelLite
     }
 
     public function request_handler(){ 
-        if($_GET['ignoreSyncDonation']){ //doesn't require authentication first...
-            $this-> ignore_sync_donation($_GET['ignoreSyncDonation']);
+        if(self::input('ignoreSyncDonation','get')){ //doesn't require authentication first...
+            $this-> ignore_sync_donation(self::input('ignoreSyncDonation','get'));
             return true;           
         }     
         if ($this->authenticate()){
-            if ($_GET['syncDonorId']){
-                $this->donor_to_customer_check($_GET['syncDonorId'],$_GET['QuickBooksId']);
+            if (self::input('syncDonorId','get')){
+                $this->donor_to_customer_check(self::input('syncDonorId','get'),self::input('QuickBooksId','get'));
                 return true;
-            }elseif($_GET['syncDonationPaid']){
-                $this->donation_to_payment_check($_GET['syncDonationPaid']);
-            }elseif($_GET['syncDonation']){
-                $this->donation_to_invoice_check($_GET['syncDonation'],$_GET['ItemId']); //ItemId
+            }elseif(self::input('syncDonationPaid','get')){
+                $this->donation_to_payment_check(self::input('syncDonationPaid','get'));
+            }elseif(self::input('syncDonation','get')){
+                $this->donation_to_invoice_check(self::input('syncDonation','get'),self::input('ItemId','get')); //ItemId
                 return true;
-            }elseif ($_POST['Function']=='SaveQuickBooks' && $_POST['quickbooks_table'] && $_POST['quickbooks_id']){
+            }elseif (self::input('Function','post')=='SaveQuickBooks' && self::input('quickbooks_table','post') && self::input('quickbooks_id','post')){
                 ### Get Current entry
-                $entity=$this->dataService->FindById($_POST['quickbooks_table'], $_POST['quickbooks_id']);
+                $entity=$this->dataService->FindById(self::input('quickbooks_table','post'), self::input('quickbooks_id','post'));
                 $this->dataService->throwExceptionOnError(true);               
                 if($this->check_dateService_error()){
                     $changedFields=$this->find_changed_fields('',$entity);
@@ -383,7 +383,7 @@ class QuickBooks extends ModelLite
         }
         if ($this->authenticate()){
             $customer=false;
-            if ($_GET['forceNew'=='true']){ //skip lookups and jump to creation.
+            if (self::input('forceNew'=='true','get')){ //skip lookups and jump to creation.
 
             }elseif ($quickBookId){
                 $customer=$this->dataService->FindById("Customer", $quickBookId);
@@ -408,16 +408,16 @@ class QuickBooks extends ModelLite
                 if (isset($entities) && sizeof($entities)>1){
                     print "<div class=\"notice notice-success\">Attempting to Sync Donor #".$donor->show_field('DonorId').", however multiple Quick Book Matches were found. Please select the closest match:<ul>";
                     foreach($entities as $customer){
-                        print '<li><a href="?page='.$_GET['page'].'&syncDonorId='.$donorId.'&QuickBooksId='.$customer->Id.'">#'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address.'</li>';
+                        print '<li><a href="?page='.self::input('page','get').'&syncDonorId='.$donorId.'&QuickBooksId='.$customer->Id.'">#'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address.'</li>';
                     }
-                    print '<li><a href="?page='.$_GET['page'].'&syncDonorId='.$donorId.'&forceNew=true">Force New Entry</a></li>';
+                    print '<li><a href="?page='.self::input('page','get').'&syncDonorId='.$donorId.'&forceNew=true">Force New Entry</a></li>';
                     print "</ul><div>";
                     return false;
                 }
             }
             if ($customer){
                 self::display_notice('Match Found. #'.$customer->Id.' '.$customer->DisplayName.'</a> '.$customer->PrimaryEmailAddr->Address);
-                print '<div><a href="?page='.$_GET['page'].'&syncDonorId='.$donorId.'&forceNew=true">Force New Entry</a> - careful when doing this. You want to avoid creating duplicate entries.</div>';
+                print '<div><a href="?page='.self::input('page','get').'&syncDonorId='.$donorId.'&forceNew=true">Force New Entry</a> - careful when doing this. You want to avoid creating duplicate entries.</div>';
                 print "Add Sync Logic Here";
             }else{                    
                 //create new entry here.
@@ -471,13 +471,13 @@ class QuickBooks extends ModelLite
             if ($entities[0]){               
                 return $entities[0];
             }else{
-                if ($_POST['IncomeAccount']){ //creation form submitted
+                if (self::input('IncomeAccount','post')){ //creation form submitted
                 $item = new IPPItem();
                 $item->Name="Donation";
                 $item->Description="Donation";
                 $item->Active=true;
                 $item->Type="NonInventory";
-                $item->IncomeAccountRef=$_POST['IncomeAccount'];
+                $item->IncomeAccountRef=self::input('IncomeAccount','post');
                 $resultObj=$this->dataService->Add($item);
                 if($this->check_dateService_error()){                   
                     return $resultObj;
@@ -555,9 +555,9 @@ class QuickBooks extends ModelLite
     }
 
     public function default_item_id($donation,$donor=null){
-        if ($donation->QBItemId>0){ //not actually a variable we store, but can be set manually when posting
+        if (isset($donation->QBItemId) && $donation->QBItemId>0){ //not actually a variable we store, but can be set manually when posting
             return $donation->QBItemId;
-        }elseif($donation->CategoryId){
+        }elseif(isset($donation->CategoryId) && $donation->CategoryId){
             $category=DonationCategory::find($donation->CategoryId);
             $QBItemId=$category?$category->getQuickBooksId():null;
             if ($QBItemId) return $QBItemId;
@@ -760,13 +760,13 @@ class QuickBooks extends ModelLite
     public function show(){
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");            
-            if ($_GET['debug']){
+            if (self::input('debug','get')){
                 $this->debug();
                 return;
             }
-            if ($_GET['syncDonorsToQB']){         
-                if ($_POST['Function']=="LinkMatchQBtoDonorId"){
-                    $this->process_customer_match($_POST['match'],$_POST['rmatch']);                    
+            if (self::input('syncDonorsToQB','get')){         
+                if (self::input('Function','post')=="LinkMatchQBtoDonorId"){
+                    $this->process_customer_match(self::input('match','post'),self::input('rmatch','post'));                    
                 }
 
                 $match=[];
@@ -774,7 +774,7 @@ class QuickBooks extends ModelLite
                 ?>
                 
                 <h2>Sync Donors to Quickbooks</h2><?php
-                $index=$_GET['index']??1;
+                $index=self::input('index','get')??1;
                 
                 $customer=$this->get_all_entity('Customer');                                         
                 
@@ -878,17 +878,17 @@ class QuickBooks extends ModelLite
                     
                 }
                 return;
-            }elseif ($_GET['table']){      
-                if ($_GET['Id']){
-                    $entity=$this->dataService->FindById($_GET['table'], $_GET['Id']);
+            }elseif (self::input('table','get')){      
+                if (self::input('Id','get')){
+                    $entity=$this->dataService->FindById(self::input('table','get'), self::input('Id','get'));
                     if($this->check_dateService_error()){
-                        print "<div><a href='?page=donor-quickbooks&table=".$_GET['table']."'>Back to ".$_GET['table']." list</a></div>
-                        <h3>".$_GET['table']." #".$_GET['Id']."</h3>";
-                        if ($_GET['edit']){
+                        print "<div><a href='?page=donor-quickbooks&table=".self::input('table','get')."'>Back to ".self::input('table','get')." list</a></div>
+                        <h3>".self::input('table','get')." #".self::input('Id','get')."</h3>";
+                        if (self::input('edit','get')){
                             print "                        
-                            <form method='post' action='?page=donor-quickbooks&table=".$_GET['table']."&Id=".$_GET['Id']."'>
-                            <input type='hidden' name='quickbooks_table' value='".$_GET['table']."'/>
-                            <input type='hidden' name='quickbooks_id' value='".$_GET['Id']."'/>
+                            <form method='post' action='?page=donor-quickbooks&table=".self::input('table','get')."&Id=".self::input('Id','get')."'>
+                            <input type='hidden' name='quickbooks_table' value='".self::input('table','get')."'/>
+                            <input type='hidden' name='quickbooks_id' value='".self::input('Id','get')."'/>
                             <table class=\"dp\">";
                             $this->edit_line('',$entity); 
                             print "</table>
@@ -897,7 +897,7 @@ class QuickBooks extends ModelLite
 
                         }else{
                             print "
-                            <div><a href='?page=donor-quickbooks&table=".$_GET['table']."&Id=".$_GET['Id']."&edit=t'>edit</a></div>
+                            <div><a href='?page=donor-quickbooks&table=".self::input('table','get')."&Id=".self::input('Id','get')."&edit=t'>edit</a></div>
                             <table class=\"dp\">";
                             $notset=$this->display_line('',$entity,$entity);                        
                             print "</table>";
@@ -908,34 +908,34 @@ class QuickBooks extends ModelLite
                         }                        
                     }
                 }else{
-                    if ($_GET['Report']=="UnMatched" && $_GET['table']=="Payment"){
+                    if (self::input('Report','get')=="UnMatched" && self::input('table','get')=="Payment"){
                         return self::reportUnMatchedPayments();
                     }
 
 
-                    $index=$_GET['index']??1;
-                    $max=$_GET['max']??100;
+                    $index=self::input('index','get')??1;
+                    $max=self::input('max','get')??100;
                     if ($max>1000) $max=1000;
 
-                    $count =$this->dataService->Query("SELECT count(*) FROM ".$_GET['table']);
+                    $count =$this->dataService->Query("SELECT count(*) FROM ".self::input('table','get'));
 
-                    switch($_GET['table']){
+                    switch(self::input('table','get')){
                         case "Payment":
-                            print "<div><a href='?page=donor-quickbooks&table=".$_GET['table']."&Report=UnMatched'>Show all unmatched Payments</a></div>";
+                            print "<div><a href='?page=donor-quickbooks&table=".self::input('table','get')."&Report=UnMatched'>Show all unmatched Payments</a></div>";
                         break;
                     }
 
-                    $entities =$this->dataService->Query("SELECT * FROM ".$_GET['table']." STARTPOSITION ".(($index-1)*$max)." MAXRESULTS ".$max);
-                    //dd($count,$entities,"SELECT * FROM ".$_GET['table']." STARTPOSITION ".($index*$max)." MAXRESULTS ".$max);
+                    $entities =$this->dataService->Query("SELECT * FROM ".self::input('table','get')." STARTPOSITION ".(($index-1)*$max)." MAXRESULTS ".$max);
+                    //dd($count,$entities,"SELECT * FROM ".self::input('table','get')." STARTPOSITION ".($index*$max)." MAXRESULTS ".$max);
                     if($this->check_dateService_error()){
                         print "<div><a href='?page=donor-quickbooks'>Back to Quickbook list</a></div>
-                        <h3>".$_GET['table']." List <span style=\"font-size:60%\">- ".($entities?sizeof($entities).($count!=sizeof($entities)?" of ". $count:""):0)." Entries</span></h3>";
+                        <h3>".self::input('table','get')." List <span style=\"font-size:60%\">- ".($entities?sizeof($entities).($count!=sizeof($entities)?" of ". $count:""):0)." Entries</span></h3>";
                         if (!$entities || sizeof($entities)==0){
                             self::display_error("No Results Found");
                             return;
                         }
                         print self::pagination($index,$max,$count);
-                        $field=$this->QBtables[$_GET['table']]?$this->QBtables[$_GET['table']]:"Id";
+                        $field=$this->QBtables[self::input('table','get')]?$this->QBtables[self::input('table','get')]:"Id";
                         ?><table class="dp"><th>Id</th><?php
                         if (is_array($field)){
                             foreach($field as $f) print "<th>".str_replace("_"," ",$f)."</th>";
@@ -944,7 +944,7 @@ class QuickBooks extends ModelLite
                         ?></tr>
                         <?php
                         foreach ($entities as $entity){                                                      
-                            ?><tr><td><a href="?page=donor-quickbooks&table=<?php print $_GET['table']?>&Id=<?php print $entity->Id?>"><?php print $entity->Id?></a></td><?php 
+                            ?><tr><td><a href="?page=donor-quickbooks&table=<?php print self::input('table','get')?>&Id=<?php print $entity->Id?>"><?php print $entity->Id?></a></td><?php 
                             if (is_array($field)){
                                 foreach($field as $f)  print "<td>".$this->showQBfield($entity,$f)."</td>"; //show
 
@@ -963,8 +963,8 @@ class QuickBooks extends ModelLite
                 $companyInfo = $this->dataService->getCompanyInfo();               
                 ?>
                 <h2>Company: <?php print $companyInfo->LegalName?> | <?php print CustomVariables::get_option('QuickbooksBase');?></h2> 
-                <div><a href="?page=<?php print $_GET['page']?>&debug=t">Debug Mode</a></div> 
-                <div><a href="?page=<?php print $_GET['page']?>&syncDonorsToQB=t">Sync Donors to QuickBooks</a></div>           
+                <div><a href="?page=<?php print self::input('page','get')?>&debug=t">Debug Mode</a></div> 
+                <div><a href="?page=<?php print self::input('page','get')?>&syncDonorsToQB=t">Sync Donors to QuickBooks</a></div>           
                 <h3>View</h3>
                  <?php foreach ($this->QBtables as $tbl=>$key){ ?>
                     <div><a href="?page=donor-quickbooks&table=<?php print $tbl?>"><?php print $tbl?></a></div>
@@ -1103,7 +1103,7 @@ class QuickBooks extends ModelLite
             return true;            
         }
     
-        return $_SESSION[$var];
+        return isset($_SESSION[$var])?$_SESSION[$var]:null;
     }
 
     public function check_redirects($redirect){ 
@@ -1205,7 +1205,7 @@ class QuickBooks extends ModelLite
         $qb = new self();
         if ($qb->authenticate()){
             $max=100;
-            $query=$_REQUEST['query']?$_REQUEST['query']:"Select * From Customer MAXRESULTS ".$max;
+            $query=self::input('query','request')?self::input('query','request'):"Select * From Customer MAXRESULTS ".$max;
             ?><form method="post">
                 Query: <textarea name="query"><?php print $query;?></textarea>
                 <button>Go</button>

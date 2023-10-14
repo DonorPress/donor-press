@@ -33,8 +33,12 @@ class ModelLite{
 
 		if (is_array($fields)){
 			foreach ($fields as $field){
-				//I'm not positive why we have to strip slashes... but it fixes the issue.
-				$this->$field=stripslashes(isset($attributes->$field)?$attributes->$field:$this->attributes[$field]);
+				//I'm not positive why we have to strip slashes... but it fixes the issue.		
+				$this->$field=stripslashes(
+					(isset($attributes->$field)?$attributes->$field
+						:(isset($this->attributes[$field])?$this->attributes[$field]:"")
+					)
+				);
 
 				if (isset($this->fieldLimits)&&isset($this->fieldLimits[$field])){ //trim strings that are to long.
 					$this->$field=substr($this->$field,0,$this->fieldLimits[$field]);
@@ -49,8 +53,8 @@ class ModelLite{
 	}
 
 	public function get_viewable_fields(){
-		$fields=$this->fillable?$this->fillable:[];
-		$primaryKey=$this->primaryKey;
+		$fields=isset($this->fillable)?$this->fillable:[];
+		$primaryKey=isset($this->primaryKey)?$this->primaryKey:null;
 		
 		### Add Primary Key to results
 		if (is_array($primaryKey)){
@@ -235,7 +239,7 @@ class ModelLite{
 		return  self::find($id);
 	}
 
-	public static function first($where=array(),$orderby,$settings=[]){
+	public static function first($where=array(),$orderby="",$settings=[]){
 		$settings['limit']=1;
 		$first=self::get($where,$orderby,$settings);
 		if (is_array($first) && sizeof($first)>0) return $first[key($first)];
@@ -250,11 +254,16 @@ class ModelLite{
 	
 	public static function get($where=array(),$orderby="",$settings=false){
 		if ($where && !is_array($where)) $where=[$where];	
-		$SQL="SELECT ".($settings['select']?$settings['select']:"*")." FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"").($settings['limit']?" LIMIT ".$settings['limit']:"");
+		$SQL="SELECT "
+		.(isset($settings['select'])?$settings['select']:"*")
+		." FROM ".self::s()->get_table()." "
+		.(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"")
+		.($orderby!=""?" ORDER BY ".$orderby:"").(isset($settings['limit'])?" LIMIT ".$settings['limit']:"");
 		$all=self::db()->get_results($SQL);
+		$return=[];
 		foreach($all as $r){
 			$obj=new static($r,$settings);
-			if ($settings['key']){
+			if (isset($settings['key'])){
 				$primaryField=$obj->primaryKey;
 				$return[$r->$primaryField]=$obj;
 			}else{
@@ -319,6 +328,7 @@ class ModelLite{
     }
 	
 	public function show_field($fieldName,$settings=[]){
+		if (!isset($this->$fieldName)) return "";
 		$v=$this->$fieldName;
 		switch($fieldName){
 			case "Address":
@@ -339,23 +349,23 @@ class ModelLite{
 			case "QBOPaymentId":
 				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
 				if ($v==0) return "<span>Not Synced to QB</span>";
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Payment&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Payment',$v,'QB');
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Payment&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Payment',$v,'QB');
 				break;	
 			case "QBOInvoiceId":
 				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
 				if ($v==0) return "<span>Not Synced to QB</span>";
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Invoice',$v,'QB');
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Invoice',$v,'QB');
 			case "QuickBooksId":
 				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
 				if ($v==0) return "<span>Not Synced to QB</span>";
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Customer',$v,'QB');
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Customer',$v,'QB');
 			case "DonationId":
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonationId='.$v.'">'.$v.'</a>';
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonationId='.$v.'">'.$v.'</a>';
 			break;
 			case "MergedId":
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>';
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>';
 			case "DonorId":
-				return '<a '.($settings['target']?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>'.($settings['donationlink']?' <a href="?page=donor-index&DonorId='.$v.'&f=AddDonation">+ Donation</a>':"");
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>'.(isset($settings['donationlink'])?' <a href="?page=donor-index&DonorId='.$v.'&f=AddDonation">+ Donation</a>':"");
 			break;
 			case "Date":
 					return str_replace(" 00:00:00","",$v);
@@ -383,15 +393,15 @@ class ModelLite{
 					
 										
 				}
-				return '<a href="?page='.$_GET['page'].'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - '.$label;
-				//return ($settings['idShow']?'<a href="?page='.$_GET['page'].'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
+				return '<a href="?page='.self::input('page','get').'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - '.$label;
+				//return ($settings['idShow']?'<a href="?page='.self::input('page','get').'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
 			break;
 			case "TransactionType":
 				if (!$v) return "";
 				return $v." - ".Donation::s()->tinyIntDescriptions['TransactionType'][$v];
 				break;
 			default:
-				if ($this->tinyIntDescriptions[$fieldName]){
+				if (isset($this->tinyIntDescriptions[$fieldName])){
 					$label=self::s()->tinyIntDescriptions[$fieldName][$v];								
 					if ($label){	
 						return $v." - ".$label;
@@ -434,7 +444,7 @@ class ModelLite{
 	
 	public function edit_form(){
 		$primaryKey=$this->primaryKey;
-		?><form method="post" action="?page=<?php print $_GET['page']?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>">
+		?><form method="post" action="?page=<?php print self::input('page','get')?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>">
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
 		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
 	
@@ -502,12 +512,12 @@ class ModelLite{
 		print "<div class=\"notice notice-error is-dismissible\">".$html."</div>";
 	}
 
-	static public function show_tabs($tabs,$active_tab){
-		$active_tab=$_REQUEST['tab']?$_REQUEST['tab']:key($tabs);
+	static public function show_tabs($tabs){
+		$active_tab=self::input('tab','request')?self::input('tab','request'):key($tabs);
 		?>
 		<div class="dp-tab-links">
 			<?php foreach ($tabs as $tab=>$label){
-				print '<a href="?page='.$_GET['page'].'&tab='.$tab.'" class="tab'.($active_tab==$tab?" active":"").'">'.$label.'</a>';			
+				print '<a href="?page='.self::input('page','get').'&tab='.$tab.'" class="tab'.($active_tab==$tab?" active":"").'">'.$label.'</a>';			
 			}?>
 		</div>
 		<?php
@@ -522,5 +532,16 @@ class ModelLite{
 		}
         return $dir;
     }
+
+
+	static function input($field,$type='request'){
+		switch ($type){
+			case 'get': return isset($_GET[$field])?$_GET[$field]:null; break;
+			case 'post': return isset($_POST[$field])?$_POST[$field]:null; break;
+			default:
+				return isset($_REQUEST[$field])?$_REQUEST[$field]:null;
+			break;
+		}		
+	}
 }
 ?>

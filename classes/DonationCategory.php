@@ -14,43 +14,43 @@ class DonationCategory extends ModelLite
 
     static public function request_handler(){
         $wpdb=self::db();  
-        if ($_POST['CategoryId'] && $_POST['Function']=="Delete" && $_POST['table']=="donation_category"){
+        if (self::input('CategoryId','post') && self::input('Function','post')=="Delete" && self::input('table','post')=="donation_category"){
             $donationCategory=new self($_POST);
             if ($donationCategory->delete()){
                 self::display_notice("Donation Category '".$donationCategory->Category."' deleted."); 
             }
-        }elseif ($_POST['CategoryId'] && $_POST['Function']=="DonationCategoryMergeTo" && $_POST['table']=="donation_category"){
+        }elseif (self::input('CategoryId','post') && self::input('Function','post')=="DonationCategoryMergeTo" && self::input('table','post')=="donation_category"){
             $donationCategory=new self($_POST);
-            $mergeTo=self::find($_POST['MergeTo']);
+            $mergeTo=self::find(self::input('MergeTo','post'));
             //self::dump($mergeTo);
             if (!$mergeTo->CategoryId){
-                self::display_error("Could not find Merge to Donation Category: ".$_POST['MergeTo']);
+                self::display_error("Could not find Merge to Donation Category: ".self::input('MergeTo','post'));
                 return;
             }
             $old=new self($_POST);
             $old->donation_count();
             
-            $wpdb->update(Donation::get_table_name(),array("CategoryId"=>$_POST['MergeTo']),array('CategoryId'=> $old->CategoryId));
+            $wpdb->update(Donation::get_table_name(),array("CategoryId"=>self::input('MergeTo','post')),array('CategoryId'=> $old->CategoryId));
             self::display_notice($old->donation_count." donation record counts changed from Category '". $old->Category."' to ".$mergeTo->show_field("CategoryId")." - ".$mergeTo->Category); 
 
             if ($donationCategory->delete()){                
                 self::display_notice("Donation Category '".$donationCategory->Category."' deleted."); 
             }        
-        }elseif ($_REQUEST['CategoryId']&&$_GET['tab']=="cat"){	            
+        }elseif (self::input('CategoryId','request')&&self::input('tab','get')=="cat"){	            
 
-            if ($_POST['CategoryId']=='new'){
+            if (self::input('CategoryId','post')=='new'){
                 unset($_POST['CategoryId']);
             }
 
-            if ($_GET['ChangeTypeTo']&& $_GET['ChangeTypeFrom']){
-                $uSQL="UPDATE ".Donation::get_table_name()." SET TransactionType='".($_GET['ChangeTypeTo']=='ZERO'?0:$_GET['ChangeTypeTo'])."' WHERE CategoryId='".$_GET['CategoryId']."' AND (TransactionType".($_GET['ChangeTypeFrom']=='ZERO'?"=0 OR TransactionType IS NULL":"='".$_GET['ChangeTypeFrom']."'").")";
+            if (self::input('ChangeTypeTo','get')&& self::input('ChangeTypeFrom','get')){
+                $uSQL="UPDATE ".Donation::get_table_name()." SET TransactionType='".(self::input('ChangeTypeTo','get')=='ZERO'?0:self::input('ChangeTypeTo','get'))."' WHERE CategoryId='".self::input('CategoryId','get')."' AND (TransactionType".(self::input('ChangeTypeFrom','get')=='ZERO'?"=0 OR TransactionType IS NULL":"='".self::input('ChangeTypeFrom','get')."'").")";
                 $wpdb->get_results($uSQL);
-                print self::display_notice("TransactionType Changed from ".$_GET['ChangeTypeFrom']." to ".$_GET['ChangeTypeTo']." for Category ".$_GET['CategoryId']);
+                print self::display_notice("TransactionType Changed from ".self::input('ChangeTypeFrom','get')." to ".self::input('ChangeTypeTo','get')." for Category ".self::input('CategoryId','get'));
 
             }
 
 
-            if ($_POST['Function']=="Save" && $_POST['table']=="donation_category"){                
+            if (self::input('Function','post')=="Save" && self::input('table','post')=="donation_category"){                
                 
                 $donationCategory=new self($_POST);
                 if ($donationCategory->save()){
@@ -58,20 +58,20 @@ class DonationCategory extends ModelLite
                     $_REQUEST['CategoryId']=$donationCategory->CategoryId;
                 }
             }
-            if ($_REQUEST['CategoryId']=="new"){
+            if (self::input('CategoryId','request')=="new"){
                 $donationCategory=new self();
             }else{
-                $donationCategory=self::find($_REQUEST['CategoryId']);	
+                $donationCategory=self::find(self::input('CategoryId','request'));	
             }          
 
             ?>
             <div id="pluginwrap">
-                <div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>">Return</a></div>
-                <h1>Category <?php print $_GET['CategoryId']=="new"?"NEW":"#".$donationCategory->CategoryId?></h1><?php 
-                if ($_REQUEST['edit']){
+                <div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>">Return</a></div>
+                <h1>Category <?php print self::input('CategoryId','get')=="new"?"NEW":"#".$donationCategory->CategoryId?></h1><?php 
+                if (self::input('edit','request')){
                     $donationCategory->edit_form();
                 }else{
-                    ?><div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?php
+                    ?><div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?php
                     $donationCategory->view(); 
                     if ($donationCategory->TransactionType){
                         $SQL="SELECT TransactionType,COUNT(*) as C  FROM ".Donation::get_table_name()." WHERE CategoryId='".$donationCategory->CategoryId."' AND (TransactionType<>'".$donationCategory->TransactionType."' OR TransactionType IS NULL) Group BY TransactionType";
@@ -82,7 +82,7 @@ class DonationCategory extends ModelLite
                             <table class="dp"><tr><th>Transaction Type</th><th>Count</th><th></th></tr>
                             <?php
                             foreach($results as $r){
-                                print "<tr><td>".$r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]."</td><td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=".$donationCategory->CategoryId."&TransactionType=".($r->TransactionType?$r->TransactionType:"ZERO")."&f=Go'>".$r->C."</td><td><a href='?page=".$_GET['page']."&tab=".$_GET['tab']."&CategoryId=".$_GET['CategoryId']."&ChangeTypeTo=".($donationCategory->TransactionType?$donationCategory->TransactionType:"ZERO")."&ChangeTypeFrom=".($r->TransactionType?$r->TransactionType:"ZERO")."'>Change All To: ".$donationCategory->TransactionType." (".Donation::s()->tinyIntDescriptions["TransactionType"][$donationCategory->TransactionType].")</a></td></tr>";
+                                print "<tr><td>".$r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]."</td><td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=".$donationCategory->CategoryId."&TransactionType=".($r->TransactionType?$r->TransactionType:"ZERO")."&f=Go'>".$r->C."</td><td><a href='?page=".self::input('page','get')."&tab=".self::input('tab','get')."&CategoryId=".self::input('CategoryId','get')."&ChangeTypeTo=".($donationCategory->TransactionType?$donationCategory->TransactionType:"ZERO")."&ChangeTypeFrom=".($r->TransactionType?$r->TransactionType:"ZERO")."'>Change All To: ".$donationCategory->TransactionType." (".Donation::s()->tinyIntDescriptions["TransactionType"][$donationCategory->TransactionType].")</a></td></tr>";
                             }?>
                             </table>
                             <?php 
@@ -103,7 +103,7 @@ class DonationCategory extends ModelLite
     function edit_form(){
         $wpdb=self::db();         
         $primaryKey=$this->primaryKey;
-		?><form method="post" action="?page=<?php print $_GET['page'].($_GET['tab']?'&tab='.$_GET['tab']:"")."&".$primaryKey."=".$this->$primaryKey?>">
+		?><form method="post" action="?page=<?php print self::input('page','get').(self::input('tab','get')?'&tab='.self::input('tab','get'):"")."&".$primaryKey."=".$this->$primaryKey?>">
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
 		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?$this->$primaryKey:"new"?>"/>
         <table>
@@ -120,7 +120,7 @@ class DonationCategory extends ModelLite
                 <option value="">--None--</option>
                 <?php
                 foreach(Donation::s()->tinyIntDescriptions["TransactionType"] as $key=>$label){
-                    ?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
+                    ?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==self::input('Type','get')?" selected":""?>><?php print $key." - ".$label?></option><?php
                 }?>
             </select>
 
@@ -192,7 +192,7 @@ class DonationCategory extends ModelLite
         $cache=[];
         $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::get_table_name());
         foreach ($results as $r){
-            if ($cache[$r->Category]){
+            if (isset($cache[$r->Category])){
                 $uSQL="UPDATE".Donation::get_table_name()." SET `CategoryId`='".$cache[$r->Category]."' WHERE `CategoryId`='".$r->CategoryId."'";
                 print $uSQL.";<br>";
                 $dSQL="DELETE FROM ".DonationCategory::get_table_name()." WHERE `CategoryId`='".$r->CategoryId."'";
@@ -227,7 +227,7 @@ class DonationCategory extends ModelLite
         }
         ?>
         <h2>Donation Categories</h2>
-        <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=new&edit=t">Add Category</a>
+        <a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=new&edit=t">Add Category</a>
         <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>Transaction Type</th><th>ParentId</th>
         <?php if (Quickbooks::is_setup()) print  "<th>QuickBooks Item Id</th>";?>
         <th>Total Donations</th><th></th></tr><?php
@@ -240,7 +240,7 @@ class DonationCategory extends ModelLite
         if (!$parent[$parentId]) return;
         foreach ($parent[$parentId] as $r){
             ?><tr>
-                <td style="padding-left:<?php print $level*20?>px"><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $r->CategoryId?>"><?php print $r->CategoryId?></a></td>
+                <td style="padding-left:<?php print $level*20?>px"><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=<?php print $r->CategoryId?>"><?php print $r->CategoryId?></a></td>
                 <td><?php print $r->Category?></td>
                 <td><?php print $r->Description?></td>
                 <td><?php print $r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]?></td>
@@ -248,7 +248,7 @@ class DonationCategory extends ModelLite
                 <?php if (Quickbooks::is_setup()) print  "<td>".($r->QBItemId>0?Quickbooks::qbLink('Item',$r->QBItemId):"")."</td>";?>
 
                 <td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=<?php print $r->CategoryId;?>&f=Go'><?php print $r->donation_count?></a></td>
-                <td><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $r->CategoryId?>&edit=t">edit</a></td>
+                <td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=<?php print $r->CategoryId?>&edit=t">edit</a></td>
             </tr>
             <?php
             self::show_children($r->CategoryId,$parent,$level+1);
@@ -256,10 +256,13 @@ class DonationCategory extends ModelLite
     }
 
     static function show_options($parentId,$parent,$level=0,$settings=[]){
-        if (!$parent[$parentId]) return;
+        if (!isset($parent[$parentId])) return;
         if (!is_array($settings['selected'])) $settings['selected']=[$settings['selected']];
+        $return="";
         foreach ($parent[$parentId] as $r){
-            $return.='<option value="'.$r->CategoryId.'"'.(isset($settings['DisableId']) && $settings['DisableId']==$r->CategoryId?" disabled":"").(in_array($r->CategoryId,$settings['selected'])?' selected':"").'>';
+            $return.='<option value="'.$r->CategoryId.'"'
+            .(isset($settings['DisableId']) && $settings['DisableId']==$r->CategoryId?" disabled":"")
+            .(in_array($r->CategoryId,$settings['selected'])?' selected':"").'>';
             for($i=0;$i<$level;$i++){
                 $return.="--";
             }
@@ -271,15 +274,15 @@ class DonationCategory extends ModelLite
 
     static public function select($settings=[]){
         $return='<select name="'.($settings['Name']?$settings['Name']:"CategoryId").'"';
-        if ($settings["Multiple"]) $return.=" multiple";       
+        if (isset($settings["Multiple"])) $return.=" multiple";       
         $return.=">";
-        if ($settings['IncludeNone']){
+        if (isset($settings['IncludeNone'])){
            $return.='<option value="0">[--None--]</option>';
         }else{
             $return.='<option></option>';
         }       
        
-        $SQL= "SELECT *".($settings['Count']?",(Select COUNT(*) FROM ".Donation::get_table_name()." Where CategoryId=C.CategoryId) as donation_count":"")." FROM ".self::get_table_name()." C Order BY Category";       
+        $SQL= "SELECT *".(isset($settings['Count'])?",(Select COUNT(*) FROM ".Donation::get_table_name()." Where CategoryId=C.CategoryId) as donation_count":"")." FROM ".self::get_table_name()." C Order BY Category";       
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){ 
             $parent[$r->ParentId?$r->ParentId:0][]=$r;

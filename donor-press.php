@@ -46,13 +46,13 @@ function donor_header_check() {
 		donor_press_upgrade();
 	}
 
-	if (isset($_GET['redirect'])){
+	if (Donor::input('redirect','get')){
 		$qb=new QuickBooks();
-		$qb->check_redirects($_GET['redirect']);
+		$qb->check_redirects(Donor::input('redirect','get'));
 	}
 	## download functions before page is loaded
-	if (isset($_REQUEST['Function'])){
-		switch($_REQUEST['Function']){
+	if (Donor::input('Function')){
+		switch(Donor::input('Function')){
 			case "pdfTemplatePreview":
 				$template=new DonorTemplate($_POST);
             	$template->post_excerpt=DonorTemplate::post_to_settings($_POST);
@@ -60,31 +60,31 @@ function donor_header_check() {
 				$template->pdf_preview(); 
 			break;
 			case "DonationReceiptPdf":
-				$donation=Donation::find($_REQUEST['DonationId']);	
-				$donation->pdf_receipt(stripslashes_deep($_POST['customMessage']));
+				$donation=Donation::find(Donor::input('DonationId','request'));	
+				$donation->pdf_receipt(stripslashes_deep(Donor::input('customMessage','post')));
 			break;	
 			case 'BackupDonorPress':		
 				CustomVariables::backup(true);
 				break;
 			break;
 			case "YearEndReceiptPdf":
-				$donor=Donor::find($_REQUEST['DonorId']);
-				$donor->year_receipt_pdf($_REQUEST['Year'],stripslashes_deep($_REQUEST['customMessage']));
+				$donor=Donor::find(Donor::input('DonorId','request'));
+				$donor->year_receipt_pdf(Donor::input('Year'),stripslashes_deep(Donor::input('customMessage')));
 				break;
 			case 'SendYearEndPdf':
-				Donor::YearEndReceiptMultiple($_REQUEST['Year'],$_POST['pdf'],$_REQUEST['limit'],$_REQUEST['blankBack'],$_REQUEST['preview']?false:true);
+				Donor::YearEndReceiptMultiple(Donor::input('Year'),Donor::input('pdf','post'),Donor::input('limit'),Donor::input('blankBack','request'),Donor::input('preview','request')?false:true);
 			break;
 			case 'PdfLabelDonationReceipts':			
-				Donation::label_by_id($_POST['EmailDonationId'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
+				Donation::label_by_id(Donor::input('EmailDonationId','post'),Donor::input('col','post'),Donor::input('row','post'),Donor::input('limit'));
 			break;
 			case 'PrintYearEndLabels':
-				Donor::YearEndLabels($_REQUEST['Year'],$_POST['pdf'],$_POST['col'],$_POST['row'],$_REQUEST['limit']);
+				Donor::YearEndLabels(Donor::input('Year'),Donor::input('pdf','post'),Donor::input('col','post'),Donor::input('row','post'),Donor::input('limit'));
 			break;
 			case 'ExportAllDonors':
 				Donor::get_mail_list();
 			break;
 			case 'ExportDonorList':
-				Donor::get_mail_list(["D.DonorId IN (".implode(",",$_POST['pdf']).")"]);
+				Donor::get_mail_list(["D.DonorId IN (".implode(",",Donor::input('pdf','post')).")"]);
 			break;
 			case 'QuickbookSessionKill';
 				$qb=new QuickBooks();
@@ -94,8 +94,8 @@ function donor_header_check() {
 		}
 	}
 
-	if (isset($_GET['donorAutocomplete'])){
-		Donor::autocomplete($_GET['query']);
+	if (Donor::input('donorAutocomplete','get')){
+		Donor::autocomplete(Donor::input('query','get'));
 		exit();
 	}
 	## add style
@@ -170,8 +170,6 @@ function donor_plugin_create_tables() {
 	}
 	add_option( "donor_press_db_version", $donor_press_db_version );
 }
-
-
 
 
 ## Search record

@@ -1,6 +1,6 @@
 <?php
 $tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression",'tax'=>"Tax"];
-$active_tab=Donor::show_tabs($tabs,$active_tab);
+$active_tab=Donor::show_tabs($tabs);
 ?>
 <div id="pluginwrap">
 	<?php
@@ -10,9 +10,9 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 	?>
 	<h1>Report Page: <?php print $tabs[$active_tab]?></h1>
 	<?php
-	if ($_GET['view']=='detail'){
-		?><h2>Detailed View: <?php print $_GET['report']?></h2><?php
-		switch($_GET['report']){
+	if (Donor::input('view','get')=='detail'){
+		?><h2>Detailed View: <?php print Donor::input('view','report')?></h2><?php
+		switch(Donor::input('view','report')){
 			case "reportMonthly":
 				reportMonthly();
 			break;
@@ -56,18 +56,18 @@ $active_tab=Donor::show_tabs($tabs,$active_tab);
 function year_end_summmaries(){ ?>	
 	<div><strong>Year End Tax Summaries:</strong> <?php
 	for($y=date("Y");$y>=date("Y")-4;$y--){
-		?><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&f=YearSummaryList&Year=<?php print $y?>"><?php print $y?></a> | <?php
+		?><a href="?page=<?php print Donor::input('page','get')?>&tab=<?php print Donor::input('tab','get')?>&f=YearSummaryList&Year=<?php print $y?>"><?php print $y?></a> | <?php
 	}	
 	?></div>
 	<?php
-	if($_GET['f']=="YearSummaryList" && $_GET['Year']){
-		$year=$_GET['Year'];
-		$limit=$_REQUEST['limit'];
-		if (!$_REQUEST['limit']) $limit=1000;
-		if($_POST['Function']=='SendYearEndEmail'){         
-			if (sizeof($_POST['emails'])<$limit) $limit=sizeof($_POST['emails']);
+	if(Donor::input('f','get')=="YearSummaryList" && Donor::input('Year','get')){
+		$year=Donor::input('Year','get');
+		$limit=Donor::input('limit');
+		if (!Donor::input('limit')) $limit=1000;
+		if(Donor::input('Function','post')=='SendYearEndEmail'){         
+			if (sizeof(Donor::input('emails','post'))<$limit) $limit=sizeof(Donor::input('emails','post'));
 			for($i=0;$i<$limit;$i++){
-				$donorIds[]=$_POST['emails'][$i];
+				$donorIds[]=Donor::input('emails','post')[$i];
 			}
 			
 			if (sizeof($donorIds)>0){
@@ -81,56 +81,56 @@ function year_end_summmaries(){ ?>
 					}                      
 				}
 			}
-			Donation::display_notice("E-mailed Year End Receipts to  $limit of  ".sizeof($_POST['emails']));
+			Donation::display_notice("E-mailed Year End Receipts to  $limit of  ".sizeof(Donor::input('emails','post')));
 
 		}
-		Donor::summary_list_year($_GET['Year']);
+		Donor::summary_list_year(Donor::input('Year','get'));
 		return true;
 	}
 }
 
 function report_donors(){	
-	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';
+	$dateField=Donor::input('dateField','get')?Donor::input('dateField','get'):'Date';
 	?><form method="post">
 		<button name="Function" value="ExportAllDonors">Export All Donors</button>
 	</form>
 	
 	<form method="get" style="font-size:90%;">
-	<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-	<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
+	<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>" />
+	<input type="hidden" name="tab" value="<?php print Donor::input('tab','get')?>" />
 	Top: <input type="number" name="top" value="<?php print $top?>" step=1 style="width:80px;"/>
-	Name Search: <input name="name" value="<?php print $_GET['name']?>" />	
-	Dates From <input type="date" name="df" value="<?php print $_GET['df']?>"/> to 
-	<input type="date" name="dt" value="<?php print $_GET['dt']?>"/> 
+	Name Search: <input name="name" value="<?php print Donor::input('name','get')?>" />	
+	Dates From <input type="date" name="df" value="<?php print Donor::input('df','get')?>"/> to 
+	<input type="date" name="dt" value="<?php print Donor::input('dt','get')?>"/> 
 	Date Field: <select name="dateField"><?php 
 	foreach (Donation::s()->dateFields as $field=>$label){?>
 		<option value="<?php print $field?>"<?php print $dateField==$field?" selected":""?>><?php print $label?> Date</option>
 	<?php } ?>
 	</select>
 	<br>
-	Amount >=  <input type="number" step=".01" name="af" value="<?php print $_GET['af']?>" style="width:120px;"/>
-		<label><input type="checkbox" name="yearView" value="t" <?php print $_GET['yearView']=="t"?" checked":""?>/> Year Trends</label>
-		<!-- <label><input type="checkbox" name="bulkAction" value="t" <?php print $_GET['bulkAction']=="t"?" checked":""?>/> Bulk Action</label> -->
+	Amount >=  <input type="number" step=".01" name="af" value="<?php print Donor::input('af','get')?>" style="width:120px;"/>
+		<label><input type="checkbox" name="yearView" value="t" <?php print Donor::input('yearView','get')=="t"?" checked":""?>/> Year Trends</label>
+		<!-- <label><input type="checkbox" name="bulkAction" value="t" <?php print Donor::input('bulkAction','get')=="t"?" checked":""?>/> Bulk Action</label> -->
 		<button name="f" value="Go">Go</button>
 	</form>
 	<?php
 	$where=[];$having=[];
-	if ($_GET['df']){
-		$where[]="`$dateField`>='".$_GET['df'].($dateField=="Date"?"":" 00:00:00")."'";
+	if (Donor::input('df','get')){
+		$where[]="`$dateField`>='".Donor::input('df','get').($dateField=="Date"?"":" 00:00:00")."'";
 	}
-	if ($_GET['dt']){
-		$where[]="`$dateField`<='".$_GET['dt'].($dateField=="Date"?"":" 23:59:59")."'";
+	if (Donor::input('dt','get')){
+		$where[]="`$dateField`<='".Donor::input('dt','get').($dateField=="Date"?"":" 23:59:59")."'";
 	}
-	if ($_GET['name']){
-		$where[]="(UPPER(D.Name) LIKE '%".addslashes($_GET['name'])."%' OR UPPER(D.Name2) LIKE '%".addslashes($_GET['name'])."%')";
+	if (Donor::input('name','get')){
+		$where[]="(UPPER(D.Name) LIKE '%".addslashes(Donor::input('name','get'))."%' OR UPPER(D.Name2) LIKE '%".addslashes(Donor::input('name','get'))."%')";
 	}
 	
-	if($_GET['f']=="Go"){
-		if($_GET['yearView']=="t"){	
-			Donor::year_list(['where'=>$where,'orderBy'=>'D.Name, D.Name2','having'=>$having,'amount'=>$_GET['af']]);
+	if(Donor::input('f','get')=="Go"){
+		if(Donor::input('yearView','get')=="t"){	
+			Donor::year_list(['where'=>$where,'orderBy'=>'D.Name, D.Name2','having'=>$having,'amount'=>Donor::input('af','get')]);
 		}else{
-			if ($_GET['af']){
-				$having[]="SUM(Gross)>='".$_GET['af']."'";
+			if (Donor::input('af','get')){
+				$having[]="SUM(Gross)>='".Donor::input('af','get')."'";
 			}
 			Donor::summary_list($where,"",['orderBy'=>'D.Name, D.Name2','having'=>$having]);
 		}
@@ -140,27 +140,27 @@ function report_donors(){
 }
 
 function report_tax(){
-	$taxYear=$_GET['TaxYear']?$_GET['TaxYear']:date("Y")-1;
-	$taxMonthStart=$_GET['TaxMonthStart']?$_GET['TaxMonthStart']:1;
+	$taxYear=Donor::input('TaxYear','get')?Donor::input('TaxYear','get'):date("Y")-1;
+	$taxMonthStart=Donor::input('TaxMonthStart','get')?Donor::input('TaxMonthStart','get'):1;
 	?>
 	<div>These reports are meant to be an aid when filling out a <strong>990 form</strong>. They are only as good as the data provided, and we recommend review by a tax professional to make sure you are meeting the current tax reporting year requirements.</div>
 
 	<form method="get" style="font-size:90%;">
-	<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
+	<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>" />
+		<input type="hidden" name="tab" value="<?php print Donor::input('tab','get')?>" />
 		<strong>Tax year:</strong> <input type="number" min="2000" max="<?php print date("Y")?>" name="TaxYear" value="<?php print $taxYear;?>"/> 
 		<!-- <strong>Tax Period Starting Month:</strong> <input type="number" min="1" max="12" name="TaxMonthStart" value="<?php print $taxYear;?>"/> -->
 		<br>
 		<strong>Schedule A Part II</strong>
-		Lines 2-3 (tax levied, gov help) Total: <input type="number" name="extraIncome23" value="<?php print $_GET['extraIncome23']?>"/>
+		Lines 2-3 (tax levied, gov help) Total: <input type="number" name="extraIncome23" value="<?php print Donor::input('extraIncome23','get')?>"/>
 		<br>
-		Lines 9-10 (other income) Total: <input type="number" name="extraIncome810" value="<?php print $_GET['extraIncome810']?>"/>
+		Lines 9-10 (other income) Total: <input type="number" name="extraIncome810" value="<?php print Donor::input('extraIncome810','get')?>"/>
 		<strong>Extra Income (like interest) that needs added to for 2% calc:</strong> 			
 
 		<button>Go</button>
 		<?php 
-		$ignore=is_array($_GET['ignore'])?$_GET['ignore']:[];
-		$unusual=is_array($_GET['unusual'])?$_GET['unusual']:[]; 
+		$ignore=is_array(Donor::input('ignore','get'))?Donor::input('ignore','get'):[];
+		$unusual=is_array(Donor::input('unusual','get'))?Donor::input('unusual','get'):[]; 
 		if (sizeof($ignore)>0){
 			print "<br>Ignoring DonorIds: ";
 			foreach($ignore as $ig){
@@ -210,7 +210,7 @@ function report_tax(){
 
 
 
-	 $totalSupport=$total['donated']['total']+$total['interest']['total']+$_GET['extraIncome23']+$_GET['extraIncome810'];
+	 $totalSupport=$total['donated']['total']+$total['interest']['total']+Donor::input('extraIncome23','get')+Donor::input('extraIncome810','get');
 	 $twoPercent=round($totalSupport*.02,0);
 	 //dump($total,$twoPercent);
 	 $SQL="Select D.DonorId,D.Name,D.Name2, YEAR(DT.Date) as TaxYear,SUM(DT.Gross) as Gross
@@ -284,13 +284,13 @@ organization without charge .
 	<?php
 	for($y=$taxYear-4;$y<=$taxYear;$y++){ 		
 		print "<td class='r'></td>";
-	}print "<td class='r'>".$_GET['extraIncome23']."</td>";
+	}print "<td class='r'>".Donor::input('extraIncome23','get')."</td>";
 	?></tr>
 	<tr><td>4</td><td>Total. Add lines 1 through 3</td>
 	<?php
 	for($y=$taxYear-4;$y<=$taxYear;$y++){ 		
 		print "<td class='r'></td>";
-	}print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total'])."</td>";
+	}print "<td class='r'>".number_format(Donor::input('extraIncome23','get')+$total['donated']['total'])."</td>";
 	?></tr>
 	<tr><td>5</td><td colspan=6>The portion of total contributions by each person (other than a governmental unit or publicly supported organization) included on line 1 that exceeds 2% of the amount shown on line 11, column (f)</td>
 	<?php
@@ -298,11 +298,11 @@ organization without charge .
 	?></tr>
 	<tr><td>6</td><td colspan=6>Public support. Subtract line 5 from line 4</td>
 	<?php
-	print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total']-$total['excessMinusUnusual'])."</td>";
+	print "<td class='r'>".number_format(Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual'])."</td>";
 	?></tr>
 	<tr><td>7</td><td colspan=6>Amounts from line 4</td>
 	<?php
-	print "<td class='r'>".number_format($_GET['extraIncome23']+$total['donated']['total'])."</td>";
+	print "<td class='r'>".number_format(Donor::input('extraIncome23','get')+$total['donated']['total'])."</td>";
 	?></tr>
 	
 	<tr><td>8</td><td>Gross income from interest, dividends,
@@ -317,7 +317,7 @@ similar sources</td>
 	?></tr>
 	<tr><td>9-10</td><td  colspan=6>Interest, unrelated business income, Other total</td>
 	<?php
-	print "<td class='r'>".number_format($_GET['extraIncome810'])."</td>";
+	print "<td class='r'>".number_format(Donor::input('extraIncome810','get'))."</td>";
 	?></tr>
 	<tr><td>11</td><td colspan=6>Total Support</td>
 	<?php
@@ -329,8 +329,8 @@ similar sources</td>
 organization, check this box and stop here</td>
 	<?php	print "<td>".($taxYear-$firstYear+1>5?"No":"Yes")." (".($taxYear-$firstYear+1)." estimated reporting years)</td>";?></tr>
 	<tr><td>14</td><td colspan=6>Public support percentage for <?=$taxYear?> (line 6, column (f), divided by line 11, column (f))</td>
-	<?php	print "<td>".number_format(100*($_GET['extraIncome23']+$total['donated']['total']-$total['excessMinusUnusual'])/$totalSupport,2)."%</td>";?></tr>
-	$_GET['extraIncome23']+$total['donated']['total']-$total['excessMinusUnusual']
+	<?php	print "<td>".number_format(100*(Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual'])/$totalSupport,2)."%</td>";?></tr>
+	Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual']
 	</table>
 	
 	<h2>Schedule B (Form 990)</h2>
@@ -369,24 +369,24 @@ organization, check this box and stop here</td>
 }
 
 function report_donations(){ 
-	$top=is_int($_GET['top'])?$_GET['top']:1000;	
-	$dateField=$_GET['dateField']?$_GET['dateField']:'Date';?>
+	$top=is_int(Donor::input('top','get'))?Donor::input('top','get'):1000;	
+	$dateField=Donor::input('dateField','get')?Donor::input('dateField','get'):'Date';?>
 
 
 	<form method="get" style="font-size:90%;">
-		<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
+		<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>" />
+		<input type="hidden" name="tab" value="<?php print Donor::input('tab','get')?>" />
         Top: <input type="number" name="top" value="<?php print $top?>"/>
-		Dates From <input type="date" name="df" value="<?php print $_GET['df']?>"/> to 
-		<input type="date" name="dt" value="<?php print $_GET['dt']?>"/> 
+		Dates From <input type="date" name="df" value="<?php print Donor::input('df','get')?>"/> to 
+		<input type="date" name="dt" value="<?php print Donor::input('dt','get')?>"/> 
 		Date Field: <select name="dateField"><?php 
 		foreach (Donation::s()->dateFields as $field=>$label){?>
 			<option value="<?php print $field?>"<?php print $dateField==$field?" selected":""?>><?php print $label?> Date</option>
 		<?php } ?>
         </select>
 		<br>
-		Amount:  <input type="number" step=".01" name="af" value="<?php print $_GET['af']?>" style="width:120px;"/>
-		to <input type="number" step=".01" name="at" value="<?php print $_GET['at']?>" style="width:120px;"/>
+		Amount:  <input type="number" step=".01" name="af" value="<?php print Donor::input('af','get')?>" style="width:120px;"/>
+		to <input type="number" step=".01" name="at" value="<?php print Donor::input('at','get')?>" style="width:120px;"/>
 		Category:
 		<?php print DonationCategory::select(['Name'=>'CategoryId','Count'=>true]);?>
 		<br>
@@ -394,7 +394,7 @@ function report_donations(){
 			<option value="">--All--</option>
 			<?php			
 			foreach(Donation::s()->tinyIntDescriptions["PaymentSource"] as $key=>$label){
-				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['PaymentSource']?" selected":""?>><?php print $key." - ".$label?></option><?php
+				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==Donor::input('PaymentSource','get')?" selected":""?>><?php print $key." - ".$label?></option><?php
 			}?>
 		</select>		
 
@@ -403,7 +403,7 @@ function report_donations(){
 			<option value="">--All--</option>
 			<?php			
 			foreach(Donation::s()->tinyIntDescriptions["Type"] as $key=>$label){
-				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['Type']?" selected":""?>><?php print $key." - ".$label?></option><?php
+				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==Donor::input('Type','get')?" selected":""?>><?php print $key." - ".$label?></option><?php
 			}?>
 		</select>
 		Transaction Type:
@@ -411,37 +411,37 @@ function report_donations(){
 			<option value="">--All--</option>
 			<?php
 			foreach(Donation::s()->tinyIntDescriptions["TransactionType"] as $key=>$label){
-				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==$_GET['TransactionType']?" selected":""?>><?php print $key." - ".$label?></option><?php
+				?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==Donor::input('TransactionType','get')?" selected":""?>><?php print $key." - ".$label?></option><?php
 			}?>
 		</select>
 		<button name="f" value="Go">Go</button>
 	</form>	<?php
-	if($_GET['f']=="Go"){
+	if(Donor::input('f','get')=="Go"){
 		$where=["DT.Status>0"];
-		if ($_GET['PaymentSource']){
-			$where[]="PaymentSource='".($_GET['PaymentSource']=="ZERO"?0:$_GET['PaymentSource'])."'";		
+		if (Donor::input('PaymentSource','get')){
+			$where[]="PaymentSource='".(Donor::input('PaymentSource','get')=="ZERO"?0:Donor::input('PaymentSource','get'))."'";		
 		}	
-		if ($_GET['Type']){
-			$where[]="`Type`='".($_GET['Type']=="ZERO"?0:$_GET['Type'])."'";			
+		if (Donor::input('Type','get')){
+			$where[]="`Type`='".(Donor::input('Type','get')=="ZERO"?0:Donor::input('Type','get'))."'";			
 		}
-		if ($_GET['TransactionType']){
-			$where[]="TransactionType='".($_GET['TransactionType']=="ZERO"?0:$_GET['TransactionType'])."'";			
+		if (Donor::input('TransactionType','get')){
+			$where[]="TransactionType='".(Donor::input('TransactionType','get')=="ZERO"?0:Donor::input('TransactionType','get'))."'";			
 		}
-		if ($_GET['df']){
-			$where[]="`$dateField`>='".$_GET['df'].($dateField=="Date"?"":" 00:00:00")."'";
+		if (Donor::input('df','get')){
+			$where[]="`$dateField`>='".Donor::input('df','get').($dateField=="Date"?"":" 00:00:00")."'";
 		}
-		if ($_GET['dt']){
-			$where[]="`$dateField`<='".$_GET['dt'].($dateField=="Date"?"":" 23:59:59")."'";
+		if (Donor::input('dt','get')){
+			$where[]="`$dateField`<='".Donor::input('dt','get').($dateField=="Date"?"":" 23:59:59")."'";
 		}
-		if ($_GET['CategoryId']){
-			$where[]="CategoryId='".($_GET['CategoryId']=="ZERO"?0:$_GET['CategoryId'])."'";
+		if (Donor::input('CategoryId','get')){
+			$where[]="CategoryId='".(Donor::input('CategoryId','get')=="ZERO"?0:Donor::input('CategoryId','get'))."'";
 		}
-		if ($_GET['af'] && $_GET['at']){
-			$where[]="DT.Gross BETWEEN '".$_GET['af']."' AND '".$_GET['at']."'";
-		}elseif ($_GET['af']){
-			$where[]="DT.Gross='".$_GET['af']."'";
-		}elseif ($_GET['at']){
-			$where[]="DT.Gross='".$_GET['at']."'";
+		if (Donor::input('af','get') && Donor::input('at','get')){
+			$where[]="DT.Gross BETWEEN '".Donor::input('af','get')."' AND '".Donor::input('at','get')."'";
+		}elseif (Donor::input('af','get')){
+			$where[]="DT.Gross='".Donor::input('af','get')."'";
+		}elseif (Donor::input('at','get')){
+			$where[]="DT.Gross='".Donor::input('at','get')."'";
 		}
 
 		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
@@ -478,15 +478,16 @@ function report_current_monthly(){
 	global $wpdb;
 
 	$where=array("`Type` IN (5)","Date>='".date("Y-m-d",strtotime("-3 months"))."'");
-	$selectedCatagories=$_GET['category']?$_GET['category']:array();
+	$selectedCatagories=Donor::input('category','get')?Donor::input('category','get'):array();
 	if (sizeof($selectedCatagories)>0){
 		$where[]="CategoryId IN ('".implode("','",$selectedCatagories)."')";
 	}
 
 	$SQL="SELECT `Name`,AVG(`Gross`) as Total, Count(*) as Count, MIN(Date) as FirstDonation, MAX(Date)as LastDonation FROM ".Donation::get_table_name()." WHERE ".implode(" AND ",$where)." Group BY `Name` ORder BY AVG(`Gross`) DESC";
+	print $SQL;
 	$results = $wpdb->get_results($SQL);	
 	if (sizeof($results)>0){
-		?><form method="get" action=""><input type="hidden" name="page" value="<?php print $_GET['page']?>" /></form>
+		?><form method="get" action=""><input type="hidden" name="page" value="<?php print Donor::input('page','get')?>" /></form>
 		<h2>Current Monthly Donors</h2>
 		<table class="dp"><tr><th></th><th>Name</th><th>Monthly Give</th><th>Count</th><th>Give Day</th></tr>
 		<?php $i=0;
@@ -501,31 +502,27 @@ function report_current_monthly(){
 
 function report_top($top=20){
 	global $wpdb,$wp;
-	$dateFrom=$_GET['topDf'];
-	$dateTo=$_GET['topDt'];
+	$dateFrom=Donor::input('topDf','get');
+	$dateTo=Donor::input('topDt','get');
+
+	$selectedCatagories=Donor::input('category','get')?Donor::input('category','get'):array();
 
 	?><form method="get" action="">
-		<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-		<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
-		<h3>Top <input type="number" name="topL" value="<?php print ($_GET['topL']?$_GET['topL']:$top)?>" style="width:50px;"/>Donor Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> 
-		<select name='category[]' multiple>
-			<?php
-			$selectedCatagories=$_GET['category']?$_GET['category']:array();
-			$donationCategory=DonationCategory::get(array('(ParentId=0 OR ParentId IS NULL)'),'Category');
-			foreach($donationCategory as $cat){
-				?><option value="<?php print $cat->CategoryId?>"<?php print in_array($cat->CategoryId,$selectedCatagories)?" selected":""?>><?php print $cat->Category?></option><?php
-			}
-			?>
-		</select>
+		<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>" />
+		<input type="hidden" name="tab" value="<?php print Donor::input('tab','get')?>" />
+		<h3>Top <input type="number" name="topL" value="<?php print (Donor::input('topL','get')?Donor::input('topL','get'):$top)?>" style="width:50px;"/>Donor Report From <input type="date" name="topDf" value="<?php print Donor::input('topDf','get')?>"/> to <input type="date" name="topDt" value="<?php print Donor::input('topDt','get')?>"/> 
+		<?php
+		print DonationCategory::select(['Name'=>"category[]",'selected'=>$selectedCatagories,'Multiple'=>true]);
+		?>
 		<button type="submit">Go</button></h3>
 		<div><?php
 		for($y=date("Y");$y>=date("Y")-4;$y--){
-			?><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?php
+			?><a href="?page=<?php print Donor::input('page','get')?>&tab=<?php print Donor::input('tab','get')?>&topDf=<?php print $y?>-01-01&topDt=<?php print $y?>-12-31"><?php print $y?></a> | <?php
 		}
 		?>
 
-		| <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&f=SummaryList&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">View Donation Individual Summary for this Time Range</a>
-		| <a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&SummaryView=t&df=<?php print $_GET['topDf']?>&dt=<?php print $_GET['topDt']?>">Donation Report</a>
+		| <a href="?page=<?php print Donor::input('page','get')?>&tab=<?php print Donor::input('tab','get')?>&f=SummaryList&df=<?php print Donor::input('topDf','get')?>&dt=<?php print Donor::input('topDt','get')?>">View Donation Individual Summary for this Time Range</a>
+		| <a href="?page=<?php print Donor::input('page','get')?>&tab=<?php print Donor::input('tab','get')?>&SummaryView=t&df=<?php print Donor::input('topDf','get')?>&dt=<?php print Donor::input('topDt','get')?>">Donation Report</a>
 		</div>
 	</form><?php
 
@@ -562,24 +559,24 @@ function report_top($top=20){
 
 function donor_regression($where=[]){
 	global $wpdb,$wp;
-	if (!$_GET['yt']) $_GET['yt']=date('m')<5?date("Y")-1:date("Y");
-	if (!$_GET['yf']){
+	if (!Donor::input('yt','get')) $_GET['yt']=date('m')<5?date("Y")-1:date("Y");
+	if (!Donor::input('yf','get')){
 		$results = $wpdb->get_results("SELECT MIN(Year(`Date`)) as Year	FROM ".Donation::get_table_name());
-		$_GET['yf']=isset($results[0]->Year)?$results[0]->Year:date("Y")-1;
+		$_GET['yt']=isset($results[0]->Year)?$results[0]->Year:date("Y")-1;
 	}
 
 	?><form method="get">
-			<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-			<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
-			Year: <input type="number" name="yf" value="<?php print $_GET['yf']?>"/> to <input type="number" name="yt" value="<?php print $_GET['yt']?>"/>
+			<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>" />
+			<input type="hidden" name="tab" value="<?php print Donor::input('tab','get')?>" />
+			Year: <input type="number" name="yf" value="<?php print Donor::input('yf','get')?>"/> to <input type="number" name="yt" value="<?php print Donor::input('yt','get')?>"/>
 			<button>Go</button>		
 	</form>
 	<?php
 	
 	$where[]='`Gross`>0';
-	$where[]="Year(`Date`) BETWEEN '".$_GET['yf']."' AND '".$_GET['yt']."'";
-	if($_GET['RegressionDonorId']){
-		$where[]="D.DonorId='".$_GET['RegressionDonorId']."'";
+	$where[]="Year(`Date`) BETWEEN '".Donor::input('yf','get')."' AND '".Donor::input('yt','get')."'";
+	if(Donor::input('RegressionDonorId','get')){
+		$where[]="D.DonorId='".Donor::input('RegressionDonorId','get')."'";
 	}
 	$results = $wpdb->get_results("SELECT D.`DonorId`,D.`Name`,D.Name2,D.Email, Year(`Date`) as Year, SUM(`Gross`) as Total, Count(*) as Count
 	FROM ".Donation::get_table_name()." DD INNER JOIN ".Donor::get_table_name()." D ON D.DonorId=DD.DonorId WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")." 
@@ -595,12 +592,12 @@ function donor_regression($where=[]){
 	//Stategy: take the earliest donor year for a specific donor. Compare the average of that start date to last year to this year, and show as a percentage and total.
 	foreach ($donorYear as $donorId=>$years){
 		ksort($years);
-		for($year=key($years);$year<$_GET['yt'];$year++){
+		for($year=key($years);$year<Donor::input('yt','get');$year++){
 			$donorStats[$donorId]['years'][$year]=$donorYear[$donorId][$year];
 		}
 		if ($donorStats[$donorId]['years']) $donorStats[$donorId]['avg']=array_sum($donorStats[$donorId]['years'])/count($donorStats[$donorId]['years']);
 		
-		$amountDiff[$donorId]=$donorYear[$donorId][$_GET['yt']]-$donorStats[$donorId]['avg'];
+		$amountDiff[$donorId]=$donorYear[$donorId][Donor::input('yt','get')]-$donorStats[$donorId]['avg'];
 	}
 	asort($amountDiff);
 	//dd($donorStats,$donorYear,$amountDiff);
@@ -612,21 +609,21 @@ function donor_regression($where=[]){
 		foreach ($amountDiff as $donorId=>$diff){
 			$years=$donorYear[$donorId];
 			//dd($years); //<a href="?page=donor-index&DonorId=print $donorId"> </a>
-			if ($years[$_GET['yt']]-$donorStats[$donorId]['avg']<0){
+			if ($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg']<0){
 			?><tr>
 				<td><?php print $donor[$donorId]->show_field('DonorId',['target'=>'donor']);?> <a href="?page=donor-reports&tab=stats&RegressionDonorId=<?php print $donorId?>" target="donor">Summary</a></td>
 				<td><?php print $donor[$donorId]->name_combine()?></td>
 				<td><?php print $donor[$donorId]->Email;?></td>
 				<?php foreach($allYears as $year=>$total) print "<td align=right>".number_format($years[$year])."</td>";
 				?><td align=right><?php print number_format($donorStats[$donorId]['avg'])?></td>
-				<td align=right><?php print $donorStats[$donorId]['avg']?number_format(100*($years[$_GET['yt']]-$donorStats[$donorId]['avg'])/$donorStats[$donorId]['avg'],2)."%":"-"?></td>
+				<td align=right><?php print $donorStats[$donorId]['avg']?number_format(100*($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg'])/$donorStats[$donorId]['avg'],2)."%":"-"?></td>
 			</tr>
 			<?php
 			}
 		}
 		?></table><?php
 	}
-	if($_GET['RegressionDonorId']){
+	if(Donor::input('RegressionDonorId','get')){
 		?>
 		<div>Counts</div>	
 		<table class="dp"><tr><th>#</th><th>Name</th><th>Email</th><?php
@@ -635,7 +632,7 @@ function donor_regression($where=[]){
 		foreach ($amountDiff as $donorId=>$diff){
 			$years=$donorCount[$donorId];
 			//dd($years); //<a href="?page=donor-index&DonorId=print $donorId"> </a>
-			if ($years[$_GET['yt']]-$donorStats[$donorId]['avg']<0){
+			if ($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg']<0){
 			?><tr>
 				<td><?php print $donor[$donorId]->show_field('DonorId',['target'=>'donor']);?> <a href="?page=donor-reports&tab=stats&RegressionDonorId=<?php print $donorId?>" target="donor">Summary</a></td>
 				<td><?php print $donor[$donorId]->name_combine()?></td>
@@ -655,18 +652,18 @@ function reportMonthly(){
 	global $wpdb,$wp;
 	$where=array("Gross>0","Currency='USD'","Status=9");
 	//,"`Type` IN ('Subscription Payment','Donation Payment','Website Payment')"
-	if ($_GET['report']=="reportMonthly"&&$_GET['view']=='detail'){
-		if ($_GET['month']){
-			$where[]="EXTRACT(YEAR_MONTH FROM `Date`)='".addslashes($_GET['month'])."'";
+	if (Donor::input('view','report')=="reportMonthly"&&Donor::input('view','get')=='detail'){
+		if (Donor::input('month','get')){
+			$where[]="EXTRACT(YEAR_MONTH FROM `Date`)='".addslashes(Donor::input('month','get'))."'";
 		}
 
-		$selectedCatagories=$_GET['category']?$_GET['category']:array();
+		$selectedCatagories=Donor::input('category','get')?Donor::input('category','get'):array();
 		if (sizeof($selectedCatagories)>0){
 			$where[]="CategoryId IN ('".implode("','",$selectedCatagories)."')";
 		}
 
-		if (isset($_GET['type'])){
-			$where[]="`Type`='".addslashes($_GET['type'])."'";
+		if (Donor::input('type','get')){
+			$where[]="`Type`='".addslashes(Donor::input('type','get'))."'";
 		}
 		//dd($where);
 		$results=Donation::get($where);
@@ -676,21 +673,33 @@ function reportMonthly(){
 	}
 
 
-	if ($_GET['topDf']) $where[]="Date>='".$_GET['topDf']."'";
-	if ($_GET['topDt']) $where[]="Date<='".$_GET['topDt']."'";
+	if (Donor::input('topDf','get')) $where[]="Date>='".Donor::input('topDf','get')."'";
+	if (Donor::input('topDt','get')) $where[]="Date<='".Donor::input('topDt','get')."'";
 	
-	$selectedCatagories=$_GET['category']?$_GET['category']:array();
+	$selectedCatagories=Donor::input('category','get')?Donor::input('category','get'):array();
 	if (sizeof($selectedCatagories)>0){
 		$where[]="CategoryId IN ('".implode("','",$selectedCatagories)."')";
 	}
 
-	$countField=($_GET['s']=="Count"?"Count":"Gross");	
+	$countField=(Donor::input('s','get')=="Count"?"Count":"Gross");	
 
-	$graph=array();
+	$graph=array('Month'=>array(),'WeekDay'=>array(),'YearMonth'=>array(),'Total'=>array(),'Count'=>array(),'time'=>array());
+	//Donor::dump($graph);
 	$SQL="SELECT `Date`, `Type`, Gross, PaymentSource FROM ".Donation::get_table_name()." WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")."";
 	$results = $wpdb->get_results($SQL);		
 	foreach ($results as $r){
 		$timestamp=strtotime($r->Date);
+		$yearMonth=date("Ym",$timestamp);
+		$type=$r->Type;
+		/* set variables to avoid wrnings */
+		if (!isset($graph['Month'][date("n",$timestamp)])) $graph['Month'][date("n",$timestamp)]=0;
+		if (!isset($graph['WeekDay'][date("N",$timestamp)])) $graph['WeekDay'][date("N",$timestamp)]=0;
+		if (!isset($graph['time'][date("H",$timestamp)])) $graph['time'][date("H",$timestamp)]=0;
+		if (!isset($graph['YearMonth'][date("Y",$timestamp)][date("n",$timestamp)])) $graph['YearMonth'][date("Y",$timestamp)][date("n",$timestamp)]=0;
+		if (!isset($graph['Total'][$yearMonth][$type])) $graph['Total'][$yearMonth][$type]=0;
+		if (!isset($graph['Count'][$yearMonth][$type])) $graph['Count'][$yearMonth][$type]=0;
+		if (!isset($graph['Type'][$type])) $graph['Type'][$type]=0;
+
 		if ($r->Type<>5){ //skip autopayments / subcriptions for day/time graph
 			$graph['Month'][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);			
 			$graph['WeekDay'][date("N",$timestamp)]+=($countField=="Gross"?$r->Gross:1);			
@@ -699,8 +708,7 @@ function reportMonthly(){
 			}			
 		}
 		$graph['YearMonth'][date("Y",$timestamp)][date("n",$timestamp)]+=($countField=="Gross"?$r->Gross:1);
-		$yearMonth=date("Ym",$timestamp);
-		$type=$r->Type;
+
 		$graph['Total'][$yearMonth][$type]+=$r->Gross;
 		$graph['Count'][$yearMonth][$type]++;			
 		$graph['Type'][$type]+=$r->Gross;
@@ -775,7 +783,7 @@ function reportMonthly(){
         ['Week Day', '<?php print $countField;?>']
 		<?php
 		for ($i=0;$i<=23;$i++){
-			print ", ['".$i."',".($graph['time'][$i]?$graph['time'][$i]:0)."]";
+			print ", ['".$i."',".(isset($graph['time'][$i])?$graph['time'][$i]:0)."]";
 		}
 		
 		?>
@@ -796,7 +804,7 @@ function reportMonthly(){
         ['Week Day', '<?php print $countField;?>']
 		<?php
 		for ($i=1;$i<=12;$i++){
-			print ", ['".$i."',".($graph['Month'][$i]?$graph['Month'][$i]:0)."]";
+			print ", ['".$i."',".(isset($graph['Month'][$i])?$graph['Month'][$i]:0)."]";
 		}	
 		?>
       ]);
@@ -821,7 +829,7 @@ function reportMonthly(){
 			for ($i=1;$i<=12;$i++){
 				print ", ['".$i."'";
 				foreach($graph['YearMonth'] as $y=>$a){
-					print ",".($a[$i]?$a[$i]:0);
+					print ",".(isset($a[$i])?$a[$i]:0);
 				}
 				print "]";
 			}?>
@@ -836,9 +844,9 @@ function reportMonthly(){
 	}
 	</script>
 <form method="get">
-	<input type="hidden" name="page" value="<?php print $_GET['page']?>" />
-	<input type="hidden" name="tab" value="<?php print $_GET['tab']?>" />
-			<h3>Monthly Donations Report From <input type="date" name="topDf" value="<?php print $_GET['topDf']?>"/> to <input type="date" name="topDt" value="<?php print $_GET['topDt']?>"/> 
+	<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>" />
+	<input type="hidden" name="tab" value="<?php print Donor::input('tab','get')?>" />
+			<h3>Monthly Donations Report From <input type="date" name="topDf" value="<?php print Donor::input('topDf','get')?>"/> to <input type="date" name="topDt" value="<?php print Donor::input('topDt','get')?>"/> 
 			Show: <select name="s">
 				<option value="Gross"<?php print ($countField=="Gross"?" selected":"")?>>Gross</option>	
 				<option value="Count"<?php print ($countField=="Count"?" selected":"")?>>Count</option>
@@ -858,7 +866,7 @@ function reportMonthly(){
 		<?php
 		foreach ($graph['Total'] as $yearMonth =>$types){
 			foreach($types as $type=>$total){
-				?><tr><td><?php print  $yearMonth?></td><td><?php print Donation::get_tiny_description('Type',$type)??$type?></td><td align=right><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&report=reportMonthly&view=detail&month=<?php print $yearMonth?>&type=<?php print urlencode($type)?>"><?php print number_format($total,2)?></a></td><td align=right><?php print $graph['Count'][$yearMonth][$type]?></td></tr><?php
+				?><tr><td><?php print  $yearMonth?></td><td><?php print Donation::get_tiny_description('Type',$type)??$type?></td><td align=right><a href="?page=<?php print Donor::input('page','get')?>&tab=<?php print Donor::input('tab','get')?>&report=reportMonthly&view=detail&month=<?php print $yearMonth?>&type=<?php print urlencode($type)?>"><?php print number_format($total,2)?></a></td><td align=right><?php print $graph['Count'][$yearMonth][$type]?></td></tr><?php
 		
 			}
 		}

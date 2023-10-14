@@ -8,11 +8,11 @@
 	?>
 	<h1>Donor Manager <span style="font-size:60%">Version: <?php print $donor_press_db_version;?></span></h1>
 	<form method="get">
-	<input type="hidden" name="page" value="<?php print $_GET['page']?>"/>
+	<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>"/>
 	<!-- <div class="auto-search-wrapper">
 		<input type="text" id="basic" placeholder="type w">
 	</div> -->
-		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print $_GET['dsearch']?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
+		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print Donor::input('dsearch','get')?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
 	<script>
 		//https://tomik23.github.io/autocomplete/
@@ -41,16 +41,16 @@
 		}); //<a href="?page=donor-index&DonorId=${el.DonorId}"
 	</script>
 
-	<?php if (trim($_GET['dsearch'])<>''){
-		$list=Donor::get(array("(UPPER(Name) LIKE '%".strtoupper($_GET['dsearch'])."%' 
-		OR UPPER(Name2)  LIKE '%".strtoupper($_GET['dsearch'])."%'
-		OR UPPER(Email) LIKE '%".strtoupper($_GET['dsearch'])."%'
-		OR UPPER(Phone) LIKE '%".strtoupper($_GET['dsearch'])."%')","(MergedId =0 OR MergedId IS NULL)"));
+	<?php if (Donor::input('dsearch','get') && trim(Donor::input('dsearch','get'))<>''){
+		$list=Donor::get(array("(UPPER(Name) LIKE '%".strtoupper(Donor::input('dsearch','get'))."%' 
+		OR UPPER(Name2)  LIKE '%".strtoupper(Donor::input('dsearch','get'))."%'
+		OR UPPER(Email) LIKE '%".strtoupper(Donor::input('dsearch','get'))."%'
+		OR UPPER(Phone) LIKE '%".strtoupper(Donor::input('dsearch','get'))."%')","(MergedId =0 OR MergedId IS NULL)"));
 		//print "do lookup here...";
 		if ($list){
 			print Donor::show_results($list,"",['DonorId',"Name","Name2","Email","Phone","Address"]);
 		}else{
-			Donor::display_error("No results found for: ".$_GET['dsearch']);
+			Donor::display_error("No results found for: ".Donor::input('dsearch','get'));
 		}
 				
 	}?>

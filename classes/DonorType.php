@@ -11,53 +11,53 @@ class DonorType extends ModelLite
 
     static public function request_handler(){
         $wpdb=self::db();  
-        if ($_POST['TypeId'] && $_POST['Function']=="Delete" && $_POST['table']=="donor_type"){
+        if (self::input('TypeId','post') && self::input('Function','post')=="Delete" && self::input('table','post')=="donor_type"){
             $donorType=new self($_POST);
             if ($donorType->delete()){
                 self::display_notice("Donor Type '".$donorType->Title."' deleted."); 
             }
-        }elseif ($_POST['TypeId'] && $_POST['Function']=="DonorTypeMergeTo" && $_POST['table']=="donor_type"){
+        }elseif (self::input('TypeId','post') && self::input('Function','post')=="DonorTypeMergeTo" && self::input('table','post')=="donor_type"){
             $donorType=new self($_POST);
-            $mergeTo=self::get($_POST['MergeTo']);
+            $mergeTo=self::get(self::input('MergeTo','post'));
             if (!$mergeTo->TypeId){
-                self::display_error("Could not find Merge to Donor Type: ".$_POST['MergeTo']);
+                self::display_error("Could not find Merge to Donor Type: ".self::input('MergeTo','post'));
                 return;
             }
             $old=new self($_POST);
             $old->donor_count();
             
-            $wpdb->update(Donor::get_table_name(),array("TypeId"=>$_POST['MergeTo']),array('TypeId'=> $old->TypeId));
+            $wpdb->update(Donor::get_table_name(),array("TypeId"=>self::input('MergeTo','post')),array('TypeId'=> $old->TypeId));
             self::display_notice($old->donor_count." donors changed from Type '". $old->Title."' to ".$mergeTo->show_field("TypeId")." - ".$mergeTo->Title); 
 
             if ($donorType->delete()){                
                 self::display_notice("Donor Type '".$donorType->Title."' deleted."); 
             }        
-        }elseif ($_GET['TypeId']&&$_GET['tab']=="type"){	
-            if ($_POST['Function']=="Save" && $_POST['table']=="donor_type"){
+        }elseif (self::input('TypeId','get')&&self::input('tab','get')=="type"){	
+            if (self::input('Function','post')=="Save" && self::input('table','post')=="donor_type"){
                 $donorType=new self($_POST);
                 if ($donorType->save()){
                     self::display_notice("Donor Typey #".$donorType->show_field("TypeId")." - ".$donorType->Title." saved.");
                 }
             }
-            if ($_REQUEST['TypeId']=="new"){
+            if (self::input('TypeId','request')=="new"){
                 $donorType=new self();
             }else{
-                $donorType=self::find($_REQUEST['TypeId']);
+                $donorType=self::find(self::input('TypeId','request'));
             }           
             ?>
             <div id="pluginwrap">
-                <div><a href="?page=<?php print $_GET['page']?>">Return</a></div>
+                <div><a href="?page=<?php print self::input('page','get')?>">Return</a></div>
                 <h1>Type #<?php print $donorType->TypeId?$donorType->TypeId:"NEW"?></h1><?php 
-                if ($_REQUEST['edit']){
+                if (self::input('edit','request')){
                     $donorType->edit_form();
                 }else{
-                    ?><div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&TypeId=<?php print $donorType->TypeId?>&edit=t">Edit Type</a></div><?php
+                    ?><div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&TypeId=<?php print $donorType->TypeId?>&edit=t">Edit Type</a></div><?php
                     $donorType->view(); 
                 }
             ?></div><?php
             return true;
-        }elseif($_REQUEST['TypeId']=="new" && $_REQUEST['tab']=='type'){
-            $donorType=new self(['Title'=>$_POST['Title'],'QBItemId'=>$_POST['QBItemId']]);
+        }elseif(self::input('TypeId','request')=="new" && self::input('tab','request')=='type'){
+            $donorType=new self(['Title'=>self::input('Title','post'),'QBItemId'=>self::input('QBItemId','post')]);
             $donorType->save();
             self::display_notice("Donor Type #".$donorType->show_field("TypeId")." ".$donorType->Type." created.");
         }else{
@@ -68,7 +68,7 @@ class DonorType extends ModelLite
     function edit_form(){
         $wpdb=self::db();         
         $primaryKey=$this->primaryKey;
-		?><form method="post" action="?page=<?php print $_GET['page'].($_GET['tab']?'&tab='.$_GET['tab']:"").($this->$primaryKey?"&".$primaryKey."=".$this->$primaryKey:"")?>">
+		?><form method="post" action="?page=<?php print self::input('page','get').(self::input('tab','get')?'&tab='.self::input('tab','get'):"").($this->$primaryKey?"&".$primaryKey."=".$this->$primaryKey:"")?>">
 		<input type="hidden" name="table" value="<?php print $this->table?>"/>
 		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?$this->$primaryKey:"new"?>"/>
         <table>
@@ -128,11 +128,11 @@ class DonorType extends ModelLite
         $results = self::db()->get_results($SQL);        
         ?>
         <h2>Donor Types</h2>
-        <div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&TypeId=new&edit=t">Add Donor Type</a>
+        <div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&TypeId=new&edit=t">Add Donor Type</a>
         <table border="1"><tr><th>Id</th><th>Title</th><?php if (Quickbooks::is_setup()) print "<th>QuickBook Item</th>"; ?><th>Total</th></tr><?php
         foreach ( $results as $r){
             ?><tr>
-                <td><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&TypeId=<?php print $r->TypeId?>&edit=t"><?php print $r->TypeId?></a></td>
+                <td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&TypeId=<?php print $r->TypeId?>&edit=t"><?php print $r->TypeId?></a></td>
                 <td><?php print $r->Title?></td>
                 <?php if (Quickbooks::is_setup()) print  "<td>".$r->QBItemId."</td>";?>
                 <td><?php print $r->donor_count?></td>
