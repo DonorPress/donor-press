@@ -74,7 +74,7 @@ class DonationCategory extends ModelLite
                     ?><div><a href="?page=<?php print $_GET['page']?>&tab=<?php print $_GET['tab']?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?php
                     $donationCategory->view(); 
                     if ($donationCategory->TransactionType){
-                        $SQL="SELECT TransactionType,COUNT(*) as C  FROM ".Donation::get_table_name()." WHERE CategoryId='".$donationCategory->CategoryId."' AND TransactionType<>'".$donationCategory->TransactionType."' Group BY TransactionType";
+                        $SQL="SELECT TransactionType,COUNT(*) as C  FROM ".Donation::get_table_name()." WHERE CategoryId='".$donationCategory->CategoryId."' AND (TransactionType<>'".$donationCategory->TransactionType."' OR TransactionType IS NULL) Group BY TransactionType";
                         //print $SQL;
                         $results = $wpdb->get_results($SQL);
                         if (sizeof($results)>0){
@@ -83,15 +83,14 @@ class DonationCategory extends ModelLite
                             <?php
                             foreach($results as $r){
                                 print "<tr><td>".$r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]."</td><td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=".$donationCategory->CategoryId."&TransactionType=".($r->TransactionType?$r->TransactionType:"ZERO")."&f=Go'>".$r->C."</td><td><a href='?page=".$_GET['page']."&tab=".$_GET['tab']."&CategoryId=".$_GET['CategoryId']."&ChangeTypeTo=".($donationCategory->TransactionType?$donationCategory->TransactionType:"ZERO")."&ChangeTypeFrom=".($r->TransactionType?$r->TransactionType:"ZERO")."'>Change All To: ".$donationCategory->TransactionType." (".Donation::s()->tinyIntDescriptions["TransactionType"][$donationCategory->TransactionType].")</a></td></tr>";
-
                             }?>
                             </table>
                             <?php 
                         }else{
-                            print "Query came up empty: ".$SQL;
+                            //print "Query came up empty: ".$SQL;
                         }                       
                     }else{
-                        print "Type not found";
+                        //print "Type not found";
                     }
                 }
             ?></div><?php
