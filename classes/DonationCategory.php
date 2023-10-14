@@ -43,7 +43,7 @@ class DonationCategory extends ModelLite
             }
 
             if ($_GET['ChangeTypeTo']&& $_GET['ChangeTypeFrom']){
-                $uSQL="UPDATE ".Donation::get_table_name()." SET TransactionType='".($_GET['ChangeTypeTo']=='ZERO'?0:$_GET['ChangeTypeTo'])."' WHERE CategoryId='".$_GET['CategoryId']."' AND TransactionType='".($_GET['ChangeTypeFrom']=='ZERO'?0:$_GET['ChangeTypeFrom'])."'";
+                $uSQL="UPDATE ".Donation::get_table_name()." SET TransactionType='".($_GET['ChangeTypeTo']=='ZERO'?0:$_GET['ChangeTypeTo'])."' WHERE CategoryId='".$_GET['CategoryId']."' AND (TransactionType".($_GET['ChangeTypeFrom']=='ZERO'?"=0 OR TransactionType IS NULL":"='".$_GET['ChangeTypeFrom']."'").")";
                 $wpdb->get_results($uSQL);
                 print self::display_notice("TransactionType Changed from ".$_GET['ChangeTypeFrom']." to ".$_GET['ChangeTypeTo']." for Category ".$_GET['CategoryId']);
 
