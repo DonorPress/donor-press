@@ -325,6 +325,7 @@ class Donation extends ModelLite
         }
         $wpdb=self::db();  
         $donorIdList=array();
+        $type=array();
         
         if ($settings['unsent']){
             $where[]="R.ReceiptId IS NULL";           
@@ -337,7 +338,7 @@ class Donation extends ModelLite
         //print $SQL;
         $donations = $wpdb->get_results($SQL);
         foreach ($donations as $r){
-            $donorIdList[$r->DonorId]++;
+            $donorIdList[$r->DonorId]=(isset($donorIdList[$r->DonorId])?$donorIdList[$r->DonorId]:0)+1;
             $type[$r->Type][$r->DonorId][$r->DonationId]=$r;
         }
         //
@@ -635,7 +636,7 @@ class Donation extends ModelLite
                         $where[]="`CreatedAt`='".self::input('UploadDate','get')."'";
                     }
                     
-                    $dateField=(self::s()->dateFields[self::input('dateField','get')]?self::input('dateField','get'):key(self::s()->dateFields));
+                    $dateField=(isset(self::s()->dateFields[self::input('dateField','get')])?self::input('dateField','get'):key(self::s()->dateFields));
                     if (self::input('df','get')){
                         $where[]="DATE(`$dateField`)>='".self::input('df','get')."'";
                     }

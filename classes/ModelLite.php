@@ -463,7 +463,7 @@ class ModelLite{
 			?><tr><td align=right><?php print $field?></td><td><?php
 
 			$select=false;
-			if ($this->tinyIntDescriptions[$field]) $select=$this->tinyIntDescriptions[$field];
+			if (isset($this->tinyIntDescriptions[$field])) $select=$this->tinyIntDescriptions[$field];
 			switch ($field){
 				case "TypeId":
 					$select=DonorType::list_array();
