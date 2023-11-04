@@ -993,7 +993,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $postarr['post_status']='private';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='donor-receiptyear';  
-            //$postarr['post_excerpt']='{"fontsize":"10","margin":".2"}';         
+            $postarr['post_excerpt']='{"fontsize":"10","margin":".2"}';         
             return wp_insert_post($postarr);            
         }
     }

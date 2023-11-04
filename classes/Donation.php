@@ -831,7 +831,7 @@ class Donation extends ModelLite
             $postarr['post_status']='private';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='no-tax-thank-you';
-            //$postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
+            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
             return wp_insert_post($postarr);            
         }
     }
@@ -847,7 +847,7 @@ class Donation extends ModelLite
             $postarr['post_status']='private';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='ira-qcd';
-            //$postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
+            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
             return wp_insert_post($postarr);            
         }
     }
@@ -862,7 +862,7 @@ class Donation extends ModelLite
             $postarr['post_status']='private';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='receipt-thank-you';
-            //$postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
+            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
             return wp_insert_post($postarr);            
         }    
     }
