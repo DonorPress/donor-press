@@ -445,7 +445,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
       
         if (isset($settings['DefaultCountry']) && $settings['DefaultCountry']==$this->Country){}
         elseif($address) $address.=" ".$this->Country;   
-        if (($address&&$include_name) || $settings['NameOnlyOkay']){
+        if (($address&&$include_name) || isset($settings['NameOnlyOkay'])){
             $nameLine=$this->name_combine();
             $address=$nameLine.(trim($address)?$seperator.$address:"");
         }
@@ -837,7 +837,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     function year_receipt_pdf($year,$customMessage=null){
         if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton or install <a href='https://donorpress.com/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");
             return false;
         }
         $this->year_receipt_email($year);

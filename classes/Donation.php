@@ -758,7 +758,7 @@ class Donation extends ModelLite
         if ($this->CategoryId){
             $page=DonationCategory::find($this->CategoryId)->getTemplate();
         }
-        if (!$page){
+        if (!$page || !$page->post_content){
             if ($this->TransactionType==1){                   
                 $page = DonorTemplate::get_by_name('no-tax-thank-you');  
                 if (!$page){ ### Make the template page if it doesn't exist.
@@ -888,8 +888,9 @@ class Donation extends ModelLite
     }
 
     public function pdf_receipt($customMessage=null){
+        //require ( WP_PLUGIN_DIR.'/doublewp-tcpdf-wrapper/lib/tcpdf/tcpdf.php' );
         if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function or install <a href='https://donorpress.com/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");            
             return false;
         }
         ob_clean();
@@ -974,9 +975,8 @@ class Donation extends ModelLite
         print "<div class='no-print'><a href='?page=".self::input('page','get')."'>Home</a> | <a href='?page=".self::input('page','get')."&DonorId=".$this->DonorId."'>Return to Donor Overview</a></div>";
         $receipts=DonationReceipt::get(array("DonorId='".$this->DonorId."'","KeyType='DonationId'","KeyId='".$this->DonationId."'"));
         $lastReceiptKey=is_array($receipts)?sizeof($receipts)-1:0;
-        $bodyContent=isset($receipts[$lastReceiptKey]) && $receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
+        $bodyContent=isset($receipts[$lastReceiptKey]) && $receipts[$lastReceiptKey]->Content!=""?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body; //retrieve last saved custom message
         $bodyContent=self::input('customMessage','post')?stripslashes_deep(self::input('customMessage','post')):$bodyContent; //Post value overrides this though.
-        
         $subject=self::input('EmailSubject','post')?stripslashes_deep(self::input('EmailSubject','post')):$this->emailBuilder->subject;
 
         //dump($receipts[$lastReceiptKey]);
