@@ -1,9 +1,9 @@
 === Donor Press ===
 Contributors: steinerd
 Tags: nonprofit, donation tracker, donations, donation manager, quickbooks, paypal, donors
-Requires at least: 5.5
-Tested up to: 6.1
-Stable tag: 5.5
+Requires at least: 5.3
+Tested up to: 6.3
+Stable tag: 5.3
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -12,7 +12,7 @@ DonorPress is a free plugin for non-profits to track donations, send thank you l
 
 == Description ==
 ## Beta Notice: 
-This is a functional plugin, but may take some intial setup to work well, and some things might not be as polished as they could be. If you run into bugs, please report them to the developer.
+This is a functional plugin. Some advance features (quickbook integration and .pdf generateion) require composer install. If you run into bugs, please report them to the developer.
 # Intro
 Donor Press was started by Denver Steiner who found himself managing the finances for 3 small non-profits.
 Short on both time and funds (like many small non-profits), Steiner needed a free way to automate thank you letter receipts and year end summaries.
@@ -40,13 +40,15 @@ Markdown parsed.
 Denver Steiner denver@steiner7.com
 
 == Installation ==
-## Prerequisites - at least until this is published as a authorized plugin.
+Once released as a plugin on wordpress, it should be simple to install and activate. However certain optional components such as Quickbooks and PDF generation required additional optional libaries. See the "`composer install`" notes below.
+
+# Installation via command line
+## Prerequisites
 1. Wordpress Installed
 2. Shell Command Prompt access
 3. GIT Installed
 4. Optional: Composer - will give you ability to write .pdf receipts and allows for API access to QuickBooks
 
-# Installation
 ## Download Plugin
 Assuming you have Wordpress already installed, navigate to the following folder using a terminal/command prompt that has the git command configured:
 `wp-content\plugins\`
