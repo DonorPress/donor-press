@@ -181,6 +181,11 @@ class DonorTemplate extends ModelLite {
             $t->post_name.='-copy'.self::input('CopyDonorTemplateId','get');
             $t->edit();           
             return true;
+        }elseif(self::input('CreateDonorTemplateId','get')){
+            $t=new self();            
+            //$t->post_name;
+            $t->edit();           
+            return true;
         }    
     }
   
@@ -189,6 +194,7 @@ class DonorTemplate extends ModelLite {
         $SQL="SELECT * FROM ".self::get_table_name()." WHERE post_type='donortemplate' AND post_parent=0 Order BY post_name,post_title";
         $results = $wpdb->get_results($SQL);        
         ?><h2>Template List</h2>
+        <div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CreateDonorTemplateId=t&edit=t">Add Blank Template</a></div>
         <table class="dp"><tr><th>Template</th><th>Subject</th><th>Body</th><th></th></tr>
         <?php
         foreach ($results as $r){ 
