@@ -829,6 +829,7 @@ class Donation extends ModelLite
             $postarr['post_content']=file_get_contents($tempLoc);            
             $postarr['post_title']='Thank You For Your ##Organization## Gift';
             $postarr['post_status']='private';
+            $postarr['post_excerpt']='Donor Press Template';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='no-tax-thank-you';
             $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
@@ -845,6 +846,7 @@ class Donation extends ModelLite
             $postarr['post_content']=file_get_contents($tempLoc);            
             $postarr['post_title']='Thank You For IRA Qualified Charitable Distribution To ##Organization##';
             $postarr['post_status']='private';
+            $postarr['post_excerpt']='Donor Press Template';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='ira-qcd';
             $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
@@ -860,6 +862,7 @@ class Donation extends ModelLite
             $postarr['post_content']=file_get_contents($tempLoc);
             $postarr['post_title']='Thank You For Your ##Organization## Donation';
             $postarr['post_status']='private';
+            $postarr['post_excerpt']='Donor Press Template';
             $postarr['post_type']='donortemplate';
             $postarr['post_name']='receipt-thank-you';
             $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
