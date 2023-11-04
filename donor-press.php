@@ -1,10 +1,10 @@
 <?php
 /*
     Plugin Name: Donor Press - A Donation Tracking System
-    Plugin URI: https://github.com/DonorPress/donor-press
+    Plugin URI: https://donorpress.com/
     Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry. Syncing data to Quickbooks is also in beta.
     Author: Denver Steiner
-    Author URI: https://github.com/DonorPress/donor-press
+    Author URI: https://donorpress.com/author/
     Version: 0.0.8
 */
 global $donor_press_db_version;
