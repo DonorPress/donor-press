@@ -183,7 +183,6 @@ class DonorTemplate extends ModelLite {
             return true;
         }elseif(self::input('CreateDonorTemplateId','get')){
             $t=new self();            
-            //$t->post_name;
             $t->edit();           
             return true;
         }    
