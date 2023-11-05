@@ -986,15 +986,14 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     static function make_receipt_year_template(){
         $page = DonorTemplate::get_by_name('donor-receiptyear');  
         if (!$page){
-            $postarr['ID']=0;
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_year.html";          
-            $postarr['post_content']=file_get_contents($tempLoc);
-            $postarr['post_title']='##Organization## ##Year## Year End Receipts';
-            $postarr['post_status']='private';
-            $postarr['post_type']='donortemplate';
-            $postarr['post_name']='donor-receiptyear';  
-            $postarr['post_excerpt']='{"fontsize":"10","margin":".2"}';         
-            return wp_insert_post($postarr);            
+            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_year.html";   
+            $t=new DonorTemplate();          
+            $t->post_content=file_get_contents($tempLoc);            
+            $t->post_title='##Organization## ##Year## Year End Receipts';
+            $t->post_name='donor-receiptyear';
+            $t->post_excerpt='{"fontsize":"10","margin":".2"}';
+            $t->save();
+            return $t;
         }
     }
 

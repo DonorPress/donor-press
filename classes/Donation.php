@@ -822,48 +822,44 @@ class Donation extends ModelLite
 
     static function make_receipt_template_no_tax(){
         $page = DonorTemplate::get_by_name('no-tax-thank-you');  
-        if (!$page){
-            $postarr['ID']=0;
+        if (!$page){                   
+            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_no_tax.html"; 
+            $t=new DonorTemplate();          
+            $t->post_content=file_get_contents($tempLoc);            
+            $t->post_title='Thank You For Your ##Organization## Gift';
+            $t->post_name='no-tax-thank-you';
+            $t->post_excerpt='{"fontsize":"12","margin":".25"}';
+            $t->save();
+            return $t;          
 
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_no_tax.html";          
-            $postarr['post_content']=file_get_contents($tempLoc);            
-            $postarr['post_title']='Thank You For Your ##Organization## Gift';
-            $postarr['post_status']='private';
-            $postarr['post_type']='donortemplate';
-            $postarr['post_name']='no-tax-thank-you';
-            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
-            return wp_insert_post($postarr);            
         }
     }
 
     static function make_receipt_template_ira_qcd(){
         $page = DonorTemplate::get_by_name('ira-qcd');  
         if (!$page){
-            $postarr['ID']=0;
-
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_ira_qcd.html";          
-            $postarr['post_content']=file_get_contents($tempLoc);            
-            $postarr['post_title']='Thank You For IRA Qualified Charitable Distribution To ##Organization##';
-            $postarr['post_status']='private';
-            $postarr['post_type']='donortemplate';
-            $postarr['post_name']='ira-qcd';
-            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
-            return wp_insert_post($postarr);            
+            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_ira_qcd.html"; 
+            $t=new DonorTemplate();          
+            $t->post_content=file_get_contents($tempLoc);            
+            $t->post_title='Thank You For IRA Qualified Charitable Distribution To ##Organization##';
+            $t->post_name='ira-qcd';
+            $t->post_excerpt='{"fontsize":"12","margin":".25"}';
+            $t->save();
+            return $t;
         }
     }
 
     static function make_receipt_template_thank_you(){
         $page = DonorTemplate::get_by_name('receipt-thank-you');  
         if (!$page){
-            $postarr['ID']=0;
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_thank_you.html";          
-            $postarr['post_content']=file_get_contents($tempLoc);
-            $postarr['post_title']='Thank You For Your ##Organization## Donation';
-            $postarr['post_status']='private';
-            $postarr['post_type']='donortemplate';
-            $postarr['post_name']='receipt-thank-you';
-            $postarr['post_excerpt']='{"fontsize":"12","margin":".25"}';
-            return wp_insert_post($postarr);            
+            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_thank_you.html";
+            $t=new DonorTemplate();          
+            $t->post_content=file_get_contents($tempLoc);            
+            $t->post_title='Thank You For Your ##Organization## Donation';
+            $t->post_name='receipt-thank-you';
+            $t->post_excerpt='{"fontsize":"12","margin":".25"}';
+            $t->save();
+            return $t;           
         }    
     }
 
