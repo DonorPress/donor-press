@@ -883,13 +883,20 @@ class Donation extends ModelLite
         return $notice;
     }
 
-    public function pdf_receipt($customMessage=null){
-        //require ( WP_PLUGIN_DIR.'/doublewp-tcpdf-wrapper/lib/tcpdf/tcpdf.php' );
+    static function pdf_class_check(){
+        if (!class_exists("TCPDF")){           
+            require ( WP_PLUGIN_DIR.'/doublewp-tcpdf-wrapper/lib/tcpdf/tcpdf.php' );
+        }
         if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function");         
-            // or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a>    
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");         
+            //    
             return false;
         }
+        return true;
+    }
+
+    public function pdf_receipt($customMessage=null){
+        if (!self::pdf_class_check()) return false;
         ob_clean();
         $this->receipt_email();        
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
@@ -990,7 +997,7 @@ class Donation extends ModelLite
                 <input type="hidden" name="DonationId" value="<?php print $this->DonationId?>"/>
                 <?php              
 
-                if ($this->QBOInvoiceId==0){
+                if ($this->QBOInvoiceId==0 && QuickBooks::qb_api_installed()){
                     $qb=new QuickBooks();
                     $items=$qb->item_list("",false);
                     $QBItemId=$qb->default_item_id($this,$donor);

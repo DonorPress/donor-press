@@ -836,11 +836,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     function year_receipt_pdf($year,$customMessage=null){
-        if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
-            //or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> <-- this bricks site, so not recommending it right now.
-            return false;
-        }
+        if (!Donation::pdf_class_check()) return false;        
         $this->year_receipt_email($year);
         ob_clean();
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
@@ -853,12 +849,12 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $pdf->AddPage();
         $pdf->writeHTML($html, true, false, true, false, '');
         $f=$this->receipt_file_info($year);
-        $file=$f['file'];
+        $file="YearEndReceipt-".$year."-D".$this->DonorId.".pdf";
         $path=$f['path'];
 
         $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$this->mailing_address(),"Subject"=>$this->emailBuilder->subject,"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
 		$dr->save();  
-        if ($pdf->Output($path, 'D')){
+        if ($pdf->Output($file, 'D')){
             return true;
         }else{
             return false;
