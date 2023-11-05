@@ -837,7 +837,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     function year_receipt_pdf($year,$customMessage=null){
         if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton or install <a href='https://donorpress.com/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
+            //or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> <-- this bricks site, so not recommending it right now.
             return false;
         }
         $this->year_receipt_email($year);

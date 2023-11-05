@@ -886,7 +886,8 @@ class Donation extends ModelLite
     public function pdf_receipt($customMessage=null){
         //require ( WP_PLUGIN_DIR.'/doublewp-tcpdf-wrapper/lib/tcpdf/tcpdf.php' );
         if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function or install <a href='https://donorpress.com/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");            
+            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function");         
+            // or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a>    
             return false;
         }
         ob_clean();
