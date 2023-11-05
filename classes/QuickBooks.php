@@ -63,6 +63,10 @@ class QuickBooks extends ModelLite
         if (!$this->dataService){
             $clientId=CustomVariables::get_option('QuickbooksClientId',true);
             $clientSecret=CustomVariables::get_option('QuickbooksSecret',true);
+            if (!self::qb_api_installed()){
+                //if ($clientId || $clientSecret) $this->missing_class_error();
+                return false;
+            }
             if (!$clientId || !$clientSecret){
                 $this->missing_api_error();
                 return false;
@@ -89,6 +93,11 @@ class QuickBooks extends ModelLite
         //$this->dataService->disableLog();   
         //$dataService->setLogLocation("/Your/Path/ForLog");     
         return $this->oAuth2LoginHelper;  
+    }
+
+    static public function qb_api_installed(){
+        return file_exists(dn_plugin_base_dir()."/vendor/quickbooks");
+       //return class_exists('DataService');
     }
 
     static public function redirect_url(){
@@ -144,6 +153,8 @@ class QuickBooks extends ModelLite
                 $this->accessTokenObj = null;
                 self::dump($e);
             }
+        }elseif (!QuickBooks::qb_api_installed()){
+            $this->missing_class_error();
         }else{
             print "<a href='?redirect=donor_quickBooks_authorizeUrl'>Quickbooks API Login</a>";    
             return false; 
@@ -1120,6 +1131,10 @@ class QuickBooks extends ModelLite
 
     public function missing_api_error(){
         self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".QuickBooks::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
+    }
+
+    public function missing_class_error(){
+        self::display_error("Quickbook Class not installed. You will need appropriate webserver access and ability to run 'composer install' on the root directory of the donor-press plugin.");
     }
 
     function DonorToCustomer($donorIds){   

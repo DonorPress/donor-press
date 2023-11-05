@@ -94,16 +94,17 @@ class CustomVariables extends ModelLite
                 </table><?php               
                 if (Quickbooks::is_setup()){  
                 ?>
-                <h3>Quickbook Integration Setup</h3>
+                <h3>Quickbooks Integration Setup</h3>
                 <table>
                 <?php
                     $qb=new QuickBooks();
-                    if ($items=$qb->item_list("",false)){
+                    if (!QuickBooks::qb_api_installed()){
+                        $qb->missing_class_error();
+                    }elseif ($items=$qb->item_list("",false)){
                         $var="DefaultQBItemId";
                         $fullVal=self::base."_".$var;
                         $val=$vals->$fullVal?$vals->$fullVal->option_value:"";                            
-                        ?>  
-                  
+                        ?>
                         <tr><td>Default Quickbooks Item Id</td><td><select name="DefaultQBItemId"><option value="0">[--None--]</option><?php               
                         foreach($items as $item){
                             print '<option value="'.$item->Id.'"'.($item->Id==$val?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
@@ -114,7 +115,7 @@ class CustomVariables extends ModelLite
                         <input type="hidden" name="<?php print $var?>_was" value="<?php print $val?>"/> </td></tr>
                     <?php
                     }
-                    if ($paymentMethod=$qb->payment_method_list("",false)){
+                    if ($paymentMethod=$qb->payment_method_list("",false) && QuickBooks::qb_api_installed()){
                         foreach(Donation::s()->tinyIntDescriptions["PaymentSource"] as $key=>$label){
                             $var="QBPaymentMethod_".$key;
                             $fullVal=self::base."_".$var;
@@ -134,18 +135,13 @@ class CustomVariables extends ModelLite
                         }   
 
                     }
-                    
-                    
-
-
-            } ?>
-                
+            } ?>                
             </table>           
             
             <button type="submit" class="primary" name="Function" value="Save">Save</button>
         </form>
         <?php
-        if (CustomVariables::get_option('QuickbooksClientId',true)){
+        if (CustomVariables::get_option('QuickbooksClientId',true) && QuickBooks::qb_api_installed()){
             self::display_notice("Allow Redirect access in the <a target='quickbooks' href='https://developer.intuit.com/app/developer/dashboard'>QuickBook API</a> for: ".QuickBooks::redirect_url());
         }
         print "<div><strong>Plugin base dir:</strong> ".dn_plugin_base_dir()."</div>";       
