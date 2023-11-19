@@ -546,7 +546,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
            
             }?>
             </tbody>
-            <tfoot><tr><td></td><td></td><td></td><td></td><td>Totals:</td><?php
+            <tfoot><tr><td></td><td></td><td></td><td></td><td></td><td>Totals:</td><?php
             foreach($q['year'] as $y=>$total){
                 print "<td style='text-align:right;'>".($q['total'][$y]?number_format($q['total'][$y],2):"")."</td>";
             }
@@ -560,11 +560,12 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         if (!$settings['orderBy']) $settings['orderBy']="SUM(Gross) DESC,COUNT(*) DESC";
         $total=0;
         $where[]="Status>=0";
-        $where[]="Type>=1";        
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest 
+        $where[]="Type>=1";
+        $donorTypes=DonorType::list_array();
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, D.TypeId,COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest 
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$where)
-        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` "
+        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, D.TypeId "
         .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
         ." Order BY ".$settings['orderBy'];
 
@@ -572,7 +573,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         ?><div><a href="?page=<?php print self::input('page','get')?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
         <table class="dp">
             <thead>
-                <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr>
+                <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Type</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr>
             </thead>
             <tbody><?php
         foreach ($results as $r){
@@ -582,17 +583,18 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 <td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
                 <td><?php print $donor->display_email()?></td>    
                 <td><?php print $donor->phone()?></td> 
-                <td><?php print $donor->mailing_address(', ',false)?></td>          
+                <td><?php print $donor->mailing_address(', ',false)?></td> 
+                <td><?php print $donorTypes[$donor->TypeId]?></td>       
                 <td><?php print $r->donation_count?></td>
                 <td><?php print $r->Total?></td>
-                <td><?php print $r->DateEarliest?></td>
-                <td><?php print $r->DateLatest?></td>
+                <td><?php print date("Y-m-d", strtotime($r->DateEarliest))?></td>
+                <td><?php print date("Y-m-d", strtotime($r->DateLatest))?></td>
             </tr><?php
             $total+=$r->Total;
         }?>
         </tbody>
         <tfoot>
-        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td style="text-align:right;"><?php print number_format($total,2)?></td><td></td><td></td></tr>
         </tfoot>
         </table>
                   
