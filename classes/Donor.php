@@ -15,7 +15,8 @@ class Donor extends ModelLite {
 	protected $attributes = [        
         'Country' => 'US',
         'TaxReporting'=> 0,
-        'EmailStatus'=>1
+        'EmailStatus'=>1,
+        'TypeId'=>0
     ];
     
     protected $tinyIntDescriptions=[
@@ -186,6 +187,10 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         print "<hr>";
         print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeProcessed)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeProcessed)."'>View Summary</a></div>";
    
+    }
+
+    public function type(){
+        return $this->TypeId;
     }
 
     public function merge_form_compare($oldDonor){
@@ -478,10 +483,10 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         if (!$settings['where']) $settings['where']=[];
         $settings['where'][]="Status>=0";
         $settings['where'][]="Type>=1";        
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,YEAR(DT.Date) as Year, COUNT(*) as donation_count, SUM(Gross)  as Total 
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.TypeId,YEAR(DT.Date) as Year, COUNT(*) as donation_count, SUM(Gross)  as Total 
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$settings['where'])
-        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,YEAR(DT.Date) "
+        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.TypeId,YEAR(DT.Date) "
         .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
         ." Order BY ".$settings['orderBy'];
         //print "<pre>".$SQL."</pre>";
@@ -493,9 +498,11 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $q['year'][$r->Year]+=$r->Total;
         }
         if ($q['year']) ksort($q['year']);
+
+        $donorTypes=DonorType::list_array();       
         ?><table class="dp">
             <thead>
-                <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th>
+                <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Type</th>
             <?php
             foreach($q['year'] as $y=>$total){
                 print "<th>".$y."</th>";
@@ -526,7 +533,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                         <td><?php print $donor->name_combine()?></td>
                         <td><?php print $donor->display_email()?></td>    
                         <td><?php print $donor->phone()?></td> 
-                        <td><?php print $donor->mailing_address(', ',false)?></td> 
+                        <td><?php print $donor->mailing_address(', ',false)?></td>
+                        <td><?php print $donorTypes[$donor->TypeId]?></td>
                         <?php
                         foreach($q['year'] as $y=>$total){
                             $q['total'][$y]+=$total;
@@ -606,7 +614,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $NotTaxDeductible[$r->DonorId]=$r;
         }
 
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country Order BY COUNT(*) DESC, SUM(Gross) DESC";
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, D.TypeId,COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";
         $results = self::db()->get_results($SQL);
         ?><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
         <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Mailing</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>

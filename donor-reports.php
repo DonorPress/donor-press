@@ -91,6 +91,9 @@ function year_end_summmaries(){ ?>
 
 function report_donors(){	
 	$dateField=Donor::input('dateField','get')?Donor::input('dateField','get'):'Date';
+
+	$typeIds=is_array($_GET['typeIds'])?$_GET['typeIds']:array();	//if ($donorTypes[0]=="") $donorTypes=array();
+	
 	?><form method="post">
 		<button name="Function" value="ExportAllDonors">Export All Donors</button>
 	</form>
@@ -111,6 +114,17 @@ function report_donors(){
 	Amount >=  <input type="number" step=".01" name="af" value="<?php print Donor::input('af','get')?>" style="width:120px;"/>
 		<label><input type="checkbox" name="yearView" value="t" <?php print Donor::input('yearView','get')=="t"?" checked":""?>/> Year Trends</label>
 		<!-- <label><input type="checkbox" name="bulkAction" value="t" <?php print Donor::input('bulkAction','get')=="t"?" checked":""?>/> Bulk Action</label> -->
+		Type: <select multiple name="typeIds[]">
+			<option value="">--All--</option>
+			<option value="ZERO"<?php print (in_array("ZERO",$typeIds)?" selected":"")?>>--Not Set--</option>
+		<?php
+		$donorTypes=DonorType::list_array();
+		foreach($donorTypes as $typeId=>$desc){?>
+			<option value="<?php print $typeId?>"<?php print (in_array($typeId,$typeIds)?" selected":"")?>><?php print $desc;?></option><?php
+		}
+		?>		
+		</select>
+		
 		<button name="f" value="Go">Go</button>
 	</form>
 	<?php
@@ -123,6 +137,13 @@ function report_donors(){
 	}
 	if (Donor::input('name','get')){
 		$where[]="(UPPER(D.Name) LIKE '%".addslashes(Donor::input('name','get'))."%' OR UPPER(D.Name2) LIKE '%".addslashes(Donor::input('name','get'))."%')";
+	}
+	if (sizeof($typeIds)>0 && $typeIds[0]!=""){
+		if (in_array('ZERO',$typeIds)){
+			$where[]="(TypeId IN ('0','".implode("','",$typeIds)."') OR TypeId IS NULL)";
+		}else{
+			$where[]="TypeId IN ('".implode("','",$typeIds)."')";
+		}		
 	}
 	
 	if(Donor::input('f','get')=="Go"){
