@@ -537,7 +537,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                         <td><?php print $donorTypes[$donor->TypeId]?></td>
                         <?php
                         foreach($q['year'] as $y=>$total){
-                            $q['total'][$y]+=$total;
+                            $q['total'][$y]+=$q['yearList'][$id][$y];
                             print "<td style='text-align:right;'>".($q['yearList'][$id][$y]?number_format($q['yearList'][$id][$y],2):"")."</td>";
                         }
                         ?></tr>        
@@ -586,7 +586,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 <td><?php print $donor->mailing_address(', ',false)?></td> 
                 <td><?php print $donorTypes[$donor->TypeId]?></td>       
                 <td><?php print $r->donation_count?></td>
-                <td><?php print $r->Total?></td>
+                <td><?php print number_format($r->Total,2)?></td>
                 <td><?php print date("Y-m-d", strtotime($r->DateEarliest))?></td>
                 <td><?php print date("Y-m-d", strtotime($r->DateLatest))?></td>
             </tr><?php
