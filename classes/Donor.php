@@ -1052,7 +1052,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     // }
 
     static function get_mail_list($where=[]){
-        $SQL="Select D.DonorId, D.Name, D.Name2, D.Email,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
+        $SQL="Select D.DonorId, D.Name, D.Name2, '' as NameCombined,D.Email,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".(sizeof($where)>0?implode(" AND ",$where):" 1 ")."    
         Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY D.Name";   
@@ -1064,6 +1064,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $fp = fopen('php://memory', 'r+');
         fputcsv($fp, array_keys((array)$results[0]));//write first line with field names
         foreach ($results as $r){
+            $donor=new Donor($r);
+            $r->NameCombined=$donor->name_combine();
             fputcsv($fp, (array)$r);
         }
         rewind($fp);
