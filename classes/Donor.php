@@ -443,13 +443,35 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     function mailing_address($seperator="<br>",$include_name=true,$settings=[]){
+        $validate=isset($settings['AddressValidate']) && $settings['AddressValidate']?true:false;
         $address="";
-        if ($this->Address1) $address.=$this->Address1.$seperator;
-        if ($this->Address2) $address.=$this->Address2.$seperator;
-        if ($this->City || $this->Region) $address.=$this->City." ".$this->Region." ".$this->PostalCode;
-      
-        if (isset($settings['DefaultCountry']) && $settings['DefaultCountry']==$this->Country){}
-        elseif($address) $address.=" ".$this->Country;   
+        //name_check_individual(
+        if ($this->Address1) $address.=($validate?self::name_check_individual($this->Address1):$this->Address1).$seperator;
+        if ($this->Address2) $address.=($validate?self::name_check_individual($this->Address2):$this->Address2).$seperator;
+        if ($this->City || $this->Region){ 
+            $address.=$this->City." ";
+            if ($validate && $this->Region){
+                switch($this->Country){
+                    case "US": $address.=self::REGION_US[$this->Region]?$this->Region:"<span style='background-color:yellow; font-weight:bold;'>".$this->Region."</span>"; break;
+                    case "CA": $address.=self::REGION_CA[$this->Region]?$this->Region:"<span style='background-color:yellow; font-weight:bold;'>".$this->Region."</span>"; break;
+                    default:  $address.=$this->Region; break;
+                }              
+            }else{
+                $address.=$this->Region;
+            }            
+            $address.=" ".$this->PostalCode;
+        }
+        if ($validate && $this->Country){
+            if (self::COUNTRIES[$this->Country]){
+                $address.=" ".$this->Country; 
+            }else{
+                $address.=" <span style='background-color:yellow; font-weight:bold;'>".$this->Country."</span>"; 
+            }
+        }else{
+            if (isset($settings['DefaultCountry']) && $settings['DefaultCountry']==$this->Country){}
+            elseif($address) $address.=" ".$this->Country;   
+        }
+       
         if (($address&&$include_name) || isset($settings['NameOnlyOkay'])){
             $nameLine=$this->name_combine();
             $address=$nameLine.(trim($address)?$seperator.$address:"");
@@ -462,7 +484,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     static function name_check_individual($name){
-        $names=explode(" ",$name);
+        $names=explode(" ",str_replace("'"," ",$name));
         $alert=false;
         foreach ($names as $n){
             if (ucfirst($n)!=$n){
@@ -580,10 +602,11 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $donor=new self($r);
             ?>
             <tr>
-                <td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td><td><?php print $donor->name_check()?></td>
+                <td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td>
+                <td><?php print $donor->name_check()?></td>
                 <td><?php print $donor->display_email()?></td>    
                 <td><?php print $donor->phone()?></td> 
-                <td><?php print $donor->mailing_address(', ',false)?></td> 
+                <td><?php print $donor->mailing_address(', ',false,array('AddressValidate'=>true))?></td> 
                 <td><?php print $donorTypes[$donor->TypeId]?></td>       
                 <td><?php print $r->donation_count?></td>
                 <td><?php print number_format($r->Total,2)?></td>
