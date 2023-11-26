@@ -12,7 +12,7 @@
 	<!-- <div class="auto-search-wrapper">
 		<input type="text" id="basic" placeholder="type w">
 	</div> -->
-		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print Donor::input('dsearch','get')?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
+		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print htmlentities(stripslashes(Donor::input('dsearch','get')))?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
 	<script>
 		//https://tomik23.github.io/autocomplete/
@@ -42,15 +42,16 @@
 	</script>
 
 	<?php if (Donor::input('dsearch','get') && trim(Donor::input('dsearch','get'))<>''){
-		$list=Donor::get(array("(UPPER(Name) LIKE '%".strtoupper(Donor::input('dsearch','get'))."%' 
-		OR UPPER(Name2)  LIKE '%".strtoupper(Donor::input('dsearch','get'))."%'
-		OR UPPER(Email) LIKE '%".strtoupper(Donor::input('dsearch','get'))."%'
-		OR UPPER(Phone) LIKE '%".strtoupper(Donor::input('dsearch','get'))."%')","(MergedId =0 OR MergedId IS NULL)"));
+		$search=trim(strtoupper(Donor::input('dsearch','get')));
+		$list=Donor::get(array("(UPPER(Name) LIKE '%".$search."%' 
+		OR UPPER(Name2)  LIKE '%".$search."%'
+		OR UPPER(Email) LIKE '%".$search."%'
+		OR UPPER(Phone) LIKE '%".$search."%')","(MergedId =0 OR MergedId IS NULL)"));
 		//print "do lookup here...";
 		if ($list){
 			print Donor::show_results($list,"",['DonorId',"Name","Name2","Email","Phone","Address"]);
 		}else{
-			Donor::display_error("No results found for: ".Donor::input('dsearch','get'));
+			Donor::display_error("No results found for: ".stripslashes(Donor::input('dsearch','get')));
 		}
 				
 	}?>
