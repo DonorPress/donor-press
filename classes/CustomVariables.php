@@ -57,15 +57,15 @@ class CustomVariables extends ModelLite
                     <?php 
                     switch($var){
                         case "QuickbooksBase":
-                            if (!$vals->$fullVal) $vals->$fullVal=new stdClass();
+                            if (!isset($vals->$fullVal)) $vals->$fullVal=new stdClass();
                             ?>
-                            <label><input type="radio" name="<?php print $var?>" value="Production"<?php print $vals->$fullVal->option_value=="Production"?" checked":""?>> Production </label>
-                            <label><input type="radio" name="<?php print $var?>" value="Development"<?php print $vals->$fullVal->option_value!="Production"?" checked":""?>> Development </label>
+                            <label><input type="radio" name="<?php print $var?>" value="Production"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value=="Production"?" checked":""?>> Production </label>
+                            <label><input type="radio" name="<?php print $var?>" value="Development"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value!="Production"?" checked":""?>> Development </label>
                             Note: <code><?php print site_url()?>/wp-admin/admin.php?redirect=donor_quickBooks_redirectUrl</code> must be entered into the developer app as a Redirect URL.
                             <?php
                             break;
                         default:?>
-                            <input name="<?php print $var?>" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/>
+                            <input name="<?php print $var?>" value="<?php print isset($vals->$fullVal)?$vals->$fullVal->option_value:""?>"/>
                         <?php
                         }
                         ?>
@@ -86,7 +86,7 @@ class CustomVariables extends ModelLite
                     //$c->$var=get_option($fullVal);
                     ?>
                     <tr><td><input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/><?php print $var?></td><td><input name="<?php print $var?>" value=""/>
-                    <?php print $vals->$fullVal?"<span style='color:green;'> - set</span> ":" <span style='color:red;'>- not set</span>";
+                    <?php print isset($vals->$fullVal)?"<span style='color:green;'> - set</span> ":" <span style='color:red;'>- not set</span>";
                     ?></td></tr>
                   <?php
                 }
@@ -355,7 +355,12 @@ class CustomVariables extends ModelLite
                 break;
             case 'NukeIt':
                self::nuke_it($_POST);
-                break;              
+               print self::display_notice("Site Nuked. Data erased");
+                break;
+            case 'LoadTestData':
+                loadTestData(self::input('records','post'));
+                print self::display_notice("Test Data Loaded. ".self::input('records','post')." Records Created");
+                break;            
         }		
 
 		

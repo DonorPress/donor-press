@@ -5,10 +5,10 @@
     Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry. Syncing data to Quickbooks is also in beta.
     Author: Denver Steiner
     Author URI: https://donorpress.com/author/
-    Version: 0.0.8
+    Version: 0.0.9
 */
 global $donor_press_db_version;
-$donor_press_db_version='0.0.8';
+$donor_press_db_version='0.0.9';
 
 ### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
 if (file_exists(__DIR__ . '/vendor/autoload.php')){
@@ -187,6 +187,99 @@ function donor_plugin_create_tables() {
 // // Register style sheet.
 // add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
 
+function loadTestData($count=20){
+	if (!class_exists("Faker\Factory")){
+		Donor::display_error("Faker Class is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function.");         
+		//    
+		return false;
+	}
+	for($i=0;$i<$count;$i++){
+		$faker = Faker\Factory::create();
+		$donor=new Donor();
+		$primarySex=$faker->numberBetween(0, 1);
+		$single=$faker->numberBetween(0, 1);
+		$lastName=$faker->lastName;
+		
+		$donor->Name=($primarySex==0?$faker->firstNameMale:$faker->firstNameFemale) . ' ' .$lastName ;
+		if ($single==1){
+			$donor->Name2= ($primarySex==1?$faker->firstNameMale:$faker->firstNameFemale) . ' ' .$lastName;
+		}
+		
+		$donor->Email=$faker->email;
+		$donor->Address1=$faker->streetAddress;
+		if($faker->numberBetween(0, 10)==1){
+			$donor->Address2=$faker->secondaryAddress;
+		}
+		$donor->City=$faker->city;
+		$donor->Region=$faker->stateAbbr;
+		$donor->PostalCode=$faker->postcode;
+		$donor->Country='US';
+		$donor->Phone=$faker->phoneNumber;
+		$donor->Email=$faker->email;
+		$donor->AddressStatus=1;
+		$donor->EmailStatus=1;
+		if($faker->numberBetween(0, 20)==1){
+			$donor->AddressStatus=-1;
+		}
+		if($faker->numberBetween(0, 20)==1){
+			$donor->EmailStatus=-1;
+		}
+		
+		$donor->save();
+		### add one time donations
+		$donationTotal=$faker->numberBetween(1, 7);
+		for($d=0;$d< $donationTotal;$d++){
+			$donation=new Donation();
+			$donation->DonorId=$donor->DonorId;
+			$donation->Date=$faker->dateTimeBetween('-5 years', 'now')->format('Y-m-d');
+			$donation->DateDeposited=date("Y-m-d",strtotime($donation->Date." +".$faker->numberBetween(0, 10)." days"));
+			$donation->CreatedAt=date("Y-m-d H:i:s",strtotime($donation->DateDeposited." +".$faker->numberBetween(0, 60*24)." minutes"));
+			$donation->UpdatedAt=$donation->CreatedAt;
+			$donation->Name=$donor->Name;
+			$donation->Gross=$faker->numberBetween(2, 10, 1000);
+			$donation->Fee=0;
+			$donation->Net=$donation->Gross;
+			$donation->Currency=$faker->currencyCode;
+			$donation->PaymentSource='USD'; 
+			$donation->TransactionType=0;//set to tax deductible
+			$donation->TransactionID=$faker->numberBetween(100, 2000);
+			$donation->Type=1;
+			if ($faker->numberBetween(0, 3)==1){
+				$donation->note="Note from Donor";//$faker->sentence();
+			}
+			
+			$donation->save();
+		}
+		$monthlyGift=$faker->numberBetween(0, 1);
+		if ($monthlyGift==1){			
+			$startDate=$faker->dateTimeBetween('-5 years', 'now')->format('Y-m-d');
+			$amount=$faker->numberBetween(2, 40)*5;
+			/* Add monthly giving from that start date till now */
+			$months=round((strtotime(date("Y-m-d"))-strtotime($startDate))/(60*60*24*30));
+			for($m=0;$m<$months;$m++){				
+				$donation=new Donation();
+				$donation->DonorId=$donor->DonorId;
+				$donation->Date=date("Y-m-d",strtotime($startDate." +".$m." months"));
+				$donation->DateDeposited=date("Y-m-d",strtotime($donation->Date." +".$faker->numberBetween(0, 10)." days"));
+				$donation->CreatedAt=date("Y-m-d H:i:s",strtotime($donation->DateDeposited." +".$faker->numberBetween(0, 60*24)." minutes"));
+				$donation->UpdatedAt=$donation->CreatedAt;
+				$donation->Name=$donor->Name;
+				$donation->Gross=$amount;
+				$donation->Fee=round($amount*.03,2)*-1;
+				$donation->Net=$donation->Gross+$donation->Fee;
+				$donation->Currency='USD';
+				$donation->FromEmailAddress=$donor->Email;
+				$donation->PaymentSource=10; //set to check
+				$donation->TransactionType=0;//set to tax deductible
+				$donation->TransactionID= bin2hex(random_bytes(5));	
+				$donation->Type=5; //subscription
+				$donation->save();
+			}
+		}
+		
+
+	}
+}
 
 
 

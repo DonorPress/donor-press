@@ -1,2 +1,6 @@
+= 0.0.9 =
+* Added address status for tracking returned mail and people who opt out of mailing list.
+* Added test data generator
+
 = 0.0.8 =
 *Intial Beta Release for Wordpress Plugin Approval - November 4, 2023*
