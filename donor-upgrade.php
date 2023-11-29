@@ -26,6 +26,10 @@ function donor_press_upgrade(){
 		donor_press_upgrade_008();
 	}
 
+	if (donor_upgrade_version_value($current_db_version)<donor_upgrade_version_value('0.0.9')){ 
+		donor_press_upgrade_009();
+	}
+
 	if ($current_db_version){
 		update_option( "donor_press_db_version", $donor_press_db_version );
 	}else{
@@ -89,4 +93,11 @@ function donor_press_upgrade_008(){
 	$wpdb=Donor::db();
 	$uSQL="UPDATE `".Donation::get_table_name()."` SET TransactionType=100 WHERE TransactionType=2";
 	$wpdb->query( $uSQL );		
+}
+
+function donor_press_upgrade_009(){
+	$wpdb=Donor::db();
+	$aSQL="ALTER TABLE `".Donor::get_table_name()."`
+	ADD COLUMN `AddressStatus` tinyint(4) NOT NULL DEFAULT '1' COMMENT '-2 Unsubscripted -1=Returned 1=Active' AFTER `Country`;";
+	$wpdb->query( $aSQL );	
 }

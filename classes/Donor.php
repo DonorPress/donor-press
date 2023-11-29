@@ -8,7 +8,7 @@ class Donor extends ModelLite {
     protected $table = 'donor';
 	protected $primaryKey = 'DonorId';
 	### Fields that can be passed 
-    public $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","TypeId","TaxReporting","MergedId","Source","SourceId","QuickBooksId"];	    
+    public $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","AddressStatus","TypeId","TaxReporting","MergedId","Source","SourceId","QuickBooksId"];	    
 	
     public $flat_key = ["Name","Name2","Email","Phone","City","Region"];
     ### Default Values
@@ -16,11 +16,13 @@ class Donor extends ModelLite {
         'Country' => 'US',
         'TaxReporting'=> 0,
         'EmailStatus'=>1,
+        'AddressStatus'=>0,
         'TypeId'=>0
     ];
     
     protected $tinyIntDescriptions=[
-        "EmailStatus"=>["-1"=>"Returned","0"=>"Not Set","1"=>"Valid"],        
+        "EmailStatus"=>["-1"=>"Returned","0"=>"Not Set","1"=>"Valid"],
+        "AddressStatus"=>["1"=>"Valid","-2"=>"Unsubscribed", "-1"=>"Returned","0"=>"Not Set"],     
     ];
 
     protected $fieldLimits = [//SELECT concat("'",column_name,"'=>",character_maximum_length ,",") as grid FROM information_schema.columns where table_name = 'wp_donor' and table_schema='wordpress' and data_type='varchar'
@@ -62,6 +64,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             `Region` varchar(20)  NULL,
             `PostalCode` varchar(20)  NULL,
             `Country` varchar(2)  NULL,
+            `AddressStatus` tinyint(4) NOT NULL DEFAULT '1' COMMENT '-2 Unsubscribed -1=Returned 1=Active', 
             `TypeId` int(11) NOT NULL DEFAULT '0',
             `MergedId` int(11) NOT NULL DEFAULT '0',
             `QuickBooksId` int(11) DEFAULT NULL,
@@ -1075,11 +1078,11 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     // }
 
     static function get_mail_list($where=[]){
-        $SQL="Select D.DonorId, D.Name, D.Name2, '' as NameCombined,D.Email,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
+        $SQL="Select D.DonorId, D.Name, D.Name2, '' as NameCombined,D.Email,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.AddressStatus,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".(sizeof($where)>0?implode(" AND ",$where):" 1 ")."    
-        Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country` Order BY D.Name";   
-        $results = self::db()->get_results($SQL);         
+        Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.AddressStatus Order BY D.Name";   
+        $results = self::db()->get_results($SQL);
         header("Content-Transfer-Encoding: UTF-8");
         header('Content-type: application/csv');
         header('Pragma: no-cache');
@@ -1155,7 +1158,5 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
         }
     }
-
-   
 
 }
