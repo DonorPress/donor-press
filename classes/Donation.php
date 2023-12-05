@@ -263,11 +263,13 @@ class Donation extends ModelLite
     public function suggest_donor_changes($override=array(),$matchOn=""){
         if (!$this->DonorId) return false;
         global $suggest_donor_changes;
+        $skip=array('AddressStatus');
         $newEntry=$this->new_from_donation($override);
         if ($this->DonorId){ //first pull in exising values            
             $donor=Donor::get(array('DonorId='.$this->DonorId));
             if ($donor){
                 foreach(Donor::get_fillable() as $field){
+                    if (in_array($field,$skip)) continue;
                     if ($field=="Name" && $newEntry[$field]==$newEntry['Email']){
                         continue; // skip change suggestion if Name was made the e-mail address 
                     }
