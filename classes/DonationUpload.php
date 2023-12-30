@@ -206,7 +206,7 @@ class DonationUpload extends ModelLite
                 $a['donor']->DonorId=$existingDonors[$key]; //donor already created
                 $stats['donorFound']++;
             }else{
-                $a['donor']->save($post['timenow']);
+                $a['donor']->save(strtotime($post['timenow']));
                 //confirm this is creating an Id...
                 $stats['donorCreated']++;
             }          
@@ -214,7 +214,7 @@ class DonationUpload extends ModelLite
                 foreach($a['donations'] as $donation){
                     ### eventually add a duplicate donation check...
                     $donation->DonorId= $a['donor']->DonorId;
-                    $donation->save($post['timenow']);
+                    $donation->save(strtotime($post['timenow']));
                     $stats['donationsAdded']++;
                 }
             }else{

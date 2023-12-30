@@ -13,14 +13,18 @@ $clientSecret=CustomVariables::get_option('PaypalSecret');
         Paypal::display_notice("Donor Records Updated");
     }elseif(Donor::input('Function','post')=="PaypalDateSync"){
         $response=$paypal->get_transactions_date_range(Donor::input('date_from','post'),Donor::input('date_to','post'));
-        $process=$paypal->process_response($response,Donor::input('date_to','post')); 
+        $process=$paypal->process_response($response,Donor::input('date_to','post'));
+        if (!$process['time']) $process['time']=time();
+        if (!is_numeric($process['time'])){
+            $process['time']=strtotime($process['time']);
+        }
         if ($response){
             if ($response->transaction_details){
                 Paypal::display_notice(
                     ($response->transaction_details?sizeof($response->transaction_details):"0")." records retrieved. <ul>".
                     "<li>".($process['DonorsAdded']?sizeof($process['DonorsAdded']):"0")." New Donor Entries Created.</li>".
                     ($process['DonationsMatched'] && sizeof($process['DonationsMatched'])>0?"<li>".sizeof($process['DonationsMatched'])." donations already created.</li>":"").
-                    ($process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",strtotime($process['time'])))."'>View These Donations/Send Acknowledgements</a></li>":"").
+                    ($process['DonationsAdded'] && sizeof($process['DonationsAdded'])>0?"<li>".sizeof($process['DonationsAdded'])." new donations added. <a target='sendreceipts' href='?page=donor-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",$process['time']))."'>View These Donations/Send Acknowledgements</a></li>":"").
                     "</ul>"
                 );
             }else{

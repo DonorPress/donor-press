@@ -134,7 +134,7 @@ class Paypal extends ModelLite{
 
     public function process_response($response,$dateEnd=""){
         $process=$donations=$donors=$donorEmails=array();
-        $process['time']=date("Y-m-d H:i:s");
+        $process['time']=time();
         $donationSkip=0;
         //This first loop caches results and puts them in Donor and Donation objects, but does NOT save them yet.         
         foreach($response->transaction_details as $r){

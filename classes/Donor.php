@@ -170,8 +170,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     static public function donor_update_suggestion_form($suggest_donor_changes,$timeProcessed=null){
-        if (sizeof($suggest_donor_changes)==0) return;
-
+        if (!$timeProcessed) $timeProcessed=time();
+        if (sizeof($suggest_donor_changes)==0) return;        
         print "<h2>The following changes are suggested</h2><form method='post'>";
         print "<table border='1'><tr><th>#</th><th>Name</th><th>Change</th></tr>";
         foreach ($suggest_donor_changes as $donorId => $changes){
@@ -924,9 +924,9 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             foreach ($donorList as $donor){
                 $donor->year_receipt_email($year);
                 $pdf->AddPage();
-                $margin=($this->emailBuilder->margin?$donor->emailBuilder->margin:.25)*72;
+                $margin=($donor->emailBuilder->margin?$donor->emailBuilder->margin:.25)*72;
                 $pdf->SetMargins($margin,$margin,$margin);
-                $pdf->SetFont('helvetica', '', $donor->emailBuilder->fontsize?$this->emailBuilder->fontsize:12);                
+                $pdf->SetFont('helvetica', '', $donor->emailBuilder->fontsize?$donor->emailBuilder->fontsize:12);                
                 $pdf->writeHTML("<h2>".$donor->emailBuilder->subject."</h2>".$donor->emailBuilder->body, true, false, true, false, '');
                 if ($blankBlack && $pdf->PageNo()%2==1){ //add page number check
                     $pdf->AddPage();
