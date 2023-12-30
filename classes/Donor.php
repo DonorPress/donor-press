@@ -77,7 +77,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     static public function from_paypal_api_detail($detail){
-        $payer=$detail->payer_info;
+        $payer=$detail->payer_info;       
         $shipInfo=$detail->shipping_info;
 
         $type=Donation::transaction_event_code_to_type($detail->transaction_info->transaction_event_code);
@@ -89,7 +89,12 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
        
         //$d->EmailStatus=1; //if already set elswhere... should not be etting this
         $d->Name=$payer->payer_name->alternate_full_name;
-        $address=$payer->address?$payer->address->address:$shipInfo->address; //address not always provided, but if it is, look first if it is on the payer object, otherwise look at shipping_info   
+        if (isset($payer->address)){
+            $address=$payer->address?$payer->address->address:$shipInfo->address; //address not always provided, but if it is, look first if it is on the payer object, otherwise look at shipping_info  
+        }else{
+            $address=null;
+        }
+        
         if ($address){
             $d->Address1=$address->line1;
             if ($address->line2) $d->Address2=$address->line2;
@@ -97,8 +102,10 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $d->Region=$address->state;
             $d->Country=$address->country_code;
             $d->PostalCode=$address->postal_code;
+            $d->AddressStatus=1;
         }elseif($payer->country_code){
             $d->Country=$payer->country_code;  //entries without addresses usually at least have country codes.
+            $d->AddressStatus=0;
         }
         //deposit scenerio detected
         if ($type<0 && !$d->Email){
