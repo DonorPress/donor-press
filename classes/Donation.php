@@ -760,7 +760,7 @@ class Donation extends ModelLite
         if ($this->CategoryId){
             $page=DonationCategory::find($this->CategoryId)->getTemplate();
         }
-        if (!$page || !$page->post_content){
+        if (!isset($page) || !isset($page->post_content)){
             if ($this->TransactionType==1){                   
                 $page = DonorTemplate::get_by_name('no-tax-thank-you');  
                 if (!$page){ ### Make the template page if it doesn't exist.
@@ -886,36 +886,69 @@ class Donation extends ModelLite
     }
 
     static function pdf_class_check(){
-        if (!class_exists("TCPDF")){           
+        if (class_exists("Dompdf\Dompdf")){        
+             //return "dompdf";    
+        }
+        self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");         
+
+        if (class_exists("TCPDF")){
+            return "tcpdf";
+        }else{
             require ( WP_PLUGIN_DIR.'/doublewp-tcpdf-wrapper/lib/tcpdf/tcpdf.php' );
         }
-        if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");         
-            //    
-            return false;
+
+        if (class_exists("TCPDF")){
+            return "tcpdf";
         }
-        return true;
+        return false;
     }
 
     public function pdf_receipt($customMessage=null){
-        if (!self::pdf_class_check()) return false;
+        if ($pdfLib=self::pdf_class_check()){
+        }else{ return false; }
         ob_clean();
-        $this->receipt_email();        
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-        $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
-        $pdf->SetMargins($margin,$margin,$margin);
-        $pdf->SetFont('helvetica', '', $this->emailBuilder->fontsize?$this->emailBuilder->fontsize:12);
-        $pdf->setPrintHeader(false);
-        $pdf->setPrintFooter(false); 
-        $file=$this->receipt_file_info();        
-        $pdf->AddPage();
-        $pdf->writeHTML($customMessage?$customMessage:$this->emailBuilder->body, true, false, true, false, '');        
-        
-        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
-        $dr->save();
-        if ($pdf->Output($file, 'D')){
+        $this->receipt_email(); 
+        $file=$this->receipt_file_info();    
+        $dpi=72;    
+        if ($pdfLib=="dompdf"){
+            //$margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.5)*$dpi;
+            //print $customMessage?$customMessage:$this->emailBuilder->body; exit();
+            $options = new Dompdf\Options();
+            $options->setDpi($dpi);
+            $options->set('defaultFont', 'Helvetica');
+            $options->set('isRemoteEnabled', true);
+            $options->set('isHtml5ParserEnabled',true);
+            //$options->set('tempDir', '/tmp'); //folder name and location can be changed
+            $dompdf = new Dompdf\Dompdf($options);
+    
+            $style="<style>@page { font-size:".(($this->emailBuilder->fontsize?$this->emailBuilder->fontsize:12))."px;";
+            if ($this->emailBuilder->margin) $style.="margin:".$this->emailBuilder->margin."in;";
+            $style.="}</style>";
+            //print $style.($customMessage?$customMessage:$this->emailBuilder->body); exit();
+            $dompdf->loadHtml($style.($customMessage?$customMessage:$this->emailBuilder->body));
+            $dompdf->set_paper('letter', 'portrait');
+            $dompdf->render();
+            $file=$this->receipt_file_info(); 
+            $dompdf->stream($file,array("Attachment" => false));
             return true;
-        }else return false;
+        
+        }else{
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
+            $pdf->SetMargins($margin,$margin,$margin);
+            $pdf->SetFont('helvetica', '', $this->emailBuilder->fontsize?$this->emailBuilder->fontsize:12);
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false); 
+                   
+            $pdf->AddPage();
+            $pdf->writeHTML($customMessage?$customMessage:$this->emailBuilder->body, true, false, true, false, '');  
+            if (!$pdf->Output($file, 'D')){
+                return false; 
+            }
+        } 
+        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
+        $dr->save();        
+        return true;        
     }
 
     public function receipt_file_info(){
