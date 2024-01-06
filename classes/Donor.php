@@ -1090,21 +1090,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         WHERE ".(sizeof($where)>0?implode(" AND ",$where):" 1 ")."    
         Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.AddressStatus Order BY D.Name";   
         $results = self::db()->get_results($SQL);
-        header("Content-Transfer-Encoding: UTF-8");
-        header('Content-type: application/csv');
-        header('Pragma: no-cache');
-        header('Content-Disposition: attachment; filename=Donors.csv');
-        $fp = fopen('php://memory', 'r+');
-        fputcsv($fp, array_keys((array)$results[0]));//write first line with field names
-        foreach ($results as $r){
-            $donor=new Donor($r);
-            $r->NameCombined=$donor->name_combine();
-            fputcsv($fp, (array)$r);
-        }
-        rewind($fp);
-         $csv_line = stream_get_contents($fp);
-         print $csv_line;
-         exit();
+        Donation::resultToCSV($results,array('name'=>'Donors','namecombine'=>true));       
     }
 
     static function merge_suggestions(){ //similar to find duplicates to merge... probably can consolidate

@@ -1146,4 +1146,74 @@ class Donation extends ModelLite
         $qb=new QuickBooks();
         return $qb->donation_to_invoice_process($this);
     }
+
+    static function report($top=null,$dateField=null){
+        if (!$dateField) $dateField=Donor::input('dateField','get')?Donor::input('dateField','get'):'Date';
+        $where=["DT.Status>0"];
+		if (Donor::input('PaymentSource','get')){
+			$where[]="PaymentSource='".(Donor::input('PaymentSource','get')=="ZERO"?0:Donor::input('PaymentSource','get'))."'";		
+		}	
+		if (Donor::input('Type','get')){
+			$where[]="`Type`='".(Donor::input('Type','get')=="ZERO"?0:Donor::input('Type','get'))."'";			
+		}
+		if (Donor::input('TransactionType','get')){
+			$where[]="TransactionType='".(Donor::input('TransactionType','get')=="ZERO"?0:Donor::input('TransactionType','get'))."'";			
+		}
+		if (Donor::input('df','get')){
+			$where[]="`$dateField`>='".Donor::input('df','get').($dateField=="Date"?"":" 00:00:00")."'";
+		}
+		if (Donor::input('dt','get')){
+			$where[]="`$dateField`<='".Donor::input('dt','get').($dateField=="Date"?"":" 23:59:59")."'";
+		}
+		if (Donor::input('CategoryId','get')){
+			$where[]="CategoryId='".(Donor::input('CategoryId','get')=="ZERO"?0:Donor::input('CategoryId','get'))."'";
+		}
+		if (Donor::input('af','get') && Donor::input('at','get')){
+			$where[]="DT.Gross BETWEEN '".Donor::input('af','get')."' AND '".Donor::input('at','get')."'";
+		}elseif (Donor::input('af','get')){
+			$where[]="DT.Gross='".Donor::input('af','get')."'";
+		}elseif (Donor::input('at','get')){
+			$where[]="DT.Gross='".Donor::input('at','get')."'";
+		}
+
+		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
+        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId ".($top?" LIMIT ".$top:""); 
+		//print $SQL;     
+        $results = Donation::db()->get_results($SQL);
+		if (Donor::input('Function','get')=="DonationListCsv"){
+			$fileName="all";
+			if (Donor::input('df','get')){
+				$fileName=Donor::input('df','get')."-";
+				if (Donor::input('dt','get')){
+					$fileName.=Donor::input('dt','get');
+				}
+			}elseif ($fileName=Donor::input('dt','get')){
+				$fileName="-".Donor::input('dt','get');
+			}
+            return Donation::resultToCSV($results,array('name'=>'Donations_'.$fileName,'namecombine'=>true));
+		}else{
+            ?><table class="dp"><tr><th>DonationId</th><th>Name</th><th>Transaction</th><th>Amount</th><th>Date</th><th>Deposit Date</th><th>Transaction Type</th><th>Category</th><th>Subject</th><th>Note</th></tr><?php
+            foreach ($results as $r){
+                $donation=new Donation($r);
+                $donor=new Donor($r);
+                ?>
+                <tr>
+                <td><a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>"><?php print $r->DonationId?></a> | <a target="donation" href="?page=donor-reports&DonationId=<?php print $r->DonationId?>&edit=t">Edit</a></td>
+                    <td><?php print $donor->name_combine()?></td>
+                <td><?php print ($donation->Source?$donation->Source." | ":"").$donation->show_field("PaymentSource")." - ".$r->TransactionID?></td>
+                <td align=right><?php print number_format($r->Gross,2)?></td>
+                <td><?php print $r->Date?></td>
+                <td><?php print $r->DateDeposited?></td>
+                <td><?php print $donation->show_field("TransactionType");?></td>
+                <td><?php print $donation->show_field("CategoryId");?></td>
+                <td><?php print $r->Subject?></td>
+                <td><?php print $donation->show_field("Note");?></td>
+                </tr>
+                <?php
+            }
+            ?></table>
+            <?php           
+        }	
+    }
 }

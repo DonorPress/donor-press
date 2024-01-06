@@ -86,6 +86,10 @@ function donor_header_check() {
 			case 'ExportDonorList':
 				Donor::get_mail_list(["D.DonorId IN (".implode(",",Donor::input('pdf','post')).")"]);
 			break;
+			case 'DonationListCsv':
+				Donation::report();
+			break;
+
 			case 'QuickbookSessionKill';
 				$qb=new QuickBooks();
 				$qb->clearSession();
