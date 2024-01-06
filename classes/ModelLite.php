@@ -236,6 +236,28 @@ class ModelLite{
 		exit();
 	}
 
+	static function ucfirst_fixer($txt){
+        $breakCharacters=array(" ","'","`");
+        $txt=strtolower(trim($txt));
+        $alwaysLower=array("and","the","of","in","for","to","a","an","on","at","by","with","from","into","over","under","upon");
+        $alwaysUpper=array("ii","iii","iv","v","vi","vii","viii","ix","x","xi","xii","xiii","xiv","xv",'xvi','xvii','xviii','xix','xx','rd','po','pob','jr','sr','md','phd','dmd','esq','cpa','cfo','ceo','cfo','cdo','cso','cbo','cno','coo','cto','cso','cvo','cgo','ciso','st','ln','llc','llp','lp','inc','pc','pa','dba','mds','dds','dmd','do','dpm','dvm','od','phd','pharmd','rn','np','pa','msn','ms','ma','mba','mha','mfa','msw','mdiv','mphil','phd','edd','jd','llm','dmin','thd','thm','mdiv');
+        foreach($breakCharacters as  $char){
+            $words=explode($char,$txt);
+            $pieces=array();
+            foreach($words as $word){
+                if (in_array($word,$alwaysLower)){
+                    $pieces[]=$word;
+                }elseif(in_array($word,$alwaysUpper)){
+                    $pieces[]=strtoupper($word);
+                }else{
+                    $pieces[]=ucfirst($word);
+                }
+            }
+            $txt=implode($char,$pieces);
+        }
+        return $txt;
+    }
+
 	public static function get_by_id($id,$settings=false){		
 		return  self::find($id);
 	}

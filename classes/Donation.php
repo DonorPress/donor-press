@@ -76,7 +76,7 @@ class Donation extends ModelLite
         $donation->Note=$transaction->transaction_note;
         $donation->Name=$payer->payer_name->alternate_full_name;
         if (!$donation->Name && $transaction->bank_reference_id){
-            $donation->Name="Bank ".$transaction->bank_reference_id;
+            $donation->Name="Bank Withdrawal";
             if (!$donation->SourceId) $donation->SourceId=$transaction->bank_reference_id;
         }
         //if (!$payer->payer_name->alternate_full_name) self::dd($payer->payer_name);
@@ -90,7 +90,7 @@ class Donation extends ModelLite
             $donation->FromEmailAddress=self::get_deposit_email();
         }
         //Fields we should drop:
-        $donation->AddressStatus=$payer->address_status=="Y"?1:-1;    
+        //$donation->AddressStatus=$payer->address_status=="Y"?1:-1;    
         $donation->TransactionType =0;
 
         return $donation;
@@ -113,8 +113,18 @@ class Donation extends ModelLite
         //https://developer.paypal.com/docs/reports/reference/tcodes/
         switch($transaction_event_code){
             case "T0002": return 5; break; //subscription Payment
-            case "T0013": return 1; break;
-            case "T0400": return -1; break; //bank transfer
+            case "T0004": //ebay
+            case "T0005": //Direct credit card payment
+            case "T0006": //Express Checkout Payment
+                return "101"; //assumes this is income from sales of something not a donation
+            break;
+            case "T0013": return 1; break; //Donation Payment
+            case "T0401": //auto-sweep
+            case "T0402": //Hyperallet
+            case "T0403": //manual withdrawal
+            case "T0400": 
+                return -1; //bank transfer
+            break; 
             default: return 0; break;
         }
     }
@@ -667,14 +677,17 @@ class Donation extends ModelLite
                 <div><a href="?page=<?php print self::input('page','get')?>">Home</a> |
                 <a href="?page=donor-index&DonorId=<?php print $this->DonorId?>">View Donor</a> | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>
             </form>
-            <h1>Donation #<?php print $this->DonationId?></h1><?php
-            if (self::input('edit','request')){
-                if (self::input('raw','request')) $this->edit_form();
-                else{ $this->edit_simple_form(); }
+            <h1>Donation #<?php print $this->DonationId?$this->DonationId:"Not Found"?></h1><?php
+            if ($this->DonationId){
+                if (self::input('edit','request')){
+                    if (self::input('raw','request')) $this->edit_form();
+                    else{ $this->edit_simple_form(); }
+                }else{
+                    ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t">Edit Donation</a></div><?php
+                    $this->view();
+                    $this->receipt_form();
+                }
             }else{
-                ?><div><a href="?page=donor-index&DonationId=<?php print $this->DonationId?>&edit=t">Edit Donation</a></div><?php
-                $this->view();
-                $this->receipt_form();
             }?>
             
         </div><?php

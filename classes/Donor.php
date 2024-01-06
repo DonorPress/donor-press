@@ -86,7 +86,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $d->Source='paypal';
         $d->SourceId=$payer->account_id;
         $d->Email=$payer->email_address; 
-       
+        
         //$d->EmailStatus=1; //if already set elswhere... should not be etting this
         $d->Name=$payer->payer_name->alternate_full_name;
         if (isset($payer->address)){
@@ -105,14 +105,15 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $d->AddressStatus=1;
         }elseif($payer->country_code){
             $d->Country=$payer->country_code;  //entries without addresses usually at least have country codes.
-            $d->AddressStatus=0;
+            $d->AddressStatus=-1;
         }
+        //$d->AddressStatus=$payer->address_status=="Y"?1:-1;
         //deposit scenerio detected
         if ($type<0 && !$d->Email){
             $d->Email=Donation::get_deposit_email();            
         }
         if (!$d->Name && $detail->transaction_info->bank_reference_id){
-            $d->Name="Bank ".$detail->transaction_info->bank_reference_id;
+            $d->Name="Bank Withdrawal";
             if (!$d->SourceId) $d->SourceId=$detail->transaction_info->bank_reference_id;
         }
 
@@ -128,18 +129,20 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         Enter the ID of the Donor you want to merge to. You will have the option to review this merge. Once merged, all donations will be relinked to the new profile.</form><?php
     }
 
-    static public function donor_update_suggestion($current,$new,$timeProcessed=null){   
+        static public function donor_update_suggestion($current,$new,$timeProcessed=null){   
+        $skip=array();
         $suggest_donor_changes=[];
         foreach ($new as $donorN){
             if ($donorN->DonorId && $current[$donorN->DonorId]){
                 foreach(self::s()->fillable as $field){
+                    if (in_array($field,$skip)) continue;
                     switch($field){
                         case "Name":
                         case "Name2":
                         case "Address1":
                         case "Address2":
-                        case "City":                           
-                            $value=ucwords(strtolower($donorN->$field));
+                        case "City": 
+                            $value=self::ucfirst_fixer($donorN->$field);                            
                             break;
                         case "Region":
                         case "Country":
@@ -149,6 +152,12 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                         case "Email":
                             $value=strtolower($donorN->$field);
                             break;
+                        case "AddressStatus";
+                            $value=$donorN->$field;
+                            if (in_array($current[$donorN->DonorId]->$field,array(-2,1))) { //if current AddressStatus is unsubscriptes, don't suggest a change
+                                $value=$current[$donorN->DonorId]->$field; 
+                            }
+                        break;
                         default:
                             $value=$donorN->$field;
                         break;
@@ -177,7 +186,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         foreach ($suggest_donor_changes as $donorId => $changes){
             print "<tr><td><a target='lookup' href='?page=donor-index&DonorId=".$donorId."'>".$donorId."</td><td>".$changes['Name']['c']."</td><td>";
             foreach($changes as $field=>$values){
-               if ($values['n']){                               
+               if (isset($values['n'])){                               
                    //krsort($values['n']);
                    $i=0;
                    foreach($values['n'] as $value=>$count){
@@ -494,14 +503,15 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     static function name_check_individual($name){
-        $names=explode(" ",str_replace("'"," ",$name));
-        $alert=false;
-        foreach ($names as $n){
-            if (ucfirst($n)!=$n){
-                $alert=true;
-            }
-        }       
-        if ($alert) return "<span style='background-color:yellow;'>".$name."</span>";
+        $newName=self::ucfirst_fixer($name);
+        // $names=explode(" ",str_replace("'"," ",$name));
+        // $alert=false;
+        // foreach ($names as $n){
+        //     if (ucfirst($n)!=$n){
+        //         $alert=true;
+        //     }
+        // }       
+        if ( $newName!=$name) return "<span style='background-color:yellow;'>".$name."</span>";
         else return $name;
     }
    
