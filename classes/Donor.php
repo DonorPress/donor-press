@@ -724,7 +724,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     function receipt_table_generate($donations){
         if (sizeof($donations)==0) return "";
         $total=0;
-        $ReceiptTable='<table border="1" cellpadding="4"><tr><th style="width:150px;">Date</th><th style="width:330px">Reference</th><th style="width:100px">Amount</th></tr>';
+        $ReceiptTable='<table border="1" cellpadding="4"><tr><th>Date</th><th>Reference</th><th>Amount</th></tr>';
         foreach($donations as $r){
             $lastCurrency=$r->Currency;
             $total+=$r->Gross; 
