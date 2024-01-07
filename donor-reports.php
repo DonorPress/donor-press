@@ -349,7 +349,7 @@ similar sources</td>
 	<tr><td>13</td><td colspan=6>First 5 years. If the Form 990 is for the organization’s first, second, third, fourth, or fifth tax year as a section 501(c)(3)
 organization, check this box and stop here</td>
 	<?php	print "<td>".($taxYear-$firstYear+1>5?"No":"Yes")." (".($taxYear-$firstYear+1)." estimated reporting years)</td>";?></tr>
-	<tr><td>14</td><td colspan=6>Public support percentage for <?=$taxYear?> (line 6, column (f), divided by line 11, column (f))</td>
+	<tr><td>14</td><td colspan=6>Public support percentage for <?php print $taxYear;?> (line 6, column (f), divided by line 11, column (f))</td>
 	<?php	print "<td>".number_format(100*(Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual'])/$totalSupport,2)."%</td>";?></tr>
 	Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual']
 	</table>
