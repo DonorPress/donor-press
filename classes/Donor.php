@@ -729,22 +729,23 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $lastCurrency=$r->Currency;
             $total+=$r->Gross; 
             $ReceiptTable.="<tr><td>".date("F j, Y",strtotime($r->Date))."</td><td>";
+            $reference="";
             switch($r->PaymentSource){
                 case 1:
-                    $ReceiptTable.="Check".(is_numeric($r->TransactionID)?" #".$r->TransactionID:"");$ReceiptTable.=$r->Subject?" ".$r->Subject:"";
+                    $reference="Check".(is_numeric($r->TransactionID)?" #".$r->TransactionID:"");$ReceiptTable.=$r->Subject?" ".$r->Subject:"";
                     break;
-                case "5":
-                    $ReceiptTable.="Paypal".($r->Subject?": ".$r->Subject:"");
+                case 5:
+                    $reference="Paypal".($r->Subject?": ".$r->Subject:"");
                     break;
-                case "6": 
-                    $ReceiptTable.="ACH/Wire".($r->Subject?": ".$r->Subject:($r->TransactionID?" #".$r->TransactionID:""));
+                case 6: 
+                    $reference="ACH/Wire".($r->Subject?": ".$r->Subject:($r->TransactionID?" #".$r->TransactionID:""));
                     break;
-                default:  $ReceiptTable.= $r->Subject;
+                default:  $reference= $r->Subject;
                 break;                  
             } 
-            if (!$r->Subject && $r->CategoryId) $ReceiptTable.=" - ".$r->show_field("CategoryId",['showId'=>false]) ;
+            if (!$r->Subject && $r->CategoryId) $reference.=($reference?" - ":"").$r->show_field("CategoryId",['showId'=>false]) ;
                         
-            $ReceiptTable.="</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';            
+            $ReceiptTable.=$reference."</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';            
         }
         $ReceiptTable.="<tr><td colspan=\"2\"><strong>Total:</strong></td><td align=\"right\"><strong>".trim(number_format($total,2)." ".$lastCurrency)."</strong></td></tr></table>";
         return $ReceiptTable;
