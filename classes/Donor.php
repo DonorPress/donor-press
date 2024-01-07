@@ -1159,6 +1159,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                     print '</td><td><a target="donor" href="?page=donor-index&DonorId='.$donors[$a[0]]->DonorId.'">'.$donors[$a[0]]->DonorId.'</a> '.$donors[$a[0]]->Name.($donors[$a[0]]->Name2?" & ".$donors[$a[0]]->Name2:"")."</td></tr>";
                 }
             }
+            ?></table><?php
         }
     }
 
