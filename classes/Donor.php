@@ -523,7 +523,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         if (!$settings['orderBy']) $settings['orderBy']="D.Name, D.Name2, YEAR(DT.Date)";
         $total=0;
         if (!$settings['where']) $settings['where']=[];
-        $settings['where'][]="Status>=0";
+        $settings['where'][]="(Status>=0 OR Status IS NULL)";
         $settings['where'][]="Type>=1";        
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.TypeId,YEAR(DT.Date) as Year, COUNT(*) as donation_count, SUM(Gross)  as Total 
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
@@ -601,7 +601,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     static function summary_list($where=[],$year=null,$settings=[]){
         if (!$settings['orderBy']) $settings['orderBy']="SUM(Gross) DESC,COUNT(*) DESC";
         $total=0;
-        $where[]="Status>=0";
+        $where[]="(Status>=0 OR Status IS NULL)";
         $where[]="Type>=1";
         $donorTypes=DonorType::list_array();
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, D.TypeId,COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest 
@@ -653,14 +653,14 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $receipts[$r->DonorId][]=new DonationReceipt($r);
         }
         ## Find NOT Tax Deductible entries
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=1 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  (Status>=0 OR Status IS NULL) AND (Type>=0 OR Type IS NULL) AND DT.TransactionType=1 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){
             $NotTaxDeductible[$r->DonorId]=$r;
         }
 
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, D.TypeId,COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-        WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";
+        WHERE YEAR(Date)='".$year."' AND   (Status>=0 OR Status IS NULL) AND (Type>=0 OR Type IS NULL) AND DT.TransactionType=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";
         $results = self::db()->get_results($SQL);
         ?><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
         <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Mailing</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>
