@@ -400,7 +400,7 @@ class ModelLite{
 			break;
 			case "CategoryId":
 				$label="";
-				if ($this->table=='DonationCategory') {
+				if ($this->table=='DonationCategory' && !isset($settings['idShow'])) {
 					$settings['idShow']=true;
 				}else{
 					global $cache_ModelLite_show_field;
@@ -416,7 +416,12 @@ class ModelLite{
 					
 										
 				}
-				return '<a href="?page='.self::input('page','get').'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - '.$label;
+				if ($settings['idShow']){
+					return '<a href="?page='.self::input('page','get').'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - '.$label;
+				}else{
+					return $label;
+				}
+				
 				//return ($settings['idShow']?'<a href="?page='.self::input('page','get').'&tab=cat&CategoryId='.$v.'">'.$v.'</a> - ':"").$label;
 			break;
 			case "TransactionType":

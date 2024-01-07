@@ -724,7 +724,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     function receipt_table_generate($donations){
         if (sizeof($donations)==0) return "";
         $total=0;
-        $ReceiptTable='<table border="1" cellpadding="4"><tr><th width="115">Date</th><th width="330">Reference</th><th width="100">Amount</th></tr>';
+        $ReceiptTable='<table border="1" cellpadding="4"><tr><th style="width:150px;">Date</th><th style="width:330px">Reference</th><th style="width:100px">Amount</th></tr>';
         foreach($donations as $r){
             $lastCurrency=$r->Currency;
             $total+=$r->Gross; 
@@ -742,7 +742,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 default:  $ReceiptTable.= $r->Subject;
                 break;                  
             } 
-            if (!$r->Subject && $r->CategoryId) $ReceiptTable.=" ".$r->show_field("CategoryId",['showId'=>false]) ;
+            if (!$r->Subject && $r->CategoryId) $ReceiptTable.=" - ".$r->show_field("CategoryId",['showId'=>false]) ;
                         
             $ReceiptTable.="</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';            
         }
