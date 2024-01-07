@@ -409,6 +409,7 @@ function report_donations(){
 		to <input type="number" step=".01" name="at" value="<?php print Donor::input('at','get')?>" style="width:120px;"/>
 		Category:
 		<?php print DonationCategory::select(['Name'=>'CategoryId','Count'=>true]);?>
+		SQL WHERE QUERY:<input name="where" value="<?php print stripslashes_deep(Donor::input('where','get'))?>" style="width:400px;"/> (advanced)
 		<br>
 		Source:
 		<select name="PaymentSource">

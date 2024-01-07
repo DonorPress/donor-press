@@ -1189,6 +1189,17 @@ class Donation extends ModelLite
 			$where[]="DT.Gross='".Donor::input('at','get')."'";
 		}
 
+        if (Donor::input('where','get')){
+           
+            $whereTxt=stripslashes_deep(Donor::input('where','get'));
+            $removeTxt=array('insert','update','replace','delete','drop','alter','create','truncate','grant','revoke','union','select','from','where');
+             /* remove the following words from the query regardless if they are upper or lower case */
+            foreach ($removeTxt as $word){
+                $whereTxt=str_ireplace($word,"",$whereTxt);
+            }
+            $where[]=$whereTxt;
+        }
+
 		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
         FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId ".($top?" LIMIT ".$top:""); 
