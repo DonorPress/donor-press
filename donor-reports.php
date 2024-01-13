@@ -696,8 +696,10 @@ function reportMonthly(){
 
 	if (sizeof($graph['Type'])>0){	
 		ksort($graph[$countField=="Gross"?'Total':'Count']);
+		$google_charts=CustomVariables::get_option('GoogleCharts');
+		if ($google_charts){
 		?>
-  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript" src="<?php print $google_charts?>"></script>
   <script type="text/javascript">
     google.charts.load("current", {packages:['corechart']});
     google.charts.setOnLoadCallback(drawMonthlyChart);
@@ -813,6 +815,9 @@ function reportMonthly(){
 
 	}
 	</script>
+	<?php
+		}
+	?>
 <form method="get">
 	<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>" />
 	<input type="hidden" name="tab" value="<?php print Donor::input('tab','get')?>" />
@@ -823,6 +828,7 @@ function reportMonthly(){
 					
 			</select>
 			<button type="submit">Go</button></h3>
+		<?php if ($google_charts){?>
 			<div id="MonthlyDonationsChart" style="width: 1200px; height: 500px;"></div>
 			<div id="YearMonthChart" style="width: 1200px; height: 500px;"></div>
 			<div id="MonthChart" style="width: 1200px; height: 500px;"></div>		
@@ -831,7 +837,7 @@ function reportMonthly(){
 				<div id="WeekDay" style="width: 1200px; height: 500px;"></div>
 			<?php }?>
 			<div id="TimeChart" style="width: 1200px; height: 500px;"></div>
-
+		<?php } ?>
 	<table class="dp"><tr><th>Month</th><th>Type</th><th>Amount</th><th>Count</th>
 		<?php
 		foreach ($graph['Total'] as $yearMonth =>$types){

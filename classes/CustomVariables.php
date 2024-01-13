@@ -8,7 +8,7 @@
 class CustomVariables extends ModelLite
 {  
     const base = 'donation';
-    const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","DefaultCountry","QuickbooksBase"];	
+    const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","DefaultCountry","QuickbooksBase","GoogleCharts"];	
     const variables_protected = ["PaypalClientId","PaypalSecret","QuickbooksClientId","QuickbooksSecret"];
 
     const variables_manual=["DefaultQBItemId","QBPaymentMethod"];
@@ -62,6 +62,15 @@ class CustomVariables extends ModelLite
                             <label><input type="radio" name="<?php print $var?>" value="Production"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value=="Production"?" checked":""?>> Production </label>
                             <label><input type="radio" name="<?php print $var?>" value="Development"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value!="Production"?" checked":""?>> Development </label>
                             Note: <code><?php print site_url()?>/wp-admin/admin.php?redirect=donor_quickBooks_redirectUrl</code> must be entered into the developer app as a Redirect URL.
+                            <?php
+                            break;
+                        case "GoogleCharts":
+                            $dependancy="https://www.gstatic.com/charts/loader.js";
+                            if (!isset($vals->$fullVal)) $vals->$fullVal=new stdClass();
+                            ?>
+                            <label><input type="radio" name="<?php print $var?>" value="<?php print $dependancy?>"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value==$dependancy?" checked":""?>> On</label>
+                            <label><input type="radio" name="<?php print $var?>" value=""<?php print !isset($vals->$fullVal->option_value) || $vals->$fullVal->option_value==""?" checked":""?>> Off </label>
+                            Note: Turning on Google Charts. Requires external Library.
                             <?php
                             break;
                         default:?>
