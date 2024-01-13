@@ -57,20 +57,22 @@
 	}?>
 
 <form action="" method="post" enctype="multipart/form-data" style="border:1px solid gray; padding: 20px; margin-top:10px;">
-	<h2>Upload Generic CSV file</h2>
-  <input type="file" name="fileToUpload" accept=".csv,.xls,.xlsx"> 
+	<h2>Upload CSV Donation File</h2>
+  <input type="file" name="fileToUpload" accept=".csv"> 
   <input type="hidden" name="uploadGenericFile" value="true" checked/>
   <?php submit_button('Upload File','primary','submit',false) ?>
+  <div><em>A file with a header row is required.</em></div>
  </form>
 	
-<form action="" method="post" enctype="multipart/form-data" style="border:1px solid gray; padding: 20px; margin-top:10px;">
+<!-- <form action="" method="post" enctype="multipart/form-data" style="border:1px solid gray; padding: 20px; margin-top:10px;">
 	<h2>Paypal CSV File</h2>	
 	<div><em>Note: it is recommended setting up Paypal API integration access instead</em></div>
 	Import Paypal Exported File: (.csv)
 <input type="file" name="fileToUpload" id="fileToUpload" accept=".csv"> 
-<input type="hidden" name="uploadSummary" value="true" checked/>
+<input type="hidden" name="uploadPaypalSummary" value="true" checked/>
 
-<?php submit_button('Upload','primary','submit',false) ?>
+<?php submit_button('Upload Paypal File','primary','submit',false) ?>
 <br><a target="help" href="https://www.paypal.com/us/smarthelp/article/how-do-i-download-my-transaction-history-faq1007">Read how to download .csv transaction history from Paypal</a>	
-</form>
+
+</form> -->
 

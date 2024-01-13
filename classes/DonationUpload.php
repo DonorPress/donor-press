@@ -80,9 +80,7 @@ class DonationUpload extends ModelLite
     
     
     static public function process_map_file($post){
-        //dd($post);
         $csv=self::csv_file_to_array($post["file"],$post["firstLineColumns"]);
-        //dd($csv,$post);
         $recommended_bulk['Donor']=["Source","Country"];
         $recommended_bulk['Donation']=["Date","DateDeposited","Source","PaymentSource"];
         
@@ -91,8 +89,37 @@ class DonationUpload extends ModelLite
         ##save .map file so if this file is reuploaded/reopened, it reads previous settings. 
         if ($post['file']){
             file_put_contents(self::upload_dir().$post['file'].".map",json_encode($post));
-        }  
-        //dd($post);     
+        }
+        ### Check for required fields
+        $required=array('Name'=>false,'Gross'=>false);
+        $r=$csv->data[key($csv->data)];      
+        for ($c=0; $c<$post['columncount']; $c++) {
+            if ($field=$post['column'.$c]){ 
+                switch($field){
+                    case 'Name1 & Name2 Last':
+                    case 'Last, Name1 & Name2':
+                    case 'Name':
+                        $required['Name']=true;
+                    break;
+                    case "Gross":
+                        $required['Gross']=true;
+                    break;
+                }
+            }
+        }
+        if (!$required['Gross']||!$required['Name']){ 
+            if (!$required['Gross']&& !$required['Name']){
+                self::display_error("Required fields missing.  Please select a Name and Gross field.");
+            }elseif (!$required['Name']){
+                self::display_error("Required fields missing.  Please select a Name field.");
+            }else{
+                self::display_error("Required fields missing.  Please select a Gross field.");
+            }
+            
+            //self::csv_read_file_map($csvFile,$firstLineColumns=true,$timeNow="")
+            return;
+        }
+        
 
         foreach($csv->data as $row => $r){
             $donor = new Donor();
@@ -176,7 +203,9 @@ class DonationUpload extends ModelLite
             }
             if (!$donation->DateDeposited)  $donation->DateDeposited=$donation->Date;
             
-            if (!$donation->Gross) $donation->Gross=0;
+            if (!$donation->Gross){
+                $donation->Gross=0;                
+            }
             if (!$donation->Fee) $donation->Fee=0;
             if (!$donation->Net) $donation->Net=$donation->Gross + $donation->Fee;
             //dd($donor,$post,$r);
@@ -226,6 +255,7 @@ class DonationUpload extends ModelLite
         if ($stats['donorCreated']) $notice.="<li>".$stats['donorCreated']." Donors Created.</li>";
         if ($stats['donationsAdded']) $notice.="<li>".$stats['donationsAdded']." Donations Added.</li>";
         $notice.="</ul>";
+        $notice.="<div><a href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$post['timenow'])."'>View added donations</a></div>";
         self::display_notice($notice);
         return true;
 
@@ -280,6 +310,7 @@ class DonationUpload extends ModelLite
                 
                 ?>
             </select>  <em>Key fields are used to detect duplicates</em>
+        <input type="hidden" name="columncount" value="<?php print sizeof($csv->headers)?>"/>
         <table class="dp">
             <tr><?php foreach($csv->headers as $c =>$headerField) 
                     print "<th>".$headerField."</th>";
@@ -353,7 +384,7 @@ class DonationUpload extends ModelLite
                         }else $fieldName=$c;                  
                         if (trim($data[$c])){ 
                             $array[$c]=$data[$c];
-                            $headers[$fieldName]++;
+                            //$headers[$fieldName]++;
                         }
                     } 
                     if (sizeof($array)>0){
@@ -365,10 +396,26 @@ class DonationUpload extends ModelLite
         }else{
             self::display_error("Could not open ".self::upload_dir().$csvFile);
         }
-        return (object)['headers'=>array_keys($headers),'data'=>$return];
+        return (object)['headers'=>$headerRow,'data'=>$return];
     }
 
-    static public function csv_read_file($csvFile,$firstLineColumns=true,$timeNow=""){//2019-2020-05-23.CSV
+    static public function csv_paypal_filecheck($csvFile){
+        //check is the uploaded file is a paypal file.
+        ### get first line, and compare headers to a paypal file:
+        $handle = fopen($csvFile, "r");
+        $data = fgetcsv($handle, 1000, ",");
+        $headerRow= preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $data);    
+        fclose($handle);   
+        for($c=0;$c<10;$c++){ //check first 10 columns to see if they match up.
+            if (str_replace('"',"",$headerRow[$c])!=DonationUpload::s()->paypal[$c]){               
+                return false;
+                break;
+            }
+        }
+        return true;        
+    }
+
+    static public function csv_read_paypal_file($csvFile,$firstLineColumns=true,$timeNow=""){//2019-2020-05-23.CSV
         if (!$timeNow) $timeNow=date("Y-m-d H:i:s");
         $dbHeaders=Donation::s()->fillable; 
         $dbHeaders[]="ItemTitle";        
@@ -376,10 +423,14 @@ class DonationUpload extends ModelLite
         $tinyInt=Donation::s()->tinyIntDescriptions; 
         $row=0;
         if (($handle = fopen($csvFile, "r")) !== FALSE) {
-            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
                 //print "data:"; self::dump($data);
                 if ($firstLineColumns && $row==0){
-                    $headerRow= preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $data);	
+                    $headerRow= preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $data);
+                    $paypalPass=true;
+                    for($c=0;$c<sizeof($headerRow);$c++){
+                        $headerRow[$c]=str_replace(" ","",$headerRow[$c]);                        
+                    }           
                 }else{                   
                     $entry=[];
                     $paypal=[];
@@ -478,7 +529,7 @@ class DonationUpload extends ModelLite
 
 
     static public function csv_upload_check(){
-        $timeNow=date("Y-m-d H:i:s");
+        $timeNow=time();
         if(isset($_FILES['fileToUpload'])){
             $originalFile=basename($_FILES["fileToUpload"]["name"]);
             $target_file=self::upload_dir().$originalFile;
@@ -487,50 +538,49 @@ class DonationUpload extends ModelLite
             }
            
             if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
-                self::display_notice("The file ". $originalFile. " has been uploaded.");               
-                if (self::input('submit','request')=="Upload File"){
+                self::display_notice("The file ". $originalFile. " has been uploaded."); 
+                ### If it detects a Paypal file, then follow automated Paypal load process.
+                if (self::csv_paypal_filecheck($target_file)){
+                    self::display_notice("Paypal Format has been detected"); 
+                    $result=self::csv_read_paypal_file($target_file,$firstLineColumns=true,$timeNow);
+                    ### This next step will Insert records if there is no duplicate on ["Date","Gross","FromEmailAddress","TransactionID"];
+                    if ($stats=Donation::replace_into_list($result)){//inserted'=>sizeof($iSQL),'skipped'
+                        echo "<div>Inserted ".$stats['inserted']." records. Skipped ".$stats['skipped']." repeats.</div>";
+                        unlink($target_file); //don't keep it on the server...
+                    }
+                    global $suggest_donor_changes;
+
+                    if ($suggest_donor_changes && sizeof($suggest_donor_changes)>0){
+                        print "<h2>The following changes are suggested</h2><form method='post'>";
+                        print "<table border='1'><tr><th>#</th><th>Name</th><th>Change</th></tr>";
+                        foreach ($suggest_donor_changes as $donorId => $changes){
+                            print "<tr><td><a target='lookup' href='?page=".self::input('page','get')."&DonorId=".$donorId."'>".$donorId."</td><td>".$changes['Name']['c']."</td><td>";
+                            foreach($changes as $field=>$values){
+                                if ($values['n']){                               
+                                    //krsort($values['n']);
+                                    $i=0;
+                                    foreach($values['n'] as $value=>$count){
+                                        print "<div><label><input ".($i==0?" checked ":"")." type='checkbox' name='changes[]' value=\"".addslashes($donorId."||".$field."||".$value)."\"/> <strong>".$field.":</strong> ".($values['c']?$values['c']:"(blank)")." -> ".$value.(sizeof($values['n'])>1?" (".$count.")":"")."</label></div>";
+                                        $i++;                                    
+                                    }
+                                }                         
+                            }
+                            print "</td><td>";
+                            if ($changes['MatchOn']){
+                                print_r($changes['MatchOn']);
+                            }
+                            print "</td></tr>";
+
+                        }
+                        print "</table><button type='submit' name='Function' value='MakeDonorChanges'>Make Donor Changes</button></form>";
+                        //To do: timezone off. by -5
+                        print "<hr>";
+                        print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View Summary</a></div>";
+                    }
+                }else{ 
                     $result=self::csv_read_file_map($originalFile,$firstLineColumns=true,$timeNow);
-                    return; 
-                }elseif (self::input('submit','request')=="Upload NonPaypal"){
-                    $result=self::csv_read_file_check($target_file,$firstLineColumns=true);                               
-                }else{              
-                    $result=self::csv_read_file($target_file,$firstLineColumns=true,$timeNow);                   
-                }                
-                ### This next step will Insert records if there is no duplicate on ["Date","Gross","FromEmailAddress","TransactionID"];
-                if ($stats=Donation::replace_into_list($result)){//inserted'=>sizeof($iSQL),'skipped'
-                    echo "<div>Inserted ".$stats['inserted']." records. Skipped ".$stats['skipped']." repeats.</div>";
-                    unlink($target_file); //don't keep it on the server...
+                    return;                 
                 }
-                global $suggest_donor_changes;
-
-                 if ($suggest_donor_changes && sizeof($suggest_donor_changes)>0){
-                     print "<h2>The following changes are suggested</h2><form method='post'>";
-                     print "<table border='1'><tr><th>#</th><th>Name</th><th>Change</th></tr>";
-                     foreach ($suggest_donor_changes as $donorId => $changes){
-                         print "<tr><td><a target='lookup' href='?page=".self::input('page','get')."&DonorId=".$donorId."'>".$donorId."</td><td>".$changes['Name']['c']."</td><td>";
-                         foreach($changes as $field=>$values){
-                            if ($values['n']){                               
-                                //krsort($values['n']);
-                                $i=0;
-                                foreach($values['n'] as $value=>$count){
-                                    print "<div><label><input ".($i==0?" checked ":"")." type='checkbox' name='changes[]' value=\"".addslashes($donorId."||".$field."||".$value)."\"/> <strong>".$field.":</strong> ".($values['c']?$values['c']:"(blank)")." -> ".$value.(sizeof($values['n'])>1?" (".$count.")":"")."</label></div>";
-                                    $i++;                                    
-                                }
-                            }                         
-                         }
-                         print "</td><td>";
-                         if ($changes['MatchOn']){
-                             print_r($changes['MatchOn']);
-                         }
-                         print "</td></tr>";
-
-                     }
-                     print "</table><button type='submit' name='Function' value='MakeDonorChanges'>Make Donor Changes</button></form>";
-                     //self::dump($suggest_donor_changes);
-                     //To do: timezone off. by -5
-                     print "<hr>";
-                     print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View Summary</a></div>";
-                 }
             } else {                 
                 self::display_error("Sorry, there was an error uploading your file: ".$originalFile."<br>Destination: ".$target_file);
             }           

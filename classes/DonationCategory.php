@@ -315,7 +315,7 @@ class DonationCategory extends ModelLite
 
 
     static public function get_category_id($text){
-        $text=trim($text);
+        $text=substr(trim($text),0,50); //correct entries over 50 characters
         global $cache_DonationCategory_get_category_id;
         if ($cache_DonationCategory_get_category_id[$text]){
             return $cache_DonationCategory_get_category_id[$text];
