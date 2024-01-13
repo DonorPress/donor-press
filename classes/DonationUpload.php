@@ -83,6 +83,7 @@ class DonationUpload extends ModelLite
         $csv=self::csv_file_to_array($post["file"],$post["firstLineColumns"]);
         $recommended_bulk['Donor']=["Source","Country"];
         $recommended_bulk['Donation']=["Date","DateDeposited","Source","PaymentSource"];
+        $timestamp=$post['timenow']?intval($post['timenow']):time();
         
         $selectDonation=Donation::s()->fillable; 
         $selectDonor=Donor::s()->fillable;
@@ -235,7 +236,7 @@ class DonationUpload extends ModelLite
                 $a['donor']->DonorId=$existingDonors[$key]; //donor already created
                 $stats['donorFound']++;
             }else{
-                $a['donor']->save(strtotime($post['timenow']));
+                $a['donor']->save($timestamp);
                 //confirm this is creating an Id...
                 $stats['donorCreated']++;
             }          
@@ -243,7 +244,7 @@ class DonationUpload extends ModelLite
                 foreach($a['donations'] as $donation){
                     ### eventually add a duplicate donation check...
                     $donation->DonorId= $a['donor']->DonorId;
-                    $donation->save(strtotime($post['timenow']));
+                    $donation->save($timestamp);
                     $stats['donationsAdded']++;
                 }
             }else{
@@ -255,7 +256,7 @@ class DonationUpload extends ModelLite
         if ($stats['donorCreated']) $notice.="<li>".$stats['donorCreated']." Donors Created.</li>";
         if ($stats['donationsAdded']) $notice.="<li>".$stats['donationsAdded']." Donations Added.</li>";
         $notice.="</ul>";
-        $notice.="<div><a href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$post['timenow'])."'>View added donations</a></div>";
+        $notice.="<div><a href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timestamp)."'>View added donations</a></div>";
         self::display_notice($notice);
         return true;
 
