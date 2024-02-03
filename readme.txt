@@ -1,9 +1,9 @@
 === Donor Press ===
 Contributors: steinerd
 Tags: nonprofit, donation tracker, donations, donation manager, quickbooks, paypal, donors
-Requires at least: 5.3
-Tested up to: 6.3
-Stable tag: 5.3
+Requires at least: 0.1.0
+Tested up to: 0.1
+Stable tag: 0.1.0
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -11,8 +11,6 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 DonorPress is a free plugin for non-profits to track donations, send thank you letters and year end summaries. Integration with Quickbooks & Paypal.
 
 == Description ==
-## Beta Notice: 
-This is a functional plugin. Some advance features (quickbook integration and .pdf generateion) require composer install. If you run into bugs, please report them to the developer.
 # Intro
 Donor Press was started by Denver Steiner who found himself managing the finances for 3 small non-profits.
 Short on both time and funds (like many small non-profits), Steiner needed a free way to automate thank you letter receipts and year end summaries.
@@ -33,11 +31,27 @@ Did we mention this is free!? We hope to be able to bless other small non-profit
 
 Our hope is that we will soon have documention build out well enough that you can get started on your end. However if you need help getting integration setup or custom feature or integration added, then contact the plugin author. We may ask for a donation to one of his non-profits in exchange for this help.
 
-For backwards compatibility, if this section is missing, the full length of the short description will be used, and
-Markdown parsed.
-
 # Developer Contact
 Denver Steiner denver@steiner7.com
+
+== Optional 3rd Party Dependancies ==
+Use of optional 3rd party services help extend the functionality of the Donor Press system.
+Optional Depenancies include:
+# Google Charts 
+Google Charts allow you to view different graphs on certain report pages. To turn on this dependancy, go to:
+"Settings -> Site Variables" tab and set "GoogleCharts" to "on". (By default it is off)
+Turning this on utilizes the following external library: https://www.gstatic.com/charts/loader.js 
+Read more about Google Charts here: https://developers.google.com/chart
+Terms of Service: https://developers.google.com/chart/terms
+Security and Privacy Notice: https://developers.google.com/chart/interactive/docs/security_privacy
+
+# Paypal API
+If you receive donations and payments through Paypal, the optional Paypal API settings allow you to sync transactions from Paypal.To enable this setting first:
+1) 
+
+https://api-m.paypal.com/v1/
+
+# Quickbooks API
 
 == Installation ==
 Once released as a plugin on wordpress, it should be simple to install and activate. However certain optional components such as Quickbooks and PDF generation required additional optional libaries. See the "`composer install`" notes below.

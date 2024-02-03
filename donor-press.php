@@ -1,14 +1,21 @@
 <?php
 /*
-    Plugin Name: Donor Press - A Donation Tracking System
-    Plugin URI: https://donorpress.com/
-    Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. This integrates with Paypal as well as allows for manual entry. Syncing data to Quickbooks is also in beta.
-    Author: Denver Steiner
-    Author URI: https://donorpress.com/author/
-    Version: 0.0.9
-*/
+ * Plugin Name: Donor Press - A Donation Tracking System
+ * Plugin URI: https://donorpress.com/
+ * Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. You can manually enter donations, upload a .csv file, or  optionally integrates with Paypal and Quickbooks.
+ * Version:           0.1.0
+ * Requires at least: 0.1
+ * Requires PHP:      7.2
+ * Author:            Denver Steiner
+ * Author URI:        https://donorpress.com/author/
+ * License:           GPL v2 or later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Update URI:        https://example.com/my-plugin/
+ * Text Domain:       donor-press
+ */
+
 global $donor_press_db_version;
-$donor_press_db_version='0.0.9';
+$donor_press_db_version='0.1.0';
 
 ### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
 if (file_exists(__DIR__ . '/vendor/autoload.php')){
