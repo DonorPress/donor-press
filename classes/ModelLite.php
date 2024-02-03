@@ -33,20 +33,12 @@ class ModelLite{
 
 		if (is_array($fields)){
 			foreach ($fields as $field){
+				if (!isset($attributes->$field)) continue;
 				//I'm not positive why we have to strip slashes... but it fixes the issue.		
-				$this->$field=stripslashes(
-					(isset($attributes->$field)?$attributes->$field
-						:(isset($this->attributes[$field])?$this->attributes[$field]:"")
-					)
-				);
+				$this->$field=stripslashes($attributes->$field);
 
 				if (isset($this->fieldLimits)&&isset($this->fieldLimits[$field])){ //trim strings that are to long.
 					$this->$field=substr($this->$field,0,$this->fieldLimits[$field]);
-					//if (strlen($this->$field)>$this->fieldLimits[$field]){
-						//print $field." -> Was: '".$this->$field."' | Trimmed to: '". substr($this->$field,0,$this->fieldLimits[$field])."'<br>";
-						
-					//}				
-
 				}
 			}
 		}	
@@ -98,6 +90,7 @@ class ModelLite{
 		$wpdb->show_errors();
 		$keyField=$this->primaryKey;
 		foreach ($this->fillable as $field){
+			if (!isset($this->$field)) continue; //need to test, but if not set, don't override
 			if (isset($this->fieldLimits)&&isset($this->fieldLimits[$field])){ //trim strings that are to long.
 				$data[$field]=substr($this->$field,0,$this->fieldLimits[$field]);
 			}else{
