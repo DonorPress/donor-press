@@ -226,7 +226,7 @@ class QuickBooks extends ModelLite
 
     public function request_handler(){ 
         if(self::input('ignoreSyncDonation','get')){ //doesn't require authentication first...
-            $this-> ignore_sync_donation(self::input('ignoreSyncDonation','get'));
+            $this->ignore_sync_donation(self::input('ignoreSyncDonation','get'));
             return true;           
         }     
         if ($this->authenticate()){
@@ -244,7 +244,7 @@ class QuickBooks extends ModelLite
                 $this->dataService->throwExceptionOnError(true);               
                 if($this->check_dateService_error()){
                     $changedFields=$this->find_changed_fields('',$entity);
-                    dump($changedFields);
+                    self::dump($changedFields);
                 }
             
             }
@@ -369,7 +369,7 @@ class QuickBooks extends ModelLite
                         $donation->QBOInvoiceId=$resultObj->Id;
                         $donation->save();
                         $payment=$this->donation_to_payment($donation,$donor);
-                        $this->process_payment_obj($payment,$donation,['silent'=>true]);
+                        $this->process_payment_obj($payment,$donation,array('silent'=>true));
                     }
                 }
             }
