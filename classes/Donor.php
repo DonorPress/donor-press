@@ -884,7 +884,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         print DonationReceipt::show_results($receipts);
         print '</form>';
         if ($this->emailBuilder->pageID){
-            print "<div><a target='pdf' href='?page=donor-settings&tab=email&DonorTemplateId=".$this->emailBuilder->pageID."&edit=t'>Edit Template</a></div>";      
+            print '<div><a target="pdf" href="?page=donor-settings&tab=email&DonorTemplateId='.$this->emailBuilder->pageID.'&edit=t">Edit Template</a> | <a href="?page=donor-reports&DonorId='.$this->DonorId.'&f=YearReceipt&Year='.$year.'&resetLetter=t">Reset Letter</a></div>';      
         }
 
         return true;

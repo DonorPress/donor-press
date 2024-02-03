@@ -82,7 +82,7 @@ class DonationCategory extends ModelLite
                             <table class="dp"><tr><th>Transaction Type</th><th>Count</th><th></th></tr>
                             <?php
                             foreach($results as $r){
-                                print "<tr><td>".$r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]."</td><td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=".$donationCategory->CategoryId."&TransactionType=".($r->TransactionType?$r->TransactionType:"ZERO")."&f=Go'>".$r->C."</td><td><a href='?page=".self::input('page','get')."&tab=".self::input('tab','get')."&CategoryId=".self::input('CategoryId','get')."&ChangeTypeTo=".($donationCategory->TransactionType?$donationCategory->TransactionType:"ZERO")."&ChangeTypeFrom=".($r->TransactionType?$r->TransactionType:"ZERO")."'>Change All To: ".$donationCategory->TransactionType." (".Donation::s()->tinyIntDescriptions["TransactionType"][$donationCategory->TransactionType].")</a></td></tr>";
+                                print "<tr><td>".$r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]."</td><td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=".$donationCategory->CategoryId."&TransactionType=".($r->TransactionType?$r->TransactionType:"ZERO")."&Function=DonationList'>".$r->C."</td><td><a href='?page=".self::input('page','get')."&tab=".self::input('tab','get')."&CategoryId=".self::input('CategoryId','get')."&ChangeTypeTo=".($donationCategory->TransactionType?$donationCategory->TransactionType:"ZERO")."&ChangeTypeFrom=".($r->TransactionType?$r->TransactionType:"ZERO")."'>Change All To: ".$donationCategory->TransactionType." (".Donation::s()->tinyIntDescriptions["TransactionType"][$donationCategory->TransactionType].")</a></td></tr>";
                             }?>
                             </table>
                             <?php 
@@ -247,7 +247,7 @@ class DonationCategory extends ModelLite
                 <td><?php print $r->ParentId?></td>
                 <?php if (Quickbooks::is_setup()) print  "<td>".($r->QBItemId>0?Quickbooks::qbLink('Item',$r->QBItemId):"")."</td>";?>
 
-                <td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=<?php print $r->CategoryId;?>&f=Go'><?php print $r->donation_count?></a></td>
+                <td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=<?php print $r->CategoryId;?>&Function=DonationList'><?php print $r->donation_count?></a></td>
                 <td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=<?php print $r->CategoryId?>&edit=t">edit</a></td>
             </tr>
             <?php

@@ -16,7 +16,7 @@ class Donation extends ModelLite
         "Status"=>["9"=>"Completed","7"=>"Pending","0"=>"Unknown","-1"=>"Deleted","-2"=>"Denied"],
         "AddressStatus"=>[0=>"Not Set",-1=>"Non-Confirmed",1=>"Confirmed"],
         "PaymentSource"=>[0=>"Not Set","1"=>"Check","2"=>"Cash","5"=>"Instant","6"=>"ACH/Bank Transfer","10"=>"Paypal","11"=>"Givebutter"],
-        "Type"=>[0=>"Other",1=>"Donation Payment",2=>"Website Payment",5=>"Subscription Payment",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
+        "Type"=>[0=>"Other",1=>"One Time Payment",2=>"Website Payment",5=>"Recurring/Subscription",-2=>"General Currency Conversion",-1=>"General Withdrawal","-3"=>"Expense"],
         "Currency"=>["USD"=>"USD","CAD"=>"CAD","GBP"=>"GBP","EUR"=>"EUR","AUD"=>"AUD"],
         "TransactionType"=>["0"=>"Tax Deductible","1"=>"Not Tax Deductible (Donor Advised fund, etc)","3"=>"IRA Qualified Charitable Distribution (QCD)","90"=>"Interest","100"=>"Service (Not Tax Deductible)","101"=>"Product Sale (Not Tax Deductible)","-1"=>"Expense"]
     ];
@@ -576,8 +576,7 @@ class Donation extends ModelLite
             if (self::input('Function','post')=="Delete" && self::input('table','post')=="donation"){
                 $donation=new Donation($_POST);
                 if ($donation->delete()){
-                    self::display_notice("Donation #".$donation->show_field("DonationId")." for $".$donation->Gross." from ".$donation->Name." on ".$donation->Date." deleted");
-                    //$donation->full_view();
+                    self::display_notice("Donation #".$donation->show_field("DonationId")." for $".$donation->Gross." from ".$donation->Name." on ".$donation->Date." deleted");                   
                     return true;
                 }
             }
@@ -585,6 +584,7 @@ class Donation extends ModelLite
                 $donation=new Donation($_POST);
                 if ($donation->save()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
+                    $donation=Donation::find(self::input('DonationId','request')); //reload the donation, because not all fields may be passed in the save form
                     $donation->full_view();
                     return true;
                 }else{
@@ -620,7 +620,7 @@ class Donation extends ModelLite
             $donations=self::get(["DonationId IN ('".implode("','",$donationIds)."')"]);            
             foreach($donations as $donation){
                 $donation->QBItemId=$_POST['QBItemId_'.$donation->DonationId];
-                $donation->send_to_QB(['silent'=>true]);
+                $donation->send_to_QB(array('silent'=>true));
             }
             self::display_notice(sizeof($donations)." invoices/payments created in QuickBooks.");  
             return true;     
@@ -1015,7 +1015,7 @@ class Donation extends ModelLite
     }
 
     
-    public function receipt_form(){  
+    public function receipt_form(){
         $donor=Donor::find($this->DonorId); 
         $this->receipt_email();            
         if (self::input('Function','post')=="SendDonationReceipt" && self::input('Email','post')){
