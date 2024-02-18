@@ -173,6 +173,9 @@ function report_tax(){
 		<!-- <strong>Tax Period Starting Month:</strong> <input type="number" min="1" max="12" name="TaxMonthStart" value="<?php print $taxYear;?>"/> -->
 		<br>
 		<strong>Schedule A Part II</strong>
+		Lines 1 (Gifts, grants, contributions) Total: <input type="number" name="extraIncome1" value="<?php print Donor::input('extraIncome1','get')?>"/> <em>If left blank will be calculated from donor values: </em>
+		<br>
+		<strong>Schedule A Part II</strong>
 		Lines 2-3 (tax levied, gov help) Total: <input type="number" name="extraIncome23" value="<?php print Donor::input('extraIncome23','get')?>"/>
 		<br>
 		Lines 9-10 (other income) Total: <input type="number" name="extraIncome810" value="<?php print Donor::input('extraIncome810','get')?>"/>
@@ -228,10 +231,10 @@ function report_tax(){
 		$total[$key]['year'][$r->TaxYear]+=$r->Gross;
 		$total[$key]['total']+=$r->Gross;		
 	}
+	### get input can override the calculated value if not all donations/income are accounted for in the system.
+	if (Donor::input('extraIncome1','get')) $total['donated']['total']=Donor::input('extraIncome1','get');
 
-
-
-	 $totalSupport=$total['donated']['total']+$total['interest']['total']+Donor::input('extraIncome23','get')+Donor::input('extraIncome810','get');
+	 $totalSupport=$total['donated']['total']+$total['interest']['total']+intval(Donor::input('extraIncome23','get'))+intval(Donor::input('extraIncome810','get'));
 	 $twoPercent=round($totalSupport*.02,0);
 	 //dump($total,$twoPercent);
 	 $SQL="Select D.DonorId,D.Name,D.Name2, YEAR(DT.Date) as TaxYear,SUM(DT.Gross) as Gross
@@ -311,7 +314,7 @@ organization without charge .
 	<?php
 	for($y=$taxYear-4;$y<=$taxYear;$y++){ 		
 		print "<td class='r'></td>";
-	}print "<td class='r'>".number_format(Donor::input('extraIncome23','get')+$total['donated']['total'])."</td>";
+	}print "<td class='r'>".number_format(intval(Donor::input('extraIncome23','get'))+$total['donated']['total'])."</td>";
 	?></tr>
 	<tr><td>5</td><td colspan=6>The portion of total contributions by each person (other than a governmental unit or publicly supported organization) included on line 1 that exceeds 2% of the amount shown on line 11, column (f)</td>
 	<?php
@@ -319,11 +322,11 @@ organization without charge .
 	?></tr>
 	<tr><td>6</td><td colspan=6>Public support. Subtract line 5 from line 4</td>
 	<?php
-	print "<td class='r'>".number_format(Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual'])."</td>";
+	print "<td class='r'>".number_format(intval(Donor::input('extraIncome23','get'))+$total['donated']['total']-$total['excessMinusUnusual'])."</td>";
 	?></tr>
 	<tr><td>7</td><td colspan=6>Amounts from line 4</td>
 	<?php
-	print "<td class='r'>".number_format(Donor::input('extraIncome23','get')+$total['donated']['total'])."</td>";
+	print "<td class='r'>".number_format(intval(Donor::input('extraIncome23','get'))+$total['donated']['total'])."</td>";
 	?></tr>
 	
 	<tr><td>8</td><td>Gross income from interest, dividends,
@@ -338,7 +341,7 @@ similar sources</td>
 	?></tr>
 	<tr><td>9-10</td><td  colspan=6>Interest, unrelated business income, Other total</td>
 	<?php
-	print "<td class='r'>".number_format(Donor::input('extraIncome810','get'))."</td>";
+	print "<td class='r'>".number_format(intval(Donor::input('extraIncome810','get')))."</td>";
 	?></tr>
 	<tr><td>11</td><td colspan=6>Total Support</td>
 	<?php
@@ -350,7 +353,7 @@ similar sources</td>
 organization, check this box and stop here</td>
 	<?php	print "<td>".($taxYear-$firstYear+1>5?"No":"Yes")." (".($taxYear-$firstYear+1)." estimated reporting years)</td>";?></tr>
 	<tr><td>14</td><td colspan=6>Public support percentage for <?php print $taxYear;?> (line 6, column (f), divided by line 11, column (f))</td>
-	<?php	print "<td>".number_format(100*(Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual'])/$totalSupport,2)."%</td>";?></tr>
+	<?php	print "<td>".number_format(100*(intval(Donor::input('extraIncome23','get'))+$total['donated']['total']-$total['excessMinusUnusual'])/$totalSupport,2)."%</td>";?></tr>
 	</table>
 	
 	<h2>Schedule B (Form 990)</h2>
