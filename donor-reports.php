@@ -196,7 +196,7 @@ function report_tax(){
 	### GET Qualifying Yearly Totals (TransationType ID between 0 to 99 are gifts)
 	$SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
 		FROM ".Donation::get_table_name()."
-		WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType Between 0 AND 99
+		WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND (TransactionType Between 0 AND 99 OR TransactionType IS NULL) AND Gross>0
 		".(sizeof($unusual)>0?" AND DonorId NOT IN (".implode(",",$unusual).")":"")."
 		Group By YEAR(Date) 
 		Order BY YEAR(Date)";
@@ -214,7 +214,7 @@ function report_tax(){
 	### Other Income: 90=interest, Product Service Income (100,101)
 	$SQL="SELECT TransactionType,YEAR(Date) as TaxYear,SUM(Gross) as Gross
 	 FROM ".Donation::get_table_name()."
-	 WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType >= 90 
+	 WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType >= 90 AND Gross>0
 	 Group By TransactionType, YEAR(Date) 
 	 Order BY TransactionType,YEAR(Date)";
 	$results = Donation::db()->get_results($SQL);	
@@ -235,7 +235,7 @@ function report_tax(){
 	 $twoPercent=round($totalSupport*.02,0);
 	 //dump($total,$twoPercent);
 	 $SQL="Select D.DonorId,D.Name,D.Name2, YEAR(DT.Date) as TaxYear,SUM(DT.Gross) as Gross
-	  FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+	  FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId  
 		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 89 AND ".(sizeof($ignore)>0?" D.DonorId NOT IN (".implode(",",$ignore).") AND ":"")."
 		D.DonorId IN (
 			Select DonorId FROM ".Donation::get_table_name()." WHERE YEAR(Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND TransactionType Between 0 AND 99 Group By DonorId Having SUM(Gross)>'".$twoPercent."' ) 
@@ -351,11 +351,10 @@ organization, check this box and stop here</td>
 	<?php	print "<td>".($taxYear-$firstYear+1>5?"No":"Yes")." (".($taxYear-$firstYear+1)." estimated reporting years)</td>";?></tr>
 	<tr><td>14</td><td colspan=6>Public support percentage for <?php print $taxYear;?> (line 6, column (f), divided by line 11, column (f))</td>
 	<?php	print "<td>".number_format(100*(Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual'])/$totalSupport,2)."%</td>";?></tr>
-	Donor::input('extraIncome23','get')+$total['donated']['total']-$total['excessMinusUnusual']
 	</table>
 	
 	<h2>Schedule B (Form 990)</h2>
-	<div>Top Donors needing reported because they are over $5,000 for the <?php print $taxYear?> tax year OR over the 2% Threshold: <?php print number_format($twoPercent)?></div>
+	<div>Top Donors needing reported because they are $5,000 or over for the <?php print $taxYear?> tax year OR over the 2% Threshold: <?php print number_format($twoPercent)?></div>
 	<table class="dp">
 		<tr>
 			<th>(a)<br>No.</th>
@@ -366,9 +365,9 @@ organization, check this box and stop here</td>
 	$i=0;
 	 $SQL="Select D.DonorId, D.Name, D.Name2, D.Address1, D.Address2, D.City, D.Region, D.PostalCode, D.Country, SUM(DT.Gross) as Gross
 	 FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-	   WHERE YEAR(DT.Date) = ".$taxYear." AND DT.TransactionType Between 0 AND 99  	  
+	   WHERE YEAR(DT.Date) = ".$taxYear." AND (DT.TransactionType Between 0 AND 99   OR DT.TransactionType IS NULL)	  
 		   Group By D.DonorId, D.Name, D.Name2, D.Address1, D.Address2, D.City, D.Region, D.PostalCode, D.Country
-		   HAVING SUM(DT.Gross) > ".$sheduleBThreshold."
+		   HAVING SUM(DT.Gross) >= ".$sheduleBThreshold."
 		   Order BY SUM(DT.Gross) DESC  ";
 		   //print $SQL;
 	$results = Donation::db()->get_results($SQL);	
