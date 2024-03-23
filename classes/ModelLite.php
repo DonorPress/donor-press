@@ -561,6 +561,16 @@ class ModelLite{
 			break;
 		}		
 	}
+
+	static function input_model($type='request'){
+		$fillable=self::s()->fillable;
+		if (self::s()->primaryKey)$fillable[]=self::s()->primaryKey;
+		$attributes=[];
+		foreach($fillable as $field){
+			$attributes[$field]=self::input($field,$type);
+		}
+		return $attributes;
+	}
 	
 	static function resultToCSV($results,$settings=array()){
 		if (sizeof($results)==0){

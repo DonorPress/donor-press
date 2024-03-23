@@ -12,18 +12,18 @@ class DonorType extends ModelLite
     static public function request_handler(){
         $wpdb=self::db();  
         if (self::input('TypeId','post') && self::input('Function','post')=="Delete" && self::input('table','post')=="donor_type"){
-            $donorType=new self($_POST);
+            $donorType=new self(self::input_model('post'));
             if ($donorType->delete()){
                 self::display_notice("Donor Type '".$donorType->Title."' deleted."); 
             }
         }elseif (self::input('TypeId','post') && self::input('Function','post')=="DonorTypeMergeTo" && self::input('table','post')=="donor_type"){
-            $donorType=new self($_POST);
+            $donorType=new self(self::input_model('post'));
             $mergeTo=self::get(self::input('MergeTo','post'));
             if (!$mergeTo->TypeId){
                 self::display_error("Could not find Merge to Donor Type: ".self::input('MergeTo','post'));
                 return;
             }
-            $old=new self($_POST);
+            $old=new self(self::input_model('post'));
             $old->donor_count();
             
             $wpdb->update(Donor::get_table_name(),array("TypeId"=>self::input('MergeTo','post')),array('TypeId'=> $old->TypeId));
@@ -34,7 +34,7 @@ class DonorType extends ModelLite
             }        
         }elseif (self::input('TypeId','get')&&self::input('tab','get')=="type"){	
             if (self::input('Function','post')=="Save" && self::input('table','post')=="donor_type"){
-                $donorType=new self($_POST);
+                $donorType=new self(self::input_model('post'));
                 if ($donorType->save()){
                     self::display_notice("Donor Typey #".$donorType->show_field("TypeId")." - ".$donorType->Title." saved.");
                 }
@@ -171,7 +171,7 @@ class DonorType extends ModelLite
         foreach ($results as $r){ 
             $parent[$r->ParentId?$r->ParentId:0][]=$r;
         }
-        if (!isset($settings['selected'])) $selected=$_REQUEST[$settings['Name']?$settings['Name']:"TypeId"];
+        if (!isset($settings['selected'])) $selected=self::input($settings['Name']?$settings['Name']:"TypeId");
         else $selected=$settings['selected'];
 
         if (!is_array($selected)) $selected=array($selected);        

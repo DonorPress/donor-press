@@ -15,19 +15,19 @@ class DonationCategory extends ModelLite
     static public function request_handler(){
         $wpdb=self::db();  
         if (self::input('CategoryId','post') && self::input('Function','post')=="Delete" && self::input('table','post')=="donation_category"){
-            $donationCategory=new self($_POST);
+            $donationCategory=new self(self::input_model('post'));
             if ($donationCategory->delete()){
                 self::display_notice("Donation Category '".$donationCategory->Category."' deleted."); 
             }
         }elseif (self::input('CategoryId','post') && self::input('Function','post')=="DonationCategoryMergeTo" && self::input('table','post')=="donation_category"){
-            $donationCategory=new self($_POST);
+            $donationCategory=new self(self::input_model('post'));
             $mergeTo=self::find(self::input('MergeTo','post'));
             //self::dump($mergeTo);
             if (!$mergeTo->CategoryId){
                 self::display_error("Could not find Merge to Donation Category: ".self::input('MergeTo','post'));
                 return;
             }
-            $old=new self($_POST);
+            $old=new self(self::input_model('post'));
             $old->donation_count();
             
             $wpdb->update(Donation::get_table_name(),array("CategoryId"=>self::input('MergeTo','post')),array('CategoryId'=> $old->CategoryId));
@@ -46,13 +46,10 @@ class DonationCategory extends ModelLite
                 $uSQL="UPDATE ".Donation::get_table_name()." SET TransactionType='".(self::input('ChangeTypeTo','get')=='ZERO'?0:self::input('ChangeTypeTo','get'))."' WHERE CategoryId='".self::input('CategoryId','get')."' AND (TransactionType".(self::input('ChangeTypeFrom','get')=='ZERO'?"=0 OR TransactionType IS NULL":"='".self::input('ChangeTypeFrom','get')."'").")";
                 $wpdb->get_results($uSQL);
                 print self::display_notice("TransactionType Changed from ".self::input('ChangeTypeFrom','get')." to ".self::input('ChangeTypeTo','get')." for Category ".self::input('CategoryId','get'));
-
             }
 
-
-            if (self::input('Function','post')=="Save" && self::input('table','post')=="donation_category"){                
-                
-                $donationCategory=new self($_POST);
+            if (self::input('Function','post')=="Save" && self::input('table','post')=="donation_category"){              
+                $donationCategory=new self(self::input_model('post'));
                 if ($donationCategory->save()){
                     self::display_notice("Donation Category#".$donationCategory->show_field("CategoryId")." - ".$donationCategory->Cateogry." saved.");
                     $_REQUEST['CategoryId']=$donationCategory->CategoryId;
@@ -287,7 +284,7 @@ class DonationCategory extends ModelLite
         foreach ($results as $r){ 
             $parent[$r->ParentId?$r->ParentId:0][]=$r;
         }
-        if (!isset($settings['selected'])) $settings['selected']=$_REQUEST[$settings['Name']?$settings['Name']:"CategoryId"];
+        if (!isset($settings['selected'])) $settings['selected']=self::input($settings['Name']?$settings['Name']:"CategoryId");
         else $selected=$settings['selected'];
 
         $return.=self::show_options(0,$parent,0,$settings);

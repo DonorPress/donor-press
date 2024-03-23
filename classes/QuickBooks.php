@@ -217,8 +217,8 @@ class QuickBooks extends ModelLite
                 $changedFields=$this->find_changed_fields(($field?$field."_":"").$sf,$sv,$changedFields); 
             }
         }else{
-            if ($_POST[$field]!=$value){
-                $changedFields[$field]=$_POST[$field];
+            if (self::input($field,'post')!=$value){
+                $changedFields[$field]=self::input($field,'post');
             }            
         }
         return $changedFields;
@@ -1076,9 +1076,10 @@ class QuickBooks extends ModelLite
     }
 
     public function oauthcallback(){
-        ///api/quickbooks/oauth2/callback?code=AB11670607450L4ne1zzbuPBxTHOz00f8oPv9ZKA0B2qVIBw34&state=QANVI&realmId=4620816365259820260
-        foreach($_REQUEST as $key=>$val){
-            $this->session([self::SESSION_PREFIX.$key=>$val]);               
+        ///api/quickbooks/oauth2/callback?code=ABXXXXXX&state=QANVI&realmId=9999999999
+        $requestBack=['code','state','realmId'];
+        foreach($requestBack as $key){
+            $this->session([self::SESSION_PREFIX.$key=>self::input($key)]);               
         }          
         return header("Location: ?redirect=donor_quickBooks_authorizeRedirect");      
     }

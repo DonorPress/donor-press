@@ -14,6 +14,9 @@
 	</div> -->
 		<strong>Donor Search:</strong> <input id="donorSearch" name="dsearch" value="<?php print htmlentities(stripslashes(Donor::input('dsearch','get')))?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
+	<?php	
+	/*
+	?>
 	<script>
 		//https://tomik23.github.io/autocomplete/
 		new Autocomplete("basic", {
@@ -41,7 +44,9 @@
 		}); //<a href="?page=donor-index&DonorId=${el.DonorId}"
 	</script>
 
-	<?php if (Donor::input('dsearch','get') && trim(Donor::input('dsearch','get'))<>''){
+	<?php */
+	
+	if (Donor::input('dsearch','get') && trim(Donor::input('dsearch','get'))<>''){
 		$search=trim(strtoupper(Donor::input('dsearch','get')));
 		$list=Donor::get(array("(UPPER(Name) LIKE '%".$search."%' 
 		OR UPPER(Name2)  LIKE '%".$search."%'

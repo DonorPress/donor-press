@@ -79,24 +79,24 @@ class DonationUpload extends ModelLite
     }
     
     
-    static public function process_map_file($post){
-        $csv=self::csv_file_to_array($post["file"],$post["firstLineColumns"]);
+    static public function process_map_file(){
+        $csv=self::csv_file_to_array(self::input('file','post'),self::input('firstLineColumns','post'));
         $recommended_bulk['Donor']=["Source","Country"];
         $recommended_bulk['Donation']=["Date","DateDeposited","Source","PaymentSource"];
-        $timestamp=$post['timenow']?intval($post['timenow']):time();
+        $timestamp=self::input('timenow','post')?intval(self::input('timenow','post')):time();
         
         $selectDonation=Donation::s()->fillable; 
         $selectDonor=Donor::s()->fillable;
         ##save .map file so if this file is reuploaded/reopened, it reads previous settings. 
-        if ($post['file']){
-            file_put_contents(self::upload_dir().$post['file'].".map",json_encode($post));
+        if (self::input('file','post')){
+            file_put_contents(self::upload_dir().self::input('file','post').".map",json_encode($_POST)); //encode everything passed in from POST -> if file with this filename is uploaded it again, it will map the same.
         }
 
         ### Check for required fields
         $required=array('Name'=>false,'Gross'=>false);
         $r=$csv->data[key($csv->data)];      
-        for ($c=0; $c<$post['columncount']; $c++) {
-            if ($field=$post['column'.$c]){ 
+        for ($c=0; $c<self::input('columncount','post'); $c++) {
+            if ($field=self::input('column'.$c,'post')){ 
                 switch($field){
                     case 'Name1 & Name2 Last':
                     case 'Last, Name1 & Name2':
@@ -126,7 +126,7 @@ class DonationUpload extends ModelLite
             $donation = new Donation();
             foreach($r as $c=>$v){
                 if (trim($v)=="") continue; //skip blanks    
-                if ($field=$post['column'.$c]){                    
+                if ($field=self::input('column'.$c,'post')){                    
                     switch($field){
                         case 'Name1 & Name2 Last':
                             $andSplit=explode("&",$v);
@@ -192,9 +192,7 @@ class DonationUpload extends ModelLite
                                 $donation->$field=trim($v);
                             }
                         break;
-                    }
-                    //dd($headerField,$field,$c,$selectDonor,$v,$post,$csv,$donor);
-                    //
+                    }                   
                     if (isset($donation->fieldLimits[$field])){ //make sure field isn't to long...
                         $donation->$field=substr($donation->$field,0,$donation->fieldLimits[$field]);
                     }
@@ -208,7 +206,6 @@ class DonationUpload extends ModelLite
             }
             if (!$donation->Fee) $donation->Fee=0;
             if (!$donation->Net) $donation->Net=$donation->Gross + $donation->Fee;
-            //dd($donor,$post,$r);
             if ($donor->Name){
                 $key=$donor->flat_key(self::input('donorKey','post'));
                 $donors[$key]['donor']=$donor;
@@ -218,8 +215,6 @@ class DonationUpload extends ModelLite
             }
         }
         if ($donors) ksort($donors);
-        //dump($post,$donors);
-        //dd($donors[key($donors)]);
         $stats=[];
         ### get donor keys for ALL donors -> if this gets big, might run into memory errors with this.
         $SQL="SELECT DonorId,MergedId,".(implode(",",self::input('donorKey','post')))." FROM ".Donor::s()->get_table();
@@ -257,7 +252,7 @@ class DonationUpload extends ModelLite
         $notice.="<div><a href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timestamp)."'>View added donations</a></div>";
         self::display_notice($notice);
         //delete file after process so it isn't left on server... wondering if we should do this higher up so on fail it is deleted.
-        wp_delete_file(self::upload_dir().$post["file"]);
+        wp_delete_file(self::upload_dir().self::input('file','post'));
         return true;
 
     }

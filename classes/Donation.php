@@ -543,7 +543,7 @@ class Donation extends ModelLite
             DonationUpload::csv_upload_check();
             return true;
         }elseif(self::input('Function','post')=="ProcessMapFile"){
-            DonationUpload::process_map_file($_POST);
+            DonationUpload::process_map_file();
         }elseif (self::input('f','get')=="AddDonation"){           
             $donation=new Donation();
             if (self::input('DonorId','get')){
@@ -574,14 +574,14 @@ class Donation extends ModelLite
             return true;
         }elseif (self::input('DonationId','request')){	
             if (self::input('Function','post')=="Delete" && self::input('table','post')=="donation"){
-                $donation=new Donation($_POST);
+                $donation=new self(self::input_model('post'));
                 if ($donation->delete()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." for $".$donation->Gross." from ".$donation->Name." on ".$donation->Date." deleted");                   
                     return true;
                 }
             }
             if (self::input('Function','post')=="Save" && self::input('table','post')=="donation"){
-                $donation=new Donation($_POST);
+                $donation=new self(self::input_model('post'));
                 if ($donation->save()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
                     $donation=Donation::find(self::input('DonationId','request')); //reload the donation, because not all fields may be passed in the save form
@@ -602,7 +602,7 @@ class Donation extends ModelLite
             $donation->full_view();
             return true;
         }elseif (self::input('Function','post')=="Save" && self::input('table','post')=="donation"){
-            $donation=new Donation($_POST);            
+            $donation=new self(self::input_model('post'));            
             if ($donation->save()){
                 self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
                 $donation->full_view();
@@ -619,7 +619,7 @@ class Donation extends ModelLite
             $donationIds=explode("|",self::input('DonationsToCreateInQB','post'));            
             $donations=self::get(["DonationId IN ('".implode("','",$donationIds)."')"]);            
             foreach($donations as $donation){
-                $donation->QBItemId=$_POST['QBItemId_'.$donation->DonationId];
+                $donation->QBItemId=self::input ('QBItemId_'.$donation->DonationId,'post');
                 $donation->send_to_QB(array('silent'=>true));
             }
             self::display_notice(sizeof($donations)." invoices/payments created in QuickBooks.");  

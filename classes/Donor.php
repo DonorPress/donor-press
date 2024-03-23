@@ -319,12 +319,11 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
 
 
-        }elseif (self::input('Function','post')=='MergeDonor' && self::input('DonorId','post')){
-            //self::dump($_POST);            
+        }elseif (self::input('Function','post')=='MergeDonor' && self::input('DonorId','post')){         
             $data=array();
             foreach(self::s()->fillable as $field){
-                if ($_POST[$field] && $field!='DonorId'){
-                    $data[$field]=$_POST[$field];
+                if (self::input($field,'post') && $field!='DonorId'){
+                    $data[$field]=self::input($field,'post');
                 }
             }
             if (sizeof($data)>0){
@@ -384,7 +383,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
             
             if (self::input('Function','post')=="Save" && self::input('table','post')=="donor"){
-                $donor=new Donor($_POST);
+                $donor=new self(self::input_model('post'));
                 if ($donor->save()){			
                     self::display_notice("Donor #".$donor->show_field("DonorId")." saved.");
                 }
@@ -403,7 +402,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             ?></div><?php            
             return true;
         }elseif (self::input('Function','post')=="Save" && self::input('table','post')=="donor"){
-            $donor=new Donor($_POST);
+            $donor=new self(self::input_model('post'));
             if ($donor->save()){			
                 self::display_notice("Donor #".$donor->show_field("DonorId")." saved.");
                 $donor->view();

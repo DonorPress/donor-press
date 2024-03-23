@@ -60,9 +60,9 @@ function donor_header_check() {
 	## download functions before page is loaded
 	if (Donor::input('Function')){
 		switch(Donor::input('Function')){
-			case "pdfTemplatePreview":
-				$template=new DonorTemplate($_POST);
-            	$template->post_excerpt=DonorTemplate::post_to_settings($_POST);
+			case "pdfTemplatePreview":				
+				$template=new DonorTemplate(DonorTemplate::input_model('post'));
+            	$template->post_excerpt=$template->post_to_settings('post');
 				$template->settings_decode();
 				$template->pdf_preview(); 
 			break;

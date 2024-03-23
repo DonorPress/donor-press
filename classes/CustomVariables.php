@@ -331,7 +331,6 @@ class CustomVariables extends ModelLite
                 self::backup();
                 break;
             case 'RestoreDonorPress':
-                //dd($_POST,$_FILES);
                 if ($_FILES["fileToUpload"]["tmp_name"]){
                     //self::backup(); //backup current first.                    
                     nuke(); //clear out current files
@@ -348,7 +347,12 @@ class CustomVariables extends ModelLite
                 return true;
                 break;
             case 'NukeIt':
-               self::nuke_it($_POST);
+               self::nuke_it([
+                'backup'=>self::input('backup','post'),
+                'droptable'=>self::input('droptable','post'),
+                'dropfields'=>self::input('dropfields','post'),
+                'rebuild'=>self::input('rebuild','post')                
+               ]);
                print self::display_notice("Site Nuked. Data erased");
                 break;
             case 'LoadTestData':
@@ -363,7 +367,7 @@ class CustomVariables extends ModelLite
                 self::evaluate_post_save($var);   
             }
             foreach(self::variables_protected as $var){
-                if ($_POST[$var]!=""){
+                if (self::input($var,$post)!=""){
                     self::evaluate_post_save($var,true);                   
                 }
             }
@@ -383,13 +387,14 @@ class CustomVariables extends ModelLite
     }
 
     static public function evaluate_post_save($var,$encode=false){
-        if ($_POST[$var]!=$_POST[$var.'_was']){
-            if ($_POST[$var.'_id']){             
+        $value=self::input($var,'post');
+        if ($value!=self::input($var.'_was','post')){
+            if (self::input($var.'_id','post')){             
                 print "update ".$var."<br>";
-                update_option( self::base."_".$var, $encode?self::encode($_POST[$var]):$_POST[$var], true);
+                update_option( self::base."_".$var, $encode?self::encode($value):$value, true);
             }else{
                 print "insert ".$var." <br>";              
-                add_option( self::base."_".$var, $encode?self::encode($_POST[$var]):$_POST[$var]);
+                add_option(self::base."_".$var, $encode?self::encode($value):$value);
             }
         }  
     } 

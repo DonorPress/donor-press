@@ -142,23 +142,22 @@ class DonorTemplate extends ModelLite {
         }else return false;
     }
 
-    static public function post_to_settings($post){
+    public function post_to_settings($type='post'){
         $prefix='post_excerpt_';
         $setting=[];
-        foreach($post as $f=>$v){
-            if (substr($f,0,strlen($prefix))==$prefix){
-                $field=substr($f,strlen($prefix));
-                $settings[$field]=$v;
-            }
+        foreach($this->settings as $setting=>$default){
+            $v=self::input($prefix.$setting,$type);
+            $settings[$setting]=$v?$v:$default;
         }
+        
         return json_encode($settings);
     }    
 
     static public function request_handler(){        
         $wpdb=self::db();  
         if (self::input('Function','post') == 'Save' && self::input('table','post')=="posts" && self::input('post_type','post') == 'donortemplate'){
-            $template=new self($_POST);
-            $template->post_excerpt=self::post_to_settings($_POST);          
+            $template=new self(self::input_model('post'));
+            $template->post_excerpt=$template->post_to_settings('post');          
             $template->post_modified=time();
             if ($template->save()){
                 self::display_notice("Template #".$template->ID." ".$template->post_name." saved.");
