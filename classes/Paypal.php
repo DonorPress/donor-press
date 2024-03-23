@@ -23,39 +23,40 @@ class Paypal extends ModelLite{
 
         if ($this->token) return $this->token;
         $clientId=CustomVariables::get_option('PaypalClientId',true);
-        $clientSecret=CustomVariables::get_option('PaypalSecret',true);
-
-        $ch = curl_init();
-        curl_setopt_array($ch, array(    
-            CURLOPT_URL => $this->get_url()."oauth2/token",
-            CURLOPT_HEADER =>false,
-            CURLOPT_SSL_VERIFYPEER =>false,
-            CURLOPT_POST =>true,
-            CURLOPT_RETURNTRANSFER =>true, 
-            CURLOPT_USERPWD =>$clientId.':'.$clientSecret,
-            CURLOPT_POSTFIELDS =>"grant_type=client_credentials",
-        ));
-
-        $result = curl_exec($ch);
-        if(empty($result)){
-            $this->error="Error: No Paypal response response from: ".$this->get_url()."oauth2/token";
-            self::display_error($this->error);
-            die();
-        }else{                 
-            $json = json_decode($result);            
+        $clientSecret=CustomVariables::get_option('PaypalSecret',true);        
+        $args = array(
+            'method'      => 'POST',
+            'timeout'     => 45,
+            'redirection' => 5,
+            'httpversion' => '1.0',
+            'blocking'    => true,
+            'sslverify'       => true,
+            'headers' => array(
+                'Authorization' => 'Basic ' . base64_encode($clientId.':'.$clientSecret),
+            ),
+            'body' => array(
+                'grant_type'=>'client_credentials'
+            )            
+        );
+        $response = wp_remote_post( $this->get_url().'oauth2/token', $args,$clientId.':'.$clientSecret);
+        if ( is_wp_error( $response ) ) {
+            $this->error="Error from ".$this->get_url()."oauth2/token: ". $response->get_error_message();
+            self::display_error($this->error);           
+        }else {
+            $json = json_decode($response['body']);
             if ($json->error){              
                 $this->error="<strong>".$json->error.":</strong> ".$json->error_description;
                 if ($json->error=="invalid_client"){
                     $this->error.=". Check your PaypalClientId and Paypal Secret. You may have to <a target='paypaltoken' href='https://developer.paypal.com/dashboard/applications/live'>create a new one here</a>. Once created, make sure it is <a target='paypaltoken' href='?page=donor-settings'>set here</a>.";
                 }
                 self::display_error($this->error);
-            }else{          
+            }else{
                 $_SESSION['wp_paypal_access_token']=$json->access_token;
                 $_SESSION['wp_paypal_access_token_expires']=date("Y-m-d H:i:s",strtotime("+".($json->expires_in-30)." seconds")); //30 seconds removed to avoid timeouts on longer queries that might be stacked.           
                 $this->token =$json->access_token;
                 return $this->token;
-            }
-        }
+            }    
+        }       
         return false;
     }    
 
@@ -101,29 +102,30 @@ class Paypal extends ModelLite{
         }
         
         $start_date=date("Y-m-d",$ts_start)."T00:00:00.000Z";
-        $end_date=($end_date?date("Y-m-d",$ts_end):date("Y-m-d"))."T23:59:59.999Z"; 
-
-        $ch = curl_init();
+        $end_date=($end_date?date("Y-m-d",$ts_end):date("Y-m-d"))."T23:59:59.999Z";       
         $token=$this->get_token();
-        if ($token){
-            curl_setopt_array($ch, array(
-                CURLOPT_URL => $this->get_url().'reporting/transactions?fields=transaction_info,payer_info,shipping_info&start_date='.$start_date.'&end_date='.$end_date,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => '',
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 0,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'GET',
-                CURLOPT_HTTPHEADER => array(
-                    'Authorization: Bearer '.$token
+        if ($token){            
+            $args = array(
+                'method'      => 'GET',
+                'timeout'     => 45,
+                'redirection' => 10,
+                'httpversion' => '1.1',
+                'blocking'    => true,
+                'sslverify'       => true,
+                'headers' => array(
+                    'Authorization' => 'Bearer '.$token,
                 ),
-            ));
-
-            $response = curl_exec($ch);
-            curl_close($ch); 
-            $json =  json_decode($response);  
-           // print "<pre>".  print_r($json); print "</pre>"; exit();    
+                'body' => array(
+                    'grant_type'=>'client_credentials'
+                )            
+            );
+            $response = wp_remote_get( $this->get_url().'reporting/transactions?fields=transaction_info,payer_info,shipping_info&start_date='.$start_date.'&end_date='.$end_date, $args);
+            if ( is_wp_error( $response ) ) {
+                $this->error="Error from ".$this->get_url()."oauth2/token: ". $response->get_error_message();
+                self::display_error($this->error);           
+            }else {
+                $json = json_decode($response['body']);
+            } 
             if ($json->localizedMessage){
                 self::display_error("Response Error: ".$json->localizedMessage);
             } 
