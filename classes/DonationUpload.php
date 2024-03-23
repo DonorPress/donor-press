@@ -91,6 +91,7 @@ class DonationUpload extends ModelLite
         if ($post['file']){
             file_put_contents(self::upload_dir().$post['file'].".map",json_encode($post));
         }
+
         ### Check for required fields
         $required=array('Name'=>false,'Gross'=>false);
         $r=$csv->data[key($csv->data)];      
@@ -108,6 +109,7 @@ class DonationUpload extends ModelLite
                 }
             }
         }
+
         if (!$required['Gross']||!$required['Name']){ 
             if (!$required['Gross']&& !$required['Name']){
                 self::display_error("Required fields missing.  Please select a Name and Gross field.");
@@ -116,11 +118,8 @@ class DonationUpload extends ModelLite
             }else{
                 self::display_error("Required fields missing.  Please select a Gross field.");
             }
-            
-            //self::csv_read_file_map($csvFile,$firstLineColumns=true,$timeNow="")
             return;
-        }
-        
+        }        
 
         foreach($csv->data as $row => $r){
             $donor = new Donor();
@@ -220,7 +219,6 @@ class DonationUpload extends ModelLite
         }
         if ($donors) ksort($donors);
         //dump($post,$donors);
-
         //dd($donors[key($donors)]);
         $stats=[];
         ### get donor keys for ALL donors -> if this gets big, might run into memory errors with this.
@@ -258,6 +256,8 @@ class DonationUpload extends ModelLite
         $notice.="</ul>";
         $notice.="<div><a href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timestamp)."'>View added donations</a></div>";
         self::display_notice($notice);
+        //delete file after process so it isn't left on server... wondering if we should do this higher up so on fail it is deleted.
+        wp_delete_file(self::upload_dir().$post["file"]);
         return true;
 
     }
@@ -532,13 +532,19 @@ class DonationUpload extends ModelLite
     static public function csv_upload_check(){
         $timeNow=time();
         if(isset($_FILES['fileToUpload'])){
-            $originalFile=basename($_FILES["fileToUpload"]["name"]);
+            ### Upload to 
+            $originalFile=sanitize_file_name(basename($_FILES["fileToUpload"]["name"]));
             $target_file=self::upload_dir().$originalFile;
-            if (file_exists($target_file)){ 
-                unlink($target_file);
-            }
-           
-            if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
+            wp_delete_file($target_file);
+            add_filter( 'upload_dir', 'donor_press_upload_dir' );
+            $uploadresult=wp_handle_upload($_FILES["fileToUpload"],array('test_form' => FALSE, 'unique_filename_callback' => 'your_custom_callback'));
+            remove_filter( 'upload_dir', 'donor_press_upload_dir' );  
+            $originalFile=basename($uploadresult['file']);
+            //dd($uploadresult,$target_file, $basename());      
+            if ($uploadresult['error']){
+                self::display_error("Sorry, there was an error uploading your file: ". $uploadresult['error']);
+            }elseif ( $uploadresult['file']) { 
+                $target_file= $uploadresult['file'];
                 self::display_notice("The file ". $originalFile. " has been uploaded."); 
                 ### If it detects a Paypal file, then follow automated Paypal load process.
                 if (self::csv_paypal_filecheck($target_file)){
@@ -547,7 +553,8 @@ class DonationUpload extends ModelLite
                     ### This next step will Insert records if there is no duplicate on ["Date","Gross","FromEmailAddress","TransactionID"];
                     if ($stats=Donation::replace_into_list($result)){//inserted'=>sizeof($iSQL),'skipped'
                         echo "<div>Inserted ".$stats['inserted']." records. Skipped ".$stats['skipped']." repeats.</div>";
-                        unlink($target_file); //don't keep it on the server...
+                        wp_delete_file($target_file);//don't keep it on the server...
+                        
                     }
                     global $suggest_donor_changes;
 

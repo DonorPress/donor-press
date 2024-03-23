@@ -198,6 +198,19 @@ function donor_plugin_create_tables() {
 // // Register style sheet.
 // add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
 
+
+function donor_press_upload_dir( $dirs ) { 
+	//keep uploads in their own donorpress directory, outside normal uploads
+	$dirs['subdir'] = '/donorpress';
+	$dirs['path'] = $dirs['basedir'] . $dirs['subdir'];
+	$dirs['url'] = $dirs['baseurl'] . $dirs['subdir'];
+	return $dirs;
+} 
+
+
+
+
+
 function loadTestData($count=20){
 	if (!class_exists("Faker\Factory")){
 		Donor::display_error("Faker Class is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function.");         

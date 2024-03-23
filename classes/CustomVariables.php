@@ -237,10 +237,6 @@ class CustomVariables extends ModelLite
         global $donor_press_db_version;
         $org= mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', self::get_org());
         $fileName="DonorPressBackup-".str_replace(" ","_",$org).date("YmdHis").".json";
-        // $filePath=Donor::upload_dir().$fileName;
-        // $file = fopen($filePath, "w");
-
-        //fwrite($file, json_encode(["PLUGIN"=>"DonorPress","DBPREFIX"=>$wpdb->prefix,"VERSION"=>$donor_press_db_version,"ORG"=>self::get_org(),"URL"=>get_bloginfo('url')])."\n");
         $contents=json_encode(["PLUGIN"=>"DonorPress","DBPREFIX"=>$wpdb->prefix,"VERSION"=>$donor_press_db_version,"ORG"=>self::get_org(),"URL"=>get_bloginfo('url')])."\n";
         foreach(donor_press_tables() as $table){
             $records=[];           
@@ -252,7 +248,6 @@ class CustomVariables extends ModelLite
                 $cols=array_keys($c);               
                 $records[]=array_values($c) ;  
             }
-            //fwrite($file, json_encode(["TABLE"=>$table::get_base_table(),"TABLE_SRC"=>$table::get_table_name(),'COLUMNS'=>$cols,'RECORDS'=>$records])."\n");
             $contents.=json_encode(["TABLE"=>$table::get_base_table(),"TABLE_SRC"=>$table::get_table_name(),'COLUMNS'=>$cols,'RECORDS'=>$records])."\n";
         }    
        
@@ -269,26 +264,16 @@ class CustomVariables extends ModelLite
                 $a['COLUMNS']=array_keys($c);
                 $a['RECORDS'][]=array_values($c);
             }                      
-            //fwrite($file, json_encode($a)."\n");
             $contents.=json_encode($a)."\n";
-        }
-        //fclose($file);
-
-        //if ($download){           
-            header('Content-Description: File Transfer');
-            header('Content-Disposition: attachment; filename='.$fileName); //.basename($filePath)
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            //header('Content-Length: ' . filesize($filePath));
-            header("Content-Type: text/plain");
-            echo $contents;
-            //readfile($filePath);
-            exit();
-        // }else{
-        //     self::display_notice($fileName." backup created");
-        // }
-        
+        }       
+        header('Content-Description: File Transfer');
+        header('Content-Disposition: attachment; filename='.$fileName); //.basename($filePath)
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header("Content-Type: text/plain");
+        echo $contents;
+        exit;        
     }
 
     static function mysql_escape_mimic($inp) { //https://www.php.net/manual/en/function.mysql-real-escape-string.php

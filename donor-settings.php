@@ -32,19 +32,7 @@ $active_tab=Donor::show_tabs($tabs);
                 <h2>Backup</h2>
                 <div>
                     <button name="Function" value="BackupDonorPress">Backup Donor Press Tables/Settings</button>
-                </div>
-                <?php
-                $files = glob(Donor::upload_dir()."DonorPressBackup*.json");
-                if (sizeof($files)>0){
-                    ?><h3>Previous Backups</h3> 
-                    <em>Currently these can only be removed by deleting from this folder on the webserver: <?php
-                    print plugins_url('donor-press/uploads/');
-                    ?></em>
-                    <?php
-                    foreach($files as $file){
-                        print '<div><a href="'.plugins_url('donor-press/uploads/'.basename($file)).'">'.basename($file).'</a> '.filesize_formatted($file).' - '.date ("F d Y H:i", filemtime($file)).'</div>';                
-                    }
-                }?>                    
+                </div>                                
                 <hr>
                 <h2>Restore</h2>                
                 <div>
