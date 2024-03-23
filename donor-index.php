@@ -12,7 +12,7 @@
 	<!-- <div class="auto-search-wrapper">
 		<input type="text" id="basic" placeholder="type w">
 	</div> -->
-		Donor Search: <input id="donorSearch" name="dsearch" value="<?php print htmlentities(stripslashes(Donor::input('dsearch','get')))?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
+		<strong>Donor Search:</strong> <input id="donorSearch" name="dsearch" value="<?php print htmlentities(stripslashes(Donor::input('dsearch','get')))?>"/><button class="button-primary" type="submit">Go</button> <button class="button-secondary" name="f" value="AddDonor">Add New Donor</button>
 	</form>
 	<script>
 		//https://tomik23.github.io/autocomplete/

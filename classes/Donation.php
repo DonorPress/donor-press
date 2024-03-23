@@ -884,7 +884,7 @@ class Donation extends ModelLite
         if (!$email){
             return false;         
         }
-        if (wp_mail($email, $subject?$subject:$this->emailBuilder->subject, $customMessage?$customMessage:$this->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){ 
+        if (wp_mail($this->email_string_to_array($email), $subject?$subject:$this->emailBuilder->subject, $customMessage?$customMessage:$this->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){ 
             if ($customMessage && $customMessage==$this->emailBuilder->body){
                 $customMessage=null; //don't bother saving if template hasn't changed.
             }
@@ -1086,7 +1086,7 @@ class Donation extends ModelLite
         ?><form method="post" action="?page=<?php print self::input('page','get')?>&DonationId=<?php print $this->DonationId?>">
             <h2>Send Receipt</h2>
             <input type="hidden" name="DonationId" value="<?php print $this->DonationId?>">
-            <div>Send Receipt to: <input type="email" name="Email" value="<?php print $emailToUse?>">
+            <div><strong>Send Receipt To:</strong> <input type="text" name="Email" value="<?php print $emailToUse?>">
                 <button type="submit" name="Function" value="SendDonationReceipt">Send E-mail Receipt</button> 
                 <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>                  
             </div>

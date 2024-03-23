@@ -845,8 +845,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $form="";      
         if (self::input('Function','post')=="SendYearReceipt" && self::input('Email','post')){
             $html=self::input('customMessage','post')?stripslashes_deep(self::input('customMessage','post')) :$this->emailBuilder->body;
-            //
-            if (wp_mail(self::input('Email','post'), $this->emailBuilder->subject,$html,array('Content-Type: text/html; charset=UTF-8'))){ 
+            if (wp_mail($this->email_string_to_array(self::input('Email','post')), $this->emailBuilder->subject,$html,array('Content-Type: text/html; charset=UTF-8'))){ 
                 $form.="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".self::input('Email','post')."</div>";
                 $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>self::input('Email','post'),"Subject"=>$this->emailBuilder->subject,"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
                 $dr->save();
