@@ -554,10 +554,10 @@ class ModelLite{
 
 	static function input($field,$type='request'){
 		switch ($type){
-			case 'get': return isset($_GET[$field])?$_GET[$field]:null; break;
-			case 'post': return isset($_POST[$field])?$_POST[$field]:null; break;
+			case 'get': return isset($_GET[$field])?wp_kses_post($_GET[$field]):null; break;
+			case 'post': return isset($_POST[$field])?wp_kses_post($_POST[$field]):null; break;
 			default:
-				return isset($_REQUEST[$field])?$_REQUEST[$field]:null;
+				return isset($_REQUEST[$field])?wp_kses_post($_REQUEST[$field]):null;
 			break;
 		}		
 	}
