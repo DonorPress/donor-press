@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 require_once 'classes/Paypal.php';
 if (Donor::request_handler())  { print "</div>"; return;}
 

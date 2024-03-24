@@ -1,5 +1,5 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 /* Utilizes Wordpresses Built in custom variables typically in the wp_options table.
 * Use wordpress funcitons to edit these
 * all custom variables shoudl ahve a "base" of donation, example donation_Organization

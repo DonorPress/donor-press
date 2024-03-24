@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 require_once 'CustomVariables.php';
 
 class Paypal extends ModelLite{

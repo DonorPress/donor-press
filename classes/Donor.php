@@ -1,5 +1,5 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 require_once 'ModelLite.php';
 require_once 'Donation.php';
 require_once 'DonationReceipt.php';
@@ -313,7 +313,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 self::display_error("Can't delete Donor #".self::input('DonorId','post').". There are ".sizeof($donors)." donors merged to this entry.");                           
                 return false;
             }else{
-                $dSQL="DELETE FROM ".Donor::get_table_name()." WHERE `DonorId`='".self::input('DonorId','post')."'";
+                $dSQL="DELETE FROM ".self::get_table_name()." WHERE `DonorId`='".self::input('DonorId','post')."'";
                 self::db()->query($dSQL);
                 self::display_notice("Deleted Donor #".self::input('DonorId','post').".");                           
                 return true;
@@ -336,7 +336,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 if ($oldId!=self::input('DonorId','post')){
                     ### Set MergedId on Old Donor entry
                     self::db()->update(self::s()->get_table(),$mergeUpdate,array('DonorId'=>$oldId));
-                    ### Update all donations on old donor to new donor
+                    ### Update all donations on old donor to new self
                     $uSQL="UPDATE ".Donation::s()->get_table()." SET DonorId='".self::input('DonorId','post')."' WHERE DonorId='".$oldId."'";  
                     self::db()->query($uSQL);
                     self::display_notice("Donor #<a href='?page=".self::input('page','get')."&DonorId=".$oldId."'>".$oldId."</a> merged to #<a href='?page=".self::input('page','get')."&DonorId=".self::input('DonorId','post')."'>".self::input('DonorId','post')."</a>");
@@ -346,7 +346,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
         }
         if (self::input('f','get')=="AddDonor"){
-            $donor=new Donor;
+            $donor=new self;
             if (self::input('dsearch','request') && !$donor->DonorId && !$donor->Name){
                 $donor->Name=self::input('dsearch','request');
             }          
@@ -357,8 +357,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             self::summary_list(array("Date BETWEEN '".self::input('df','get')." 00:00:00' AND '".self::input('dt','get')." 23:59:59'"),self::input('Year','get'));
             return true;
         }elseif(self::input('Function','post')=='MergeConfirm'){ 
-            $donorA=Donor::find(self::input('MergeFrom','post'));
-            $donorB=Donor::find(self::input('MergedId','post'));
+            $donorA=self::find(self::input('MergeFrom','post'));
+            $donorB=self::find(self::input('MergedId','post'));
             if (!$donorB->DonorId){
                  self::display_error("Donor ".self::input('MergedId','post')." not found.");
                  return false;
@@ -367,8 +367,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
             return true;
         }elseif(self::input('Function','get')=='MergeConfirm'){ 
-            $donorA=Donor::find(self::input('MergeFrom','get'));
-            $donorB=Donor::find(self::input('MergedId','get'));
+            $donorA=self::find(self::input('MergeFrom','get'));
+            $donorB=self::find(self::input('MergedId','get'));
             if (!$donorB->DonorId){
                  self::display_error("Donor ".self::input('MergedId','get')." not found.");
                  return false;
@@ -378,7 +378,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             return true;
         }elseif (self::input('DonorId','get')){
             if (self::input('f','get')=="YearReceipt"){
-                $donor=Donor::find(self::input('DonorId','request'));
+                $donor=self::find(self::input('DonorId','request'));
                 $donor->year_receipt_form(self::input('Year','get'));
                 return true;
             }
@@ -390,7 +390,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 }
                 
             }
-            $donor=Donor::find(self::input('DonorId','request'));	
+            $donor=self::find(self::input('DonorId','request'));	
             ?>
             <div>
                <?php 
@@ -526,7 +526,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $settings['where'][]="Status>=0";
         $settings['where'][]="Type>=1";        
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.TypeId,YEAR(DT.Date) as Year, COUNT(*) as donation_count, SUM(Gross)  as Total 
-        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$settings['where'])
         ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.TypeId,YEAR(DT.Date) "
         .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
@@ -536,7 +536,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $q=[];
         foreach($results as $r){
             $q['yearList'][$r->DonorId][$r->Year]+=$r->Total;
-            if (!$q['donors'][$r->DonorId]) $q['donors'][$r->DonorId]=new Donor($r);
+            if (!$q['donors'][$r->DonorId]) $q['donors'][$r->DonorId]=new self($r);
             $q['year'][$r->Year]+=$r->Total;
         }
         if ($q['year']) ksort($q['year']);
@@ -605,7 +605,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $where[]="Type>=1";
         $donorTypes=DonorType::list_array();
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, D.TypeId,COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest 
-        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$where)
         ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, D.TypeId "
         .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
@@ -653,13 +653,13 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $receipts[$r->DonorId][]=new DonationReceipt($r);
         }
         ## Find NOT Tax Deductible entries
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=1 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=1 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){
             $NotTaxDeductible[$r->DonorId]=$r;
         }
 
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, D.TypeId,COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, D.TypeId,COUNT(*) as donation_count, SUM(Gross) as Total FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND (DT.TransactionType=0 OR DT.TransactionType IS NULL) Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";
         $results = self::db()->get_results($SQL);
         ?><form method=post><input type="hidden" name="Year" value="<?php print esc_attr($year)?>"/>
@@ -926,7 +926,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 Donation::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
                 return false;
             }
-            $donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
+            $donorList=self::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
             ob_clean();
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);            
             $pdf->setPrintHeader(false);
@@ -958,7 +958,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             return false;
         }       
 
-        $donors=Donor::get(["DonorId IN ('".implode("','",$donorIdPost)."')"],"",['key'=>true]);        
+        $donors=self::get(["DonorId IN ('".implode("','",$donorIdPost)."')"],"",['key'=>true]);        
         $a=[];
         $defaultCountry=CustomVariables::get_option("DefaultCountry");       
         foreach($donorIdPost as $id){
@@ -1038,7 +1038,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $page = DonorTemplate::get_by_name('donor-receiptyear');  
         if (!$page){
             $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_year.html";   
-            $t=new DonorTemplate();          
+            $t=new selfTemplate();          
             $t->post_content=file_get_contents($tempLoc);            
             $t->post_title='##Organization## ##Year## Year End Receipts';
             $t->post_name='donor-receiptyear';
@@ -1050,13 +1050,13 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     static function find_duplicates_to_merge(){
         ### function to track down duplicates by email. Helpful for cleaningup DB if a script goes awry.
-        $SQL="SELECT DN.* FROM ".Donor::get_table_name()." DN LEFT JOIN ".Donation::get_table_name()." DT ON DN.`DonorId`=DT.DonorID Where DonationId IS NULL and MergedId=0;";
+        $SQL="SELECT DN.* FROM ".self::get_table_name()." DN LEFT JOIN ".Donation::get_table_name()." DT ON DN.`DonorId`=DT.DonorID Where DonationId IS NULL and MergedId=0;";
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){
             $stats['e'][strtolower($r->Email)]=$r;
             $stats['d'][$r->DonorId]=$r;
         }
-        $SQL="Select * From ".Donor::get_table_name()." WHERE Email IN ('".implode("','",array_keys($stats['e']))."') AND DonorId NOT IN (".implode(',',array_keys($stats['d'])).")";
+        $SQL="Select * From ".self::get_table_name()." WHERE Email IN ('".implode("','",array_keys($stats['e']))."') AND DonorId NOT IN (".implode(',',array_keys($stats['d'])).")";
         //print $SQL;
         $results = self::db()->get_results($SQL);       
         ?><h3>Merger list</h3><table><?php
@@ -1082,7 +1082,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     // static function get_email_list(){
     //     $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
-    //     FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+    //     FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
     //     WHERE D.Email<>'' AND D.EmailStatus=1 AND D.MergedId=0        
     //     Group BY D.DonorId, D.Name, D.Name2,`Email` Order BY D.Name";
     //     $results = self::db()->get_results($SQL);
@@ -1096,7 +1096,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     static function get_mail_list($where=[]){
         $SQL="Select D.DonorId, D.Name, D.Name2, '' as NameCombined,D.Email,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.AddressStatus,COUNT(*) as donation_count, SUM(Gross) as Total,DATE(MIN(DT.`Date`)) as FirstDonation, DATE(MAX(DT.`Date`)) as LastDonation
-        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".(sizeof($where)>0?implode(" AND ",$where):" 1 ")."    
         Group BY D.DonorId, D.Name, D.Name2,`Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`,D.AddressStatus Order BY D.Name";   
         $results = self::db()->get_results($SQL);
@@ -1106,7 +1106,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     static function merge_suggestions(){ //similar to find duplicates to merge... probably can consolidate
         $matchField=['Name','Name2','Email','Phone','Address1'];
         $SQL="Select D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId, COUNT(DT.DonationId) as donation_count
-        FROM ".Donor::get_table_name()." D LEFT JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId
+        FROM ".self::get_table_name()." D LEFT JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId
         Group BY D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId Order BY  D.DonorId";
         $results = self::db()->get_results($SQL); 
        // dd($results);

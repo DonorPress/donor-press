@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 require_once 'Donor.php';
 require_once 'DonationCategory.php';
 require_once 'DonorTemplate.php';
@@ -213,7 +214,7 @@ class Donation extends ModelLite
         $wpdb=self::db();  
         DonationCategory::consolidate_categories();
 
-        $SQL="SELECT COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM ".Donation::get_table_name()." DD WHERE ".implode(" AND ",$where);
+        $SQL="SELECT COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM ".self::get_table_name()." DD WHERE ".implode(" AND ",$where);
         $results = $wpdb->get_results($SQL);
         ?><table class="dp"><tr><th colspan=2>Period Stats</th><th>Avg</th></tr><?php
         foreach ($results as $r){
@@ -234,7 +235,7 @@ class Donation extends ModelLite
             $tinyInt['CategoryId'][$r->CategoryId]=$r->Category;
         }
         foreach($GroupFields as $gfa=>$gf){   
-            $SQL="SELECT $gf as $gfa, COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM ".Donation::get_table_name()." DD WHERE ".implode(" AND ",$where)." Group BY $gf";
+            $SQL="SELECT $gf as $gfa, COUNT(DISTINCT DonorId) as TotalDonors, Count(*) as TotalDonations,SUM(`Gross`) as TotalRaised FROM ".self::get_table_name()." DD WHERE ".implode(" AND ",$where)." Group BY $gf";
             $results = $wpdb->get_results($SQL);
             if (sizeof($results)>0){
                 ?><table class="dp"><tr><th><?php print esc_html($gfa)?></th><th>Total</th><th>Donations</th><th>Donors</th></tr><?php
@@ -299,7 +300,7 @@ class Donation extends ModelLite
         $limit=is_int(self::input('limit','get'))?self::input('limit','get'):20;
         $wpdb=self::db();  
         $SQL="SELECT `CreatedAt`,MIN(`DateDeposited`) as DepositedMin, MAX(`DateDeposited`) as DepositedMax,COUNT(*) as C,Count(R.ReceiptId) as ReceiptSentCount
-        FROM ".Donation::get_table_name()." D
+        FROM ".self::get_table_name()." D
         LEFT JOIN ".DonationReceipt::get_table_name()." R
         ON KeyType='DonationId' AND R.KeyId=D.DonationId WHERE 1
         Group BY `CreatedAt` Order BY `CreatedAt` DESC LIMIT ".$limit;
@@ -345,7 +346,7 @@ class Donation extends ModelLite
         }
         print "<div><strong>Criteria:</strong> ".implode(", ",$where)."</div>";
         $SQL="Select D.*,R.Type as ReceiptType,R.Address,R.DateSent,R.ReceiptId
-          FROM ".Donation::get_table_name()." D
+          FROM ".self::get_table_name()." D
         LEFT JOIN ".DonationReceipt::get_table_name()." R ON KeyType='DonationId' AND R.KeyId=D.DonationId AND R.ReceiptId=(Select MAX(ReceiptId) FROM ".DonationReceipt::get_table_name()." WHERE KeyType='DonationId' AND KeyId=D.DonationId)        
         WHERE ".implode(" AND ", $where)." Order BY D.Date DESC,  D.DonationId DESC;";
         //print $SQL;
@@ -358,7 +359,7 @@ class Donation extends ModelLite
         if (sizeof($donorIdList)>0){
             $donors=Donor::get(array("DonorId IN ('".implode("','",array_keys($donorIdList))."')"),'',array('key'=>true));
             // Find if first time donation
-            $result=$wpdb->get_results("Select DonorId, Count(*) as C From ".Donation::get_table_name()." where DonorId IN ('".implode("','",array_keys($donorIdList))."') Group BY DonorId");
+            $result=$wpdb->get_results("Select DonorId, Count(*) as C From ".self::get_table_name()." where DonorId IN ('".implode("','",array_keys($donorIdList))."') Group BY DonorId");
             foreach ($result as $r){
                 $donorCount[$r->DonorId]=$r->C;
             }
@@ -373,7 +374,7 @@ class Donation extends ModelLite
                     <table class="dp"><tr><th>Donor Id</th><th>Donor</th><th>E-mail</th><th>Date</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>LifeTime</th></tr>
                     <?php
                     foreach($donationsByType as $donations){
-                        $donation=new Donation($donations[key($donations)]);
+                        $donation=new self($donations[key($donations)]);
                         ?><tr>
                             <td  rowspan="<?php print esc_html(sizeof($donations))?>"><?php                        
                                 print $donation->show_field('DonorId');
@@ -393,7 +394,7 @@ class Donation extends ModelLite
                         $count=0;
                         foreach($donations as $r){                          
                             if ($count>0){
-                                $donation=new Donation($r);
+                                $donation=new self($r);
                                 print "<tr>";
                             } 
                            ?><td><?php print esc_html($donation->show_field('Date'))?></td><td align=right><?php print esc_html($donation->show_field('Gross')." ".$donation->Currency)?></td><td><?php
@@ -446,7 +447,7 @@ class Donation extends ModelLite
 
                 <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th><th>Transaction Type</th><?php if (Quickbooks::is_setup()){ print "<th>Quickbooks Link</th>"; } ?></tr><?php
                 foreach($donations as $r){
-                    $donation=new Donation($r);
+                    $donation=new self($r);
                     ?><tr><td><?php
                         if ($r->ReceiptType){
                             print "Sent: ".$r->ReceiptType." ".$r->Address;
@@ -546,12 +547,12 @@ class Donation extends ModelLite
         }elseif(self::input('Function','post')=="ProcessMapFile"){
             DonationUpload::process_map_file();
         }elseif (self::input('f','get')=="AddDonation"){           
-            $donation=new Donation();
+            $donation=new self();
             if (self::input('DonorId','get')){
                $donor=Donor::find(self::input('DonorId','get'));
                $donorText=" for Donor #".$donor->DonorId." ".$donor->Name;
                ### copy settings from the last donation...
-               $lastDonation=Donation::first(['DonorId ='.$donor->DonorId],"DonationId DESC",
+               $lastDonation=self::first(['DonorId ='.$donor->DonorId],"DonationId DESC",
                ['select'=>'DonorId,Name,FromEmailAddress,CategoryId,PaymentSource,TransactionType']);
                if ($lastDonation) $donation=$lastDonation;               
             }
@@ -585,7 +586,7 @@ class Donation extends ModelLite
                 $donation=new self(self::input_model('post'));
                 if ($donation->save()){
                     self::display_notice("Donation #".$donation->show_field("DonationId")." saved.");
-                    $donation=Donation::find(self::input('DonationId','request')); //reload the donation, because not all fields may be passed in the save form
+                    $donation=self::find(self::input('DonationId','request')); //reload the donation, because not all fields may be passed in the save form
                     $donation->full_view();
                     return true;
                 }else{
@@ -599,7 +600,7 @@ class Donation extends ModelLite
                 
             }
 
-            $donation=Donation::find(self::input('DonationId','request'));	
+            $donation=self::find(self::input('DonationId','request'));	
             $donation->full_view();
             return true;
         }elseif (self::input('Function','post')=="Save" && self::input('table','post')=="donation"){
@@ -633,7 +634,7 @@ class Donation extends ModelLite
             
             if (self::input('Function','post')=="EmailDonationReceipts" && sizeof(self::input('EmailDonationId','post'))>0){               
                 foreach(self::input('EmailDonationId','post') as $donationId){
-                    $donation=Donation::find($donationId);
+                    $donation=self::find($donationId);
                     if ($donation->FromEmailAddress){                        
                         print $donation->email_receipt($donation->FromEmailAddress);
                     }else{
@@ -889,7 +890,7 @@ class Donation extends ModelLite
                 $customMessage=null; //don't bother saving if template hasn't changed.
             }
             $notice="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$email."</div>";
-            $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s"),
+            $dr=new selfReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s"),
             "Subject"=>$subject,"Content"=>$customMessage));
             $dr->save();
         }else{
@@ -959,7 +960,7 @@ class Donation extends ModelLite
                 return false; 
             }
         } 
-        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
+        $dr=new selfReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
         $dr->save();        
         return true;        
     }
@@ -1102,7 +1103,7 @@ class Donation extends ModelLite
             return false;
         }      
         $SQL="Select DT.DonationId,DR.*
-        FROM ".Donation::get_table_name()." DT
+        FROM ".self::get_table_name()." DT
         INNER JOIN ".Donor::get_table_name()." DR ON DT.DonorId=DR.DonorId 
         WHERE DT.DonationId IN (".implode(",",$donationIds).")";      
         
@@ -1199,10 +1200,10 @@ class Donation extends ModelLite
         }
 
 		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
-        FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
+        FROM ".Donor::get_table_name()." D INNER JOIN ".self::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId ".($top?" LIMIT ".$top:""); 
 		//print $SQL;     
-        $results = Donation::db()->get_results($SQL);
+        $results = self::db()->get_results($SQL);
 		if (Donor::input('Function','get')=="DonationListCsv"){
 			$fileName="all";
 			if (Donor::input('df','get')){
@@ -1213,11 +1214,11 @@ class Donation extends ModelLite
 			}elseif ($fileName=Donor::input('dt','get')){
 				$fileName="-".Donor::input('dt','get');
 			}
-            return Donation::resultToCSV($results,array('name'=>'Donations_'.$fileName,'namecombine'=>true));
+            return self::resultToCSV($results,array('name'=>'Donations_'.$fileName,'namecombine'=>true));
 		}else{
             ?><table class="dp"><tr><th>DonationId</th><th>Name</th><th>Transaction</th><th>Amount</th><th>Date</th><th>Deposit Date</th><th>Transaction Type</th><th>Category</th><th>Subject</th><th>Note</th></tr><?php
             foreach ($results as $r){
-                $donation=new Donation($r);
+                $donation=new self($r);
                 $donor=new Donor($r);
                 ?>
                 <tr>

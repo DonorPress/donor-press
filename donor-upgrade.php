@@ -1,4 +1,5 @@
 <?php 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
 function donor_press_upgrade(){
 	global $donor_press_db_version;
 	$current_db_version=get_option( "donor_press_db_version");

@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 /*****
 Model Lite Class to make saves/inserts/updates/forms a tad easier to develop
 

@@ -1,4 +1,6 @@
-
+<?php
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+?>
 <div id="pluginwrap">
 	<?php
 	if (Donation::request_handler()) { print "</div>"; return;} //important to do this first

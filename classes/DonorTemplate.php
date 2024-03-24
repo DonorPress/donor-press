@@ -1,5 +1,5 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 class DonorTemplate extends ModelLite {
 
     protected $table = 'posts';

@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 /*
  * Plugin Name: Donor Press - A Donation Tracking System
  * Plugin URI: https://donorpress.com/

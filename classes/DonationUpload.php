@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 require_once 'Donor.php';
 require_once 'DonationCategory.php';
 require_once 'DonorTemplate.php';

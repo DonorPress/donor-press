@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 ### Manages the Category of a Donation
 
 require_once 'Donation.php';
@@ -192,7 +193,7 @@ class DonationCategory extends ModelLite
             if (isset($cache[$r->Category])){
                 $uSQL="UPDATE".Donation::get_table_name()." SET `CategoryId`='".$cache[$r->Category]."' WHERE `CategoryId`='".$r->CategoryId."'";
                 print $uSQL.";<br>";
-                $dSQL="DELETE FROM ".DonationCategory::get_table_name()." WHERE `CategoryId`='".$r->CategoryId."'";
+                $dSQL="DELETE FROM ".self::get_table_name()." WHERE `CategoryId`='".$r->CategoryId."'";
                 print $dSQL.";<br>";
             }else{
                 $cache[$r->Category]=$r->CategoryId;

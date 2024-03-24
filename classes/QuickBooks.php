@@ -1,5 +1,5 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 use QuickBooksOnline\API\DataService\DataService;
 use QuickBooksOnline\API\Facades\Invoice;
 use QuickBooksOnline\API\Core\ServiceContext;
@@ -153,7 +153,7 @@ class QuickBooks extends ModelLite
                 $this->accessTokenObj = null;
                 self::dump($e);
             }
-        }elseif (!QuickBooks::qb_api_installed()){
+        }elseif (!self::qb_api_installed()){
             $this->missing_class_error();
         }else{
             print "<a href='?redirect=donor_quickBooks_authorizeUrl'>Quickbooks API Login</a>";    
@@ -821,7 +821,7 @@ class QuickBooks extends ModelLite
                                 ?><tr>
                                     <td><input type="checkbox" name="match[<?php print esc_html($cId)?>]" value="<?php print esc_attr($donorId)?>"<?php if ($i==0) print " checked"?>></td>
                                 <?php if ($i==0){?>
-                                    <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a>".QuickBooks::qbLink('Customer',$cId,'QB')."  - ".$customer[$cId]->FullyQualifiedName?></td>
+                                    <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a>".self::qbLink('Customer',$cId,'QB')."  - ".$customer[$cId]->FullyQualifiedName?></td>
                                 <?php } ?>  
                                 <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td><td><?php print implode(", ",array_keys($matchedOn));?></td></tr><?php
                                 $i++;
@@ -836,7 +836,7 @@ class QuickBooks extends ModelLite
                     <table class="dp"><tr><th>&#8592;</th><th>QuickBooks</th><th>Link to Donor Id</th><th>Partial matches</th></tr>                  
                     <?php
                     foreach($notFound as $cId){ ?>
-                        <tr><td>&#8592;</td><td><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.esc_html($cId)."</a> ".wp_kses_post(QuickBooks::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId]))?></td>
+                        <tr><td>&#8592;</td><td><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.esc_html($cId)."</a> ".wp_kses_post(self::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId]))?></td>
                         <td><input type="number" id="match_<?php print esc_html($cId)?>" name="match[<?php print esc_html($cId)?>]" value="" step=1></td>
                         <td><?php
                         if ($match->partial[$cId]){
@@ -874,7 +874,7 @@ class QuickBooks extends ModelLite
                                 foreach($donorIds as $donorId){
                                     ?><tr>                                
                                     <?php if ($i==0){?>
-                                        <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')." - ".self::show_customer_name($customer[$cId])?></td>
+                                        <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a> ".self::qbLink('Customer',$cId,'QB')." - ".self::show_customer_name($customer[$cId])?></td>
                                     <?php } ?>  
                                     <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td></tr><?php
                                     $i++;
@@ -1131,7 +1131,7 @@ class QuickBooks extends ModelLite
     }
 
     public function missing_api_error(){
-        self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".QuickBooks::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
+        self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".self::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
     }
 
     public function missing_class_error(){
