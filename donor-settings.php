@@ -22,7 +22,7 @@ $active_tab=Donor::show_tabs($tabs);
     if (DonorTemplate::request_handler()) { print "</div>"; return;}  
     if (CustomVariables::request_handler()) { print "</div>"; return;}    
     ?>
-    <h1>Settings: <?php print $tabs[$active_tab]?></h1><?php
+    <h1>Settings: <?php print esc_html($tabs[$active_tab])?></h1><?php
     switch($active_tab){  
         case "type":  DonorType::list(); break;     
         case "cat":  DonationCategory::list(); break;

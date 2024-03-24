@@ -46,12 +46,12 @@ class DonorType extends ModelLite
             }           
             ?>
             <div id="pluginwrap">
-                <div><a href="?page=<?php print self::input('page','get')?>">Return</a></div>
+                <div><a href="<?php print esc_url('?page='.self::input('page','get'))?>">Return</a></div>
                 <h1>Type #<?php print $donorType->TypeId?$donorType->TypeId:"NEW"?></h1><?php 
                 if (self::input('edit','request')){
                     $donorType->edit_form();
                 }else{
-                    ?><div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&TypeId=<?php print $donorType->TypeId?>&edit=t">Edit Type</a></div><?php
+                    ?><div><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&TypeId='.$donorType->TypeId.'&edit=t')?>">Edit Type</a></div><?php
                     $donorType->view(); 
                 }
             ?></div><?php
@@ -68,11 +68,11 @@ class DonorType extends ModelLite
     function edit_form(){
         $wpdb=self::db();         
         $primaryKey=$this->primaryKey;
-		?><form method="post" action="?page=<?php print self::input('page','get').(self::input('tab','get')?'&tab='.self::input('tab','get'):"").($this->$primaryKey?"&".$primaryKey."=".$this->$primaryKey:"")?>">
-		<input type="hidden" name="table" value="<?php print $this->table?>"/>
-		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?$this->$primaryKey:"new"?>"/>
+		?><form method="post" action="<?php print esc_url('?page='.self::input('page','get').(self::input('tab','get')?'&tab='.self::input('tab','get'):"").($this->$primaryKey?"&".$primaryKey."=".$this->$primaryKey:""))?>">
+		<input type="hidden" name="table" value="<?php print esc_attr($this->table)?>"/>
+		<input type="hidden" name="<?php print esc_attr($primaryKey)?>" value="<?php print esc_attr($this->$primaryKey?$this->$primaryKey:"new")?>"/>
         <table>
-            <tr><td align="right">Title</td><td><input style="width: 300px" type="text" name="Title" value="<?php print $this->Title?>"></td></tr>
+            <tr><td align="right">Title</td><td><input style="width: 300px" type="text" name="Title" value="<?php print esc_attr($this->Title)?>"></td></tr>
             <?php 
             if (Quickbooks::is_setup()){                
                 $qb=new QuickBooks();
@@ -85,7 +85,7 @@ class DonorType extends ModelLite
                 ?></select></td></tr>
             <?php 
             }else{ 
-                ?><input type="hidden" name="QBItemId" value="<?php print $this->QBItemId?>"/><?php  
+                ?><input type="hidden" name="QBItemId" value="<?php print esc_attr($this->QBItemId)?>"/><?php  
             }                   
             
             ?>
@@ -103,7 +103,7 @@ class DonorType extends ModelLite
                 Merge To: <select name="MergeTo"><option value="0">[--None--]</option><?php
              $results = $wpdb->get_results("SELECT * FROM ".self::get_table_name()." WHERE TypeId<>'".$this->TypeId."' Order BY Title");
              foreach($results as $r){
-                ?><option value="<?php print $r->TypeId?>"<?php print ($r->TypeId==$this->TypeId?" selected":"")?>><?php
+                ?><option value="<?php print esc_attr($r->TypeId)?>"<?php print ($r->TypeId==$this->TypeId?" selected":"")?>><?php
                 print $r->Title." (".$r->TypeId.")";?></option><?php
              }?></select> <button type="submit" name="Function" value="DonorTypeMergeTo">Merge</button>
             <?php }?>           
@@ -128,14 +128,14 @@ class DonorType extends ModelLite
         $results = self::db()->get_results($SQL);        
         ?>
         <h2>Donor Types</h2>
-        <div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&TypeId=new&edit=t">Add Donor Type</a>
+        <div><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>&TypeId=new&edit=t">Add Donor Type</a>
         <table border="1"><tr><th>Id</th><th>Title</th><?php if (Quickbooks::is_setup()) print "<th>QuickBook Item</th>"; ?><th>Total</th></tr><?php
         foreach ( $results as $r){
             ?><tr>
-                <td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&TypeId=<?php print $r->TypeId?>&edit=t"><?php print $r->TypeId?></a></td>
-                <td><?php print $r->Title?></td>
+                <td><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&TypeId='.$r->TypeId)?>&edit=t"><?php print esc_html($r->TypeId)?></a></td>
+                <td><?php print esc_html($r->Title)?></td>
                 <?php if (Quickbooks::is_setup()) print  "<td>".$r->QBItemId."</td>";?>
-                <td><?php print $r->donor_count?></td>
+                <td><?php print esc_html($r->donor_count)?></td>
             </tr>
             <?php
             self::show_children($r->TypeId,$parent,$level+1);

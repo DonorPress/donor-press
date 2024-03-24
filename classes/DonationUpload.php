@@ -275,8 +275,8 @@ class DonationUpload extends ModelLite
         $flatKeysD=isset($previous->donationKey)?$previous->donationKey:Donation::s()->flat_key;
         ?>
         <form method="post">
-            <input type="hidden" name="file" value="<?php print $csvFile;?>"/>
-            <input type="hidden" name="timenow" value="<?php print $timeNow?>"/>
+            <input type="hidden" name="file" value="<?php print esc_attr($csvFile);?>"/>
+            <input type="hidden" name="timenow" value="<?php print esc_attr($timeNow)?>"/>
             <?php if ($firstLineColumns){?> 
                 <input type="hidden" name="firstLineColumns" value="true"/>
             <?php }?>           
@@ -286,7 +286,7 @@ class DonationUpload extends ModelLite
             <select name="donorKey[]" multiple>
                 <?php                 
                 foreach($flatKeys as $field){
-                    ?><option name="<?php print $field?>" selected><?php print $field?></option>
+                    ?><option name="<?php print esc_attr($field)?>" selected><?php print esc_html($field)?></option>
                 <?php 
                 }
                 foreach(Donor::s()->fillable as $field){
@@ -298,7 +298,7 @@ class DonationUpload extends ModelLite
                 <?php 
                 
                 foreach($flatKeysD as $field){
-                    ?><option name="<?php print $field?>" selected><?php print $field?></option>
+                    ?><option name="<?php print esc_attr($field)?>" selected><?php print esc_html($field)?></option>
                 <?php }
                 foreach(Donation::s()->fillable as $field){
                     if (!in_array($field,$flatKeys)) print "<option>".$field."</option>";
@@ -318,7 +318,7 @@ class DonationUpload extends ModelLite
                 }
                 $column= "column".$c;             
                 ?>
-                <th><select name="<?php print $column?>">
+                <th><select name="<?php print esc_attr($column)?>">
                     <option value="">--ignore--</option>
                     <?php foreach(self::UPLOAD_PATTERN as $field => $mapped){ 
                         $select=false;
@@ -327,7 +327,7 @@ class DonationUpload extends ModelLite
                         }elseif (strtolower($headerField)==strtolower($field) ||$selected==$field){       
                             $select=true;
                         }                        
-                        ?><option value="<?php print $field?>"<?php print $select?" selected":"";?>><?php print $field?></option><?php
+                        ?><option value="<?php print esc_attr($field)?>"<?php print ($select?" selected":"")?>><?php print esc_html($field)?></option><?php
                     }?>
                     <option disabled>--Donor Fields--</option>
                     <?php foreach($selectDonor as $field){ 
@@ -337,7 +337,7 @@ class DonationUpload extends ModelLite
                         }elseif (strtolower($headerField)==strtolower($field) ||$selected==$field){       
                             $select=true;
                         }                           
-                        ?><option value="<?php print $field?>"<?php print $select?" selected":"";?>><?php print $field?></option><?php
+                        ?><option value="<?php print esc_attr($field)?>"<?php print ($select?" selected":"")?>><?php print esc_html($field)?></option><?php
                     }?>
                      <option disabled>--Donation Fields--</option>
                     <?php foreach($selectDonation as $field){
@@ -347,14 +347,14 @@ class DonationUpload extends ModelLite
                         }elseif (strtolower($headerField)==strtolower($field) ||$selected==$field){       
                             $select=true;
                         }   
-                        ?><option value="<?php print $field?>"<?php print $select?" selected":"";?>><?php print $field?></option><?php
+                        ?><option value="<?php print esc_attr($field)?>"<?php print ($select?" selected":"")?>><?php print esc_html($field)?></option><?php
                     }?>
-                </select><?php print $selected;?></th>
+                </select><?php print esc_html($selected)?></th>
             <?php }?>
             </tr>
         <?php foreach($csv->data as $r){?>
             <tr><?php foreach($csv->headers as $c => $headerField){?>
-                <td><?php print $r[$c]?></td>
+                <td><?php print esc_html($r[$c])?></td>
                 <?php } ?>
             </tr>        
         <?php } ?>

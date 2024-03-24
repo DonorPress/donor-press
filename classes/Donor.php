@@ -123,7 +123,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     public function merge_form(){
         ?><form method="post">
-        <input type="hidden" name="MergeFrom" value="<?php print $this->DonorId?>"/> 
+        <input type="hidden" name="MergeFrom" value="<?php print esc_attr($this->DonorId)?>"/> 
         Merge To Id: <input type="number" name="MergedId" value="">
         <button method="submit" name="Function" value="MergeConfirm">Merge</button>
         Enter the ID of the Donor you want to merge to. You will have the option to review this merge. Once merged, all donations will be relinked to the new profile.</form><?php
@@ -230,16 +230,16 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
         }
         ?><form method='post'>
-        <input type='hidden' name='donorIds[]' value='<?php print $this->DonorId?>'>
-        <input type='hidden' name='donorIds[]' value='<?php print $oldDonor->DonorId?>'>
+        <input type='hidden' name='donorIds[]' value='<?php print esc_html($this->DonorId)?>'>
+        <input type='hidden' name='donorIds[]' value='<?php print esc_html($oldDonor->DonorId)?>'>
         <h2>The following changes are suggested</h2>
         <form method='post'>
         <table border='1'><tr><th>Field</th><th>Donor A</th><th>Donor B</th></tr><?php
         foreach($changes as $field=>$value){
             if ($field=="MergedId") continue; //don't allow mergeing of merge IF it is the original donor
-            ?><tr><td><?php print $field?></td>
-            <td><input type="radio" name="<?php print $field?>" value="<?php print $value?>"<?php print !$this->$field?" checked":""?>><?php print $value?></td>
-            <td><input type="radio" name="<?php print $field?>" value="<?php print $this->$field?>"<?php print $this->$field?" checked":""?>><?php print $this->$field?></td>
+            ?><tr><td><?php print esc_html($field)?></td>
+            <td><input type="radio" name="<?php print esc_attr($field)?>" value="<?php print esc_attr($value)?>"<?php print !$this->$field?" checked":""?>><?php print esc_html($value)?></td>
+            <td><input type="radio" name="<?php print esc_attr($field)?>" value="<?php print esc_attr($this->$field)?>"<?php print ($this->$field?" checked":"")?>><?php print esc_html($this->$field)?></td>
             </tr><?php                                    
         }
         ?><tr><td>Donation Details Will Merge</td><td><?php
@@ -261,8 +261,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     public function view(){ ?>
         <div>
-            <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&edit=t">Edit Donor</a> | 
-            <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&f=AddDonation">Add Donation</a>
+            <a href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$this->DonorId.'&edit=t')?>">Edit Donor</a> | 
+            <a href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$this->DonorId.'&f=AddDonation')?>">Add Donation</a>
         </div>
         <?php
         $this->var_view();
@@ -270,7 +270,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $this->merge_form();
         ?>
         <h2>Donation Summary</h2>
-        <div>Year End Receipt: <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")?>"><?php print date("Y")?></a> | <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")-1?>"><?php print date("Y")-1?></a> | <a href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $this->DonorId?>&f=YearReceipt&Year=<?php print date("Y")-2?>"><?php print date("Y")-2?></a></div>
+        <div>Year End Receipt: <a href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$this->DonorId.'&f=YearReceipt&Year='.date("Y"))?>"><?php print date("Y")?></a> 
+        | <a href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$this->DonorId)?>&f=YearReceipt&Year=<?php print date("Y")-1?>"><?php print date("Y")-1?></a> | <a href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$this->DonorId)?>&f=YearReceipt&Year=<?php print date("Y")-2?>"><?php print date("Y")-2?></a></div>
         <?php
          $totals=['Count'=>0,'Total'=>0];
         $SQL="SELECT  `Type`,	SUM(`Gross`) as Total,Count(*) as Count FROM ".Donation::get_table_name()." 
@@ -278,7 +279,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $results = self::db()->get_results($SQL);
         ?><table class="dp"><tr><th>Type</th><th>Count</th><th>Amount</th></tr><?php
         foreach ($results as $r){?>
-            <tr><td><?php print $r->Type?></td><td><?php print $r->Count?></td><td align=right><?php print number_format($r->Total,2)?></td></tr><?php
+            <tr><td><?php print esc_html($r->Type)?></td><td><?php print  esc_html($r->Count)?></td><td align=right><?php print number_format($r->Total,2)?></td></tr><?php
             $totals['Count']+=$r->Count;
             $totals['Total']+=$r->Total;
         }        
@@ -394,7 +395,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             <div>
                <?php 
                 $donor->donor_header();
-                if (self::input('edit','request')){
+                if (self::input('edit','request')){                  
                     $donor->edit_form();
                 }else{             
                     $donor->view();                    
@@ -431,11 +432,11 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     function donor_header(){?>
         <form method="get">
         <input type="hidden" name="page" value="<?php print self::input('page','get')?>"/>
-        <div><a href="?page=<?php print self::input('page','get')?>">Home</a> 
-        <?php if (self::input('edit','request')){?> | <a href="?page=donor-index&DonorId=<?php print $this->DonorId?>">View Donor</a> <?php }?>
+        <div><a href="<?php print esc_url('?page='.self::input('page','get'))?>">Home</a> 
+        <?php if (self::input('edit','request')){?> | <a href="<?php print esc_url('?page=donor-index&DonorId='.$this->DonorId)?>">View Donor</a> <?php }?>
          | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>        
     </form>                
-    <h1>Donor Profile #<?php print self::input('DonorId','request')?> <?php print $this->Name?></h1>
+    <h1>Donor Profile #<?php print self::input('DonorId','request')?> <?php print esc_html($this->Name)?></h1>
     <?php
     }
     function name_combine(){
@@ -570,12 +571,12 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                     $donorList[]=$donor->DonorId;                
                     ?>  
                     <tr>
-                        <td><?php print $donor->show_field('DonorId')?></td>
-                        <td><?php print $donor->name_combine()?></td>
-                        <td><?php print $donor->display_email()?></td>    
-                        <td><?php print $donor->phone()?></td> 
-                        <td><?php print $donor->mailing_address(', ',false)?></td>
-                        <td><?php print $donorTypes[$donor->TypeId]?></td>
+                        <td><?php print esc_html($donor->show_field('DonorId'))?></td>
+                        <td><?php print esc_html($donor->name_combine())?></td>
+                        <td><?php print esc_html($donor->display_email())?></td>    
+                        <td><?php print esc_html($donor->phone())?></td> 
+                        <td><?php print esc_html($donor->mailing_address(', ',false))?></td>
+                        <td><?php print esc_html($donorTypes[$donor->TypeId])?></td>
                         <?php
                         foreach($q['year'] as $y=>$total){
                             $q['total'][$y]+=$q['yearList'][$id][$y];
@@ -611,7 +612,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         ." Order BY ".$settings['orderBy'];
 
         $results = self::db()->get_results($SQL);
-        ?><div><a href="?page=<?php print self::input('page','get')?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
+        ?><div><a href="<?php print esc_url('?page='.self::input('page','get'))?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print esc_attr($year)?>"/>
         <table class="dp">
             <thead>
                 <tr><th>Donor</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Type</th><th>Count</th><th>Amount</th><th>First Donation</th><th>Last Donation</th></tr>
@@ -621,13 +622,13 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $donor=new self($r);
             ?>
             <tr>
-                <td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a></td>
-                <td><?php print $donor->name_check()?></td>
-                <td><?php print $donor->display_email()?></td>    
-                <td><?php print $donor->phone()?></td> 
-                <td><?php print $donor->mailing_address(', ',false,array('AddressValidate'=>true))?></td> 
-                <td><?php print $donorTypes[$donor->TypeId]?></td>       
-                <td><?php print $r->donation_count?></td>
+                <td><a target="donor" href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$r->DonorId)?>"><?php print esc_html($r->DonorId)?></a></td>
+                <td><?php print esc_html($donor->name_check())?></td>
+                <td><?php print esc_html($donor->display_email())?></td>    
+                <td><?php print esc_html($donor->phone())?></td> 
+                <td><?php print esc_html($donor->mailing_address(', ',false,array('AddressValidate'=>true)))?></td> 
+                <td><?php print esc_html($donorTypes[$donor->TypeId])?></td>       
+                <td><?php print esc_html($r->donation_count)?></td>
                 <td><?php print number_format($r->Total,2)?></td>
                 <td><?php print date("Y-m-d", strtotime($r->DateEarliest))?></td>
                 <td><?php print date("Y-m-d", strtotime($r->DateLatest))?></td>
@@ -661,7 +662,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, D.TypeId,COUNT(*) as donation_count, SUM(Gross) as Total FROM ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND (DT.TransactionType=0 OR DT.TransactionType IS NULL) Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";
         $results = self::db()->get_results($SQL);
-        ?><form method=post><input type="hidden" name="Year" value="<?php print $year?>"/>
+        ?><form method=post><input type="hidden" name="Year" value="<?php print esc_attr($year)?>"/>
         <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Mailing</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>
         <script>
             function toggleChecked(source,name){                
@@ -676,21 +677,21 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $donor=new self($r);
             $donorTotal=$r->Total;
             ?>
-            <tr><td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> 
-            <a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>&edit=t">edit</a></td>
-            <td><?php print $donor->name_check()?></td>
-            <td><?php print $donor->display_email()?></td> 
+            <tr><td><a target="donor" href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$r->DonorId)?>"><?php print esc_html($r->DonorId)?></a> 
+            <a target="donor" href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$r->DonorId)?>&edit=t">edit</a></td>
+            <td><?php print esc_html($donor->name_check())?></td>
+            <td><?php print esc_html($donor->display_email())?></td> 
             <td><?php print $donor->mailing_address("<br>",false)?></td>             
-            <td><?php print $r->donation_count?></td>
-            <td align=right><?php print number_format($r->Total,2)?></td><td><a target="donor" href="?page=<?php print self::input('page','get')?>&DonorId=<?php print $r->DonorId?>&f=YearReceipt&Year=<?php print $year?>">Receipt</a></td>
+            <td><?php print esc_html($r->donation_count)?></td>
+            <td align=right><?php print number_format($r->Total,2)?></td><td><a target="donor" href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$r->DonorId.'&f=YearReceipt&Year='.$year)?>">Receipt</a></td>
             <td><?php
              if (filter_var($r->Email, FILTER_VALIDATE_EMAIL) && $r->EmailStatus>=0) {
-                ?><input name="emails[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId] ?"":" checked")?>/><?php
+                ?><input name="emails[]" type="checkbox" value="<?php print esc_attr($r->DonorId)?>" <?php print ($receipts[$r->DonorId] ?"":" checked")?>/><?php
              }
             ?></td>
             <td><?php
              //if ($r->Address1 && $r->City) {
-                ?><input name="pdf[]" type="checkbox" value="<?php print $r->DonorId?>" <?php print ($receipts[$r->DonorId]?"":" checked")?>/><?php
+                ?><input name="pdf[]" type="checkbox" value="<?php print esc_attr($r->DonorId)?>" <?php print ($receipts[$r->DonorId]?"":" checked")?>/><?php
              //}
             ?></td><td><?php
             //self::dump($receipts[$r->DonorId]);
@@ -1064,9 +1065,9 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $match= $stats['e'][strtolower($r->Email)];
             if ($match->Address1 && !$r->Address1){            
                 ?><tr>
-                    <td><a target='match' href="?page=donor-index&DonorId=<?php print $r->DonorId?>"><?php print $r->DonorId?></a> - <?php print $r->Name?></td><td><?php print $r->Address1?></td>
-                    <td><a target='match' href="?page=donor-index&DonorId=<?php print $match->DonorId?>"><?php print $match->DonorId?></a> -<?php print $match->Name?></td><td><?php print $match->Address1?></td>
-                    <td><a target='match' href='?page=donor-index&Function=MergeConfirm&MergeFrom=<?php print $match->DonorId?>&MergedId=<?php print $r->DonorId?>'><-Merge</a></td></tr><?php
+                    <td><a target='match' href="<?php print esc_url('?page=donor-index&DonorId='.$r->DonorId)?>"><?php print esc_html($r->DonorId)?></a> - <?php print  esc_html($r->Name)?></td><td><?php print esc_html($r->Address1)?></td>
+                    <td><a target='match' href="<?php print esc_url('?page=donor-index&DonorId='.$match->DonorId)?>"><?php print esc_html($match->DonorId)?></a> -<?php print  esc_html($match->Name)?></td><td><?php print  esc_html($match->Address1)?></td>
+                    <td><a target='match' href='<?php print esc_url('?page=donor-index&Function=MergeConfirm&MergeFrom='.$match->DonorId.'&MergedId='.$r->DonorId)?>'><-Merge</a></td></tr><?php
             }
             $current[$r->DonorId]=$r;
             $match->DonorId=$r->DonorId;

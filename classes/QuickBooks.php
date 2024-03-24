@@ -819,7 +819,7 @@ class QuickBooks extends ModelLite
                             $i=0;
                             foreach($donorIds as $donorId=>$matchedOn){
                                 ?><tr>
-                                    <td><input type="checkbox" name="match[<?php print $cId;?>]" value="<?php print $donorId?>"<?php if ($i==0) print " checked"?>></td>
+                                    <td><input type="checkbox" name="match[<?php print esc_html($cId)?>]" value="<?php print esc_attr($donorId)?>"<?php if ($i==0) print " checked"?>></td>
                                 <?php if ($i==0){?>
                                     <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a>".QuickBooks::qbLink('Customer',$cId,'QB')."  - ".$customer[$cId]->FullyQualifiedName?></td>
                                 <?php } ?>  
@@ -837,7 +837,7 @@ class QuickBooks extends ModelLite
                     <?php
                     foreach($notFound as $cId){ ?>
                         <tr><td>&#8592;</td><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId])?></td>
-                        <td><input type="number" id="match_<?php print $cId;?>" name="match[<?php print $cId;?>]" value="" step=1></td>
+                        <td><input type="number" id="match_<?php print esc_html($cId)?>" name="match[<?php print esc_html($cId)?>]" value="" step=1></td>
                         <td><?php
                         if ($match->partial[$cId]){
                             $i=0;
@@ -858,7 +858,7 @@ class QuickBooks extends ModelLite
                     foreach($leftOverDonors as $donorId=>$true){
                         ?><tr><td>&#8594;</td>                      
                         <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td>
-                        <td><input type="number" name="rmatch[<?php print $donorId;?>]" value="" step=1></td>
+                        <td><input type="number" name="rmatch[<?php print esc_html($donorId)?>]" value="" step=1></td>
                         
                         </tr><?php
                         
@@ -955,7 +955,7 @@ class QuickBooks extends ModelLite
                         ?></tr>
                         <?php
                         foreach ($entities as $entity){                                                      
-                            ?><tr><td><a href="?page=donor-quickbooks&table=<?php print self::input('table','get')?>&Id=<?php print $entity->Id?>"><?php print $entity->Id?></a></td><?php 
+                            ?><tr><td><a href="<?php print esc_url('?page=donor-quickbooks&table='.self::input('table','get').'&Id='.$entity->Id)?>"><?php print esc_html($entity->Id)?></a></td><?php 
                             if (is_array($field)){
                                 foreach($field as $f)  print "<td>".$this->showQBfield($entity,$f)."</td>"; //show
 
@@ -973,12 +973,12 @@ class QuickBooks extends ModelLite
             }else{ 
                 $companyInfo = $this->dataService->getCompanyInfo();               
                 ?>
-                <h2>Company: <?php print $companyInfo->LegalName?> | <?php print CustomVariables::get_option('QuickbooksBase');?></h2> 
-                <div><a href="?page=<?php print self::input('page','get')?>&debug=t">Debug Mode</a></div> 
-                <div><a href="?page=<?php print self::input('page','get')?>&syncDonorsToQB=t">Sync Donors to QuickBooks</a></div>           
+                <h2>Company: <?php print esc_html($companyInfo->LegalName." | ".CustomVariables::get_option('QuickbooksBase'))?></h2> 
+                <div><a href="<?php print esc_url('?page='.self::input('page','get').'&debug=t')?>">Debug Mode</a></div> 
+                <div><a href="<?php print esc_url('?page='.self::input('page','get').'&syncDonorsToQB=t')?>">Sync Donors to QuickBooks</a></div>           
                 <h3>View</h3>
                  <?php foreach ($this->QBtables as $tbl=>$key){ ?>
-                    <div><a href="?page=donor-quickbooks&table=<?php print $tbl?>"><?php print $tbl?></a></div>
+                    <div><a href="<?php print esc_url('?page=donor-quickbooks&table='.$tbl)?>"><?php print esc_html($tbl)?></a></div>
                  <?php 
                  }  
                          
@@ -1223,7 +1223,7 @@ class QuickBooks extends ModelLite
             $max=100;
             $query=self::input('query','request')?self::input('query','request'):"Select * From Customer MAXRESULTS ".$max;
             ?><form method="post">
-                Query: <textarea name="query"><?php print $query;?></textarea>
+                Query: <textarea name="query"><?php print esc_textarea($query)?></textarea>
                 <button>Go</button>
             </form>
             <?php

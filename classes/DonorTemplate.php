@@ -7,7 +7,7 @@ class DonorTemplate extends ModelLite {
 	### Fields that can be passed 
     protected $fillable = ["ID","post_type","post_content","post_title","post_name","post_excerpt","post_date","post_author"];	  
     protected $settings =["fontsize"=>12,"margin"=>.25];
-
+    
 	### Default Values
 	protected $attributes = [        
         'post_type' => 'donortemplate',
@@ -57,25 +57,25 @@ class DonorTemplate extends ModelLite {
     public function edit(){
         $primaryKey=$this->primaryKey;
         if ($this->ID){            
-        ?><h2>Editing Donor Template #<?php print $this->ID?></h2>
+        ?><h2>Editing Donor Template #<?php print $this->ID;?></h2>
         <?php 
         }else{
             ?><h2>New Donor Template <?php print self::input('CopyDonorTemplateId','get')?" Copy of #".self::input('CopyDonorTemplateId','get'):""?></h2>
         <?php
         }?>
-        <form method="post" action="?page=<?php print self::input('page','get')?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>&tab=<?php print self::input('tab','get')?>">
-		<input type="hidden" name="table" value="<?php print $this->table?>"/>
-		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
+        <form method="post" action="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&'.$primaryKey.'='.$this->$primaryKey)?>">
+		<input type="hidden" name="table" value="<?php print esc_attr($this->table)?>"/>
+		<input type="hidden" name="<?php print esc_attr($primaryKey)?>" value="<?php print esc_attr($this->$primaryKey)?>"/>
         <input type="hidden" name="post_type" value="donortemplate"/>
-        <input type="hidden" name="post_author" value="<?php print $this->post_author?$this->post_author:get_current_user_id()?>"/>
-        <input type="hidden" name="post_date" value="<?php print $this->post_date?$this->post_date:date("Y-m-d H:i:s")?>"/>
+        <input type="hidden" name="post_author" value="<?php print esc_attr($this->post_author?$this->post_author:get_current_user_id())?>"/>
+        <input type="hidden" name="post_date" value="<?php print esc_attr($this->post_date?$this->post_date:date("Y-m-d H:i:s"))?>"/>
 
         
         <table>
-            <tr><td align="right"><strong>Template Title</strong></td><td><input style="width: 300px" type="text" name="post_name" value="<?php print $this->post_name?>"> <em>Example: donor-default</em></td></tr>
-            <tr><td align="right"><strong>Subject</strong></td><td><input style="width: 600px" type="text" name="post_title" value="<?php print $this->post_title?>"> <em>Appears in the subject of an e-mail, but does not print on .pdf letter export</em></td></tr>
-            <tr><td align="right"><strong>Default Font Size:</strong></td><td><input type="number" step=".1" name="post_excerpt_fontsize" value="<?php print $this->post_excerpt_fontsize?$this->post_excerpt_fontsize:12?>"> <em>Default font size to use on letter</em></td></tr>
-            <tr><td align="right"><strong>Default Margin:</strong></td><td><input type="number" step=".01" name="post_excerpt_margin" value="<?php print $this->post_excerpt_margin?$this->post_excerpt_margin:.25?>"> <em>Margin in Inches</em></td></tr>
+            <tr><td align="right"><strong>Template Title</strong></td><td><input style="width: 300px" type="text" name="post_name" value="<?php print esc_attr($this->post_name)?>"> <em>Example: donor-default</em></td></tr>
+            <tr><td align="right"><strong>Subject</strong></td><td><input style="width: 600px" type="text" name="post_title" value="<?php print esc_attr($this->post_title)?>"> <em>Appears in the subject of an e-mail, but does not print on .pdf letter export</em></td></tr>
+            <tr><td align="right"><strong>Default Font Size:</strong></td><td><input type="number" step=".1" name="post_excerpt_fontsize" value="<?php print esc_attr($this->post_excerpt_fontsize?$this->post_excerpt_fontsize:12)?>"> <em>Default font size to use on letter</em></td></tr>
+            <tr><td align="right"><strong>Default Margin:</strong></td><td><input type="number" step=".01" name="post_excerpt_margin" value="<?php print esc_attr($this->post_excerpt_margin?$this->post_excerpt_margin:.25)?>"> <em>Margin in Inches</em></td></tr>
             <tr><td  colspan="2"><div><strong>Message:</strong></div><?php            
             wp_editor($this->post_content, 'post_content',array("media_buttons" => false,"wpautop"=>false));
             ?></td></tr>
@@ -113,7 +113,7 @@ class DonorTemplate extends ModelLite {
                     if (substr($var,0,strlen("Quickbooks"))=="Quickbooks") continue;
                     if (substr($var,0,strlen("Paypal"))=="Paypal") continue;                    
                     ?>
-                <tr><td>##<?php print $var;?>##</td><td>Currently Set to: <strong><?php print get_option( 'donation_'.$var)?></strong></td></tr>
+                <tr><td>##<?php print esc_html($var)?>##</td><td>Currently Set to: <strong><?php print get_option( 'donation_'.$var)?></strong></td></tr>
                 <?php }
                 ?>
                 </table>
@@ -192,14 +192,14 @@ class DonorTemplate extends ModelLite {
         $SQL="SELECT * FROM ".self::get_table_name()." WHERE post_type='donortemplate' AND post_parent=0 Order BY post_name,post_title";
         $results = $wpdb->get_results($SQL);        
         ?><h2>Template List</h2>
-        <div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CreateDonorTemplateId=t&edit=t">Add Blank Template</a></div>
+        <div><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>&CreateDonorTemplateId=t&edit=t">Add Blank Template</a></div>
         <table class="dp"><tr><th>Template</th><th>Subject</th><th>Body</th><th></th></tr>
         <?php
         foreach ($results as $r){ 
-            ?><tr><td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&DonorTemplateId=<?php print $r->ID?>&edit=t"><?php print $r->post_name?></a></td>
-                <td><?php print $r->post_title;?></td>
+            ?><tr><td><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&DonorTemplateId='.$r->ID)?>&edit=t"><?php print esc_html($r->post_name)?></a></td>
+                <td><?php print esc_html($r->post_title)?></td>
                 <td><?php print substr(strip_tags($r->post_content,array('<p>','<br>')),0,160)?>...</td>
-                <td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CopyDonorTemplateId=<?php print $r->ID?>&edit=t">Copy</a></td>
+                <td><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CopyDonorTemplateId='.$r->ID)?>&edit=t">Copy</a></td>
             </tr><?php
         }
         ?></table><?php

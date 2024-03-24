@@ -6,9 +6,9 @@
 	if (DonationCategory::request_handler()) { print "</div>"; return;}
 	global $donor_press_db_version;
 	?>
-	<h1>Donor Manager <span style="font-size:60%">Version: <?php print $donor_press_db_version;?></span></h1>
+	<h1>Donor Manager <span style="font-size:60%">Version: <?php print esc_html($donor_press_db_version);?></span></h1>
 	<form method="get">
-	<input type="hidden" name="page" value="<?php print Donor::input('page','get')?>"/>
+	<input type="hidden" name="page" value="<?php print esc_attr(Donor::input('page','get'))?>"/>
 	<!-- <div class="auto-search-wrapper">
 		<input type="text" id="basic" placeholder="type w">
 	</div> -->

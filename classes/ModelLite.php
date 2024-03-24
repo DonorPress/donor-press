@@ -143,7 +143,10 @@ class ModelLite{
 		$fields=$this->get_viewable_fields();
 		foreach($fields as $f){			
 			if ($this->$f){
-				?><tr><td><?php print $f?></td><td><?php print $this->show_field($f)?></td></tr><?php
+				?><tr>
+					<td><strong><?php print esc_html($f)?></strong></td>
+					<td><?php print wp_kses_post($this->show_field($f))?></td>
+				</tr><?php
 			}
 		}
 		?></table>
@@ -324,12 +327,12 @@ class ModelLite{
 			foreach($results as $r){
 				if ($i==0){
 					?><tr><?php
-					foreach ($fields as $field){?><th><?php print $field?></th><?php }
+					foreach ($fields as $field){?><th><?php print esc_html($field)?></th><?php }
 					?></tr><?php
 				}
 				?><tr><?php
 				foreach ($fields as $field){
-					?><td><?php print $r->show_field($field)?></td><?php 
+					?><td><?php print wp_kses_post($r->show_field($field))?></td><?php 
 				
 				}
 				?></tr><?php
@@ -465,9 +468,9 @@ class ModelLite{
 	
 	public function edit_form(){
 		$primaryKey=$this->primaryKey;
-		?><form method="post" action="?page=<?php print self::input('page','get')?>&<?php print $primaryKey?>=<?php print $this->$primaryKey?>">
-		<input type="hidden" name="table" value="<?php print $this->table?>"/>
-		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?>"/>
+		?><form method="post" action="<?php print esc_url('?page='.self::input('page','get').'&'.$primaryKey.'='.$this->$primaryKey)?>">
+		<input type="hidden" name="table" value="<?php print esc_attr($this->table)?>"/>
+		<input type="hidden" name="<?php print esc_attr($primaryKey)?>" value="<?php print esc_attr($this->$primaryKey)?>"/>
 	
 		<table><?php
 		foreach($this->fillable as $field){
@@ -481,7 +484,7 @@ class ModelLite{
                 $type="date";
 			}
 			if ($field=="Date") $this->Date=substr($this->$field,0,10); //$type="datetime-local";
-			?><tr><td align=right><?php print $field?></td><td><?php
+			?><tr><td align=right><?php print esc_html($field)?></td><td><?php
 
 			$select=false;
 			if (isset($this->tinyIntDescriptions[$field])) $select=$this->tinyIntDescriptions[$field];
@@ -492,16 +495,16 @@ class ModelLite{
 			}
 
 			if ($select){
-				?><select name="<?php print $field?>"><?php
+				?><select name="<?php print esc_attr($field)?>"><?php
 					foreach($select as $key=>$label){
-						?><option value="<?php print $key?>"<?php print $key==$this->$field?" selected":""?>><?php print $key." - ".$label?></option><?php
+						?><option value="<?php print esc_attr($key)?>"<?php print ($key==$this->$field?" selected":"")?>><?php print $key." - ".$label?></option><?php
 					}
 					if (!$select[$this->$field]){
-						?><option value="<?php print $this->$field?>" selected><?php print $this->$field." - Not Set"?></option><?php
+						?><option value="<?php print esc_attr($this->$field)?>" selected><?php print $this->$field." - Not Set"?></option><?php
 					}
 					?></select><?php
 			}else{
-				?><input type="<?php print $type?>" name="<?php print $field?>" value="<?php print $this->$field?>"<?php
+				?><input type="<?php print esc_attr($type)?>" name="<?php print esc_attr($field)?>" value="<?php print esc_attr($this->$field)?>"<?php
 				if ($maxlength) print ' maxlength="'.$maxlength.'"';?>/><?php
 			}	
 		
@@ -554,12 +557,24 @@ class ModelLite{
 
 	static function input($field,$type='request'){
 		switch ($type){
-			case 'get': return isset($_GET[$field])?wp_kses_post($_GET[$field]):null; break;
-			case 'post': return isset($_POST[$field])?wp_kses_post($_POST[$field]):null; break;
+			case 'get': return isset($_GET[$field])?self::input_sanitize($_GET[$field]):null; break;
+			case 'post': return isset($_POST[$field])?self::input_sanitize($_POST[$field]):null; break;
 			default:
-				return isset($_REQUEST[$field])?wp_kses_post($_REQUEST[$field]):null;
+				return isset($_REQUEST[$field])?self::input_sanitize($_REQUEST[$field]):null;
 			break;
 		}		
+	}
+
+	static function input_sanitize($value){
+		if (is_array($value)){
+			$return=[];
+			foreach($value as $k=>$v){				
+				$return[$k]=self::input_sanitize($v);
+			}
+			return $return;
+
+		} 
+		else return wp_kses_post($value);
 	}
 
 	static function input_model($type='request'){

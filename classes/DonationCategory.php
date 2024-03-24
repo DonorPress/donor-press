@@ -63,12 +63,12 @@ class DonationCategory extends ModelLite
 
             ?>
             <div id="pluginwrap">
-                <div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>">Return</a></div>
+                <div><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>">Return</a></div>
                 <h1>Category <?php print self::input('CategoryId','get')=="new"?"NEW":"#".$donationCategory->CategoryId?></h1><?php 
                 if (self::input('edit','request')){
                     $donationCategory->edit_form();
                 }else{
-                    ?><div><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=<?php print $donationCategory->CategoryId?>&edit=t">Edit Category</a></div><?php
+                    ?><div><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CategoryId='.$donationCategory->CategoryId)?>&edit=t">Edit Category</a></div><?php
                     $donationCategory->view(); 
                     if ($donationCategory->TransactionType){
                         $SQL="SELECT TransactionType,COUNT(*) as C  FROM ".Donation::get_table_name()." WHERE CategoryId='".$donationCategory->CategoryId."' AND (TransactionType<>'".$donationCategory->TransactionType."' OR TransactionType IS NULL) Group BY TransactionType";
@@ -100,16 +100,16 @@ class DonationCategory extends ModelLite
     function edit_form(){
         $wpdb=self::db();         
         $primaryKey=$this->primaryKey;
-		?><form method="post" action="?page=<?php print self::input('page','get').(self::input('tab','get')?'&tab='.self::input('tab','get'):"")."&".$primaryKey."=".$this->$primaryKey?>">
-		<input type="hidden" name="table" value="<?php print $this->table?>"/>
-		<input type="hidden" name="<?php print $primaryKey?>" value="<?php print $this->$primaryKey?$this->$primaryKey:"new"?>"/>
+		?><form method="post" action="<?php print esc_url('?page='.self::input('page','get').(self::input('tab','get')?'&tab='.self::input('tab','get'):"")."&".$primaryKey."=".$this->$primaryKey)?>">
+		<input type="hidden" name="table" value="<?php print esc_attr($this->table)?>"/>
+		<input type="hidden" name="<?php print esc_attr($primaryKey)?>" value="<?php print esc_attr($this->$primaryKey?$this->$primaryKey:"new")?>"/>
         <table>
-            <tr><td align="right">Category Title</td><td><input style="width: 300px" type="text" name="Category" value="<?php print $this->Category?>"></td></tr>
-            <tr><td align="right">Description</td><td><textarea rows=3 cols=40 name="Description"><?php print $this->Description?></textarea></td></tr>
+            <tr><td align="right">Category Title</td><td><input style="width: 300px" type="text" name="Category" value="<?php print esc_attr($this->Category)?>"></td></tr>
+            <tr><td align="right">Description</td><td><textarea rows=3 cols=40 name="Description"><?php print esc_textarea($this->Description)?></textarea></td></tr>
             <tr><td align="right">Parent Category</td><td><select name="ParentId"><option value="0">[--None--]</option><?php
              $results = $wpdb->get_results("SELECT `CategoryId`, `Category`,ParentId FROM ".self::get_table_name()." WHERE (ParentId=0 OR ParentId IS NULL) AND CategoryId<>'".$this->CategoryId."' Order BY Category");
              foreach($results as $r){
-                ?><option value="<?php print $r->CategoryId?>"<?php print ($r->CategoryId==$this->ParentId?" selected":"")?>><?php
+                ?><option value="<?php print esc_attr($r->CategoryId)?>"<?php print ($r->CategoryId==$this->ParentId?" selected":"")?>><?php
                 print $r->Category." (".$r->CategoryId.")";?></option><?php
              }?></select></td></tr>
              <tr><td align="right">Default Transaction Type</td><td>
@@ -117,7 +117,7 @@ class DonationCategory extends ModelLite
                 <option value="">--None--</option>
                 <?php
                 foreach(Donation::s()->tinyIntDescriptions["TransactionType"] as $key=>$label){
-                    ?><option value="<?php print $key==0?"ZERO":$key?>"<?php print ($key==0?"ZERO":$key)==self::input('Type','get')?" selected":""?>><?php print $key." - ".$label?></option><?php
+                    ?><option value="<?php print esc_attr($key==0?"ZERO":$key)?>"<?php print ($key==0?"ZERO":$key)==self::input('Type','get')?" selected":""?>><?php print $key." - ".$label?></option><?php
                 }?>
             </select>
 
@@ -145,13 +145,13 @@ class DonationCategory extends ModelLite
                         }
                     }else{?>
                     <div>No Items Found in Quickbooks. Please create a non-stock item in Quickbooks first.</div>
-                    <input type="hidden" name="QBItemId" value="<?php print $this->QBItemId?>"/>
+                    <input type="hidden" name="QBItemId" value="<?php print esc_attr($this->QBItemId)?>"/>
                     <?php } ?>
                     <em>When syncing to Quickbooks, this is how the default item on an invoice is logged. Items on Quickbooks determine which sales account gets used.</em></td>
                 </tr>
                 <?php
             }else{
-                ?><input type="hidden" name="QBItemId" value="<?php print $this->QBItemId?>"/><?php
+                ?><input type="hidden" name="QBItemId" value="<?php print esc_attr($this->QBItemId)?>"/><?php
             }
           
             ?>
@@ -224,7 +224,7 @@ class DonationCategory extends ModelLite
         }
         ?>
         <h2>Donation Categories</h2>
-        <a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=new&edit=t">Add Category</a>
+        <a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>&CategoryId=new&edit=t">Add Category</a>
         <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>Transaction Type</th><th>ParentId</th>
         <?php if (Quickbooks::is_setup()) print  "<th>QuickBooks Item Id</th>";?>
         <th>Total Donations</th><th></th></tr><?php
@@ -237,15 +237,15 @@ class DonationCategory extends ModelLite
         if (!$parent[$parentId]) return;
         foreach ($parent[$parentId] as $r){
             ?><tr>
-                <td style="padding-left:<?php print $level*20?>px"><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=<?php print $r->CategoryId?>"><?php print $r->CategoryId?></a></td>
-                <td><?php print $r->Category?></td>
-                <td><?php print $r->Description?></td>
+                <td style="padding-left:<?php print esc_html($level*20)?>px"><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CategoryId='.$r->CategoryId)?>"><?php print esc_html($r->CategoryId)?></a></td>
+                <td><?php print esc_html($r->Category)?></td>
+                <td><?php print esc_html($r->Description)?></td>
                 <td><?php print $r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]?></td>
-                <td><?php print $r->ParentId?></td>
+                <td><?php print esc_html($r->ParentId)?></td>
                 <?php if (Quickbooks::is_setup()) print  "<td>".($r->QBItemId>0?Quickbooks::qbLink('Item',$r->QBItemId):"")."</td>";?>
 
-                <td><a target='lookup' href='?page=donor-reports&tab=donations&CategoryId=<?php print $r->CategoryId;?>&Function=DonationList'><?php print $r->donation_count?></a></td>
-                <td><a href="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>&CategoryId=<?php print $r->CategoryId?>&edit=t">edit</a></td>
+                <td><a target='lookup' href='<?php print esc_url('?page=donor-reports&tab=donations&CategoryId='.$r->CategoryId);?>&Function=DonationList'><?php print esc_html($r->donation_count)?></a></td>
+                <td><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CategoryId='.$r->CategoryId.'&edit=t')?>">edit</a></td>
             </tr>
             <?php
             self::show_children($r->CategoryId,$parent,$level+1);

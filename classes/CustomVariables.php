@@ -52,15 +52,15 @@ class CustomVariables extends ModelLite
                     $fullVal=self::base."_".$var;
                     //$c->$var=get_option($fullVal);
                     ?>
-                    <tr><td><input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/><?php print $var?></td>
+                    <tr><td><input type="hidden" name="<?php print esc_attr($var)?>_id" value="<?php print esc_attr($vals->$fullVal?$vals->$fullVal->option_id:"")?>"/><?php print esc_html($var)?></td>
                     <td>
                     <?php 
                     switch($var){
                         case "QuickbooksBase":
                             if (!isset($vals->$fullVal)) $vals->$fullVal=new stdClass();
                             ?>
-                            <label><input type="radio" name="<?php print $var?>" value="Production"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value=="Production"?" checked":""?>> Production </label>
-                            <label><input type="radio" name="<?php print $var?>" value="Development"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value!="Production"?" checked":""?>> Development </label>
+                            <label><input type="radio" name="<?php print esc_attr($var)?>" value="Production"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value=="Production"?" checked":""?>> Production </label>
+                            <label><input type="radio" name="<?php print esc_attr($var)?>" value="Development"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value!="Production"?" checked":""?>> Development </label>
                             Note: <code><?php print site_url()?>/wp-admin/admin.php?redirect=donor_quickBooks_redirectUrl</code> must be entered into the developer app as a Redirect URL.
                             <?php
                             break;
@@ -68,17 +68,17 @@ class CustomVariables extends ModelLite
                             $dependancy="https://www.gstatic.com/charts/loader.js";
                             if (!isset($vals->$fullVal)) $vals->$fullVal=new stdClass();
                             ?>
-                            <label><input type="radio" name="<?php print $var?>" value="<?php print $dependancy?>"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value==$dependancy?" checked":""?>> On</label>
-                            <label><input type="radio" name="<?php print $var?>" value=""<?php print !isset($vals->$fullVal->option_value) || $vals->$fullVal->option_value==""?" checked":""?>> Off </label>
+                            <label><input type="radio" name="<?php print esc_attr($var)?>" value="<?php print esc_attr($dependancy)?>"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value==$dependancy?" checked":""?>> On</label>
+                            <label><input type="radio" name="<?php print esc_attr($var)?>" value=""<?php print !isset($vals->$fullVal->option_value) || $vals->$fullVal->option_value==""?" checked":""?>> Off </label>
                             Note: Turning on Google Charts. Requires external Library.
                             <?php
                             break;
                         default:?>
-                            <input name="<?php print $var?>" value="<?php print isset($vals->$fullVal)?$vals->$fullVal->option_value:""?>"/>
+                            <input name="<?php print esc_attr($var)?>" value="<?php print isset($vals->$fullVal)?$vals->$fullVal->option_value:""?>"/>
                         <?php
                         }
                         ?>
-                        <input type="hidden" name="<?php print $var?>_was" value="<?php print $vals->$fullVal?$vals->$fullVal->option_value:""?>"/>
+                        <input type="hidden" name="<?php print esc_attr($var)?>_was" value="<?php print esc_attr($vals->$fullVal?$vals->$fullVal->option_value:"")?>"/>
                     </td></tr>
                     <?php
                 }
@@ -94,7 +94,7 @@ class CustomVariables extends ModelLite
                     $fullVal=self::base."_".$var;
                     //$c->$var=get_option($fullVal);
                     ?>
-                    <tr><td><input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/><?php print $var?></td><td><input name="<?php print $var?>" value=""/>
+                    <tr><td><input type="hidden" name="<?php print esc_attr($var)?>_id" value="<?php print esc_attr($vals->$fullVal?$vals->$fullVal->option_id:"")?>"/><?php print esc_html($var)?></td><td><input name="<?php print esc_attr($var)?>" value=""/>
                     <?php print isset($vals->$fullVal)?"<span style='color:green;'> - set</span> ":" <span style='color:red;'>- not set</span>";
                     ?></td></tr>
                   <?php
@@ -119,9 +119,9 @@ class CustomVariables extends ModelLite
                             print '<option value="'.$item->Id.'"'.($item->Id==$val?" selected":"").'>'.$item->FullyQualifiedName.'</option>';
                         }
                         ?></select>
-                        <input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/>
+                        <input type="hidden" name="<?php print esc_attr($var)?>_id" value="<?php print esc_attr($vals->$fullVal?$vals->$fullVal->option_id:"")?>"/>
 
-                        <input type="hidden" name="<?php print $var?>_was" value="<?php print $val?>"/> </td></tr>
+                        <input type="hidden" name="<?php print esc_attr($var)?>_was" value="<?php print esc_attr($val)?>"/> </td></tr>
                     <?php
                     }
                     if ($paymentMethod=$qb->payment_method_list("",false) && QuickBooks::qb_api_installed()){
@@ -132,13 +132,13 @@ class CustomVariables extends ModelLite
                             if($key==0) continue;
                             ?> 
                             
-                            <tr><td>Payment Method: <?php print $label?></td><td><select name="<?php print $var?>"><option value="">[--Not Set--]</option><?php               
+                            <tr><td>Payment Method: <?php print esc_html($label)?></td><td><select name="<?php print esc_attr($var)?>"><option value="">[--Not Set--]</option><?php               
                             foreach($paymentMethod as $pm){
                                 print '<option value="'.$pm->Id.'"'.($pm->Id==$val?" selected":"").'>'.$pm->Name.'</option>';
                             }
                             ?></select>
-                            <input type="hidden" name="<?php print $var?>_id" value="<?php print $vals->$fullVal?$vals->$fullVal->option_id:""?>"/>    
-                            <input type="hidden" name="<?php print $var?>_was" value="<?php print $val?>"/> </td></tr>
+                            <input type="hidden" name="<?php print esc_attr($var)?>_id" value="<?php print esc_attr($vals->$fullVal?$vals->$fullVal->option_id:"")?>"/>    
+                            <input type="hidden" name="<?php print esc_attr($var)?>_was" value="<?php print esc_attr($val)?>"/> </td></tr>
                             <?php
                             
                         }   
@@ -287,7 +287,7 @@ class CustomVariables extends ModelLite
     static public function nuke_confirm(){
         ?><h2>You are about to remove all donor/donations records from the database</h2>
         <div style='color:red;'>This will be permanent. Please back up anything important before proceeding.</div>
-        <form method="post" action="?page=<?php print self::input('page','get')?>&tab=<?php print self::input('tab','get')?>">
+        <form method="post" action="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>">
             <label><input type="checkbox" name="backup" value="t" checked>Backup Existing Donor Press Records to a flat file</label><br>  
             <label><input type="checkbox" name="droptable" value="t" checked>Drop All Tables Data and Structures (Donor, Donation, Categories)</label><br>           
             <label><input type="checkbox" name="dropfields" value="t" checked>Drop All Custom Fields (Letter Templates, settings)</label><br>
