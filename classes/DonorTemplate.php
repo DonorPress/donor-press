@@ -150,7 +150,7 @@ class DonorTemplate extends ModelLite {
             $settings[$setting]=$v?$v:$default;
         }
         
-        return json_encode($settings);
+        return wp_json_encode($settings);
     }    
 
     static public function request_handler(){        

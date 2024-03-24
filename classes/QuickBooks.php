@@ -182,7 +182,7 @@ class QuickBooks extends ModelLite
                     }
                     //dd($this->fieldLinks[$field],$table,$tableField);
 
-                    print '<a target="QBdetail" href="?page=donor-quickbooks&table='.$table.'&Id='.$value.'">'.$value."</a> ".self::qbLink($table,$value,'QB');
+                    print '<a target="QBdetail" href="'.url_esc('?page=donor-quickbooks&table='.$table.'&Id='.$value).'">'.esc_html($value)."</a> ".self::qbLink($table,$value,'QB');
                 }else print $value;
                 print "</td></tr>"; //rewrite this to use: $this->showQBfield($entity,$field)  -
             }
@@ -821,7 +821,7 @@ class QuickBooks extends ModelLite
                                 ?><tr>
                                     <td><input type="checkbox" name="match[<?php print esc_html($cId)?>]" value="<?php print esc_attr($donorId)?>"<?php if ($i==0) print " checked"?>></td>
                                 <?php if ($i==0){?>
-                                    <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a>".QuickBooks::qbLink('Customer',$cId,'QB')."  - ".$customer[$cId]->FullyQualifiedName?></td>
+                                    <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a>".QuickBooks::qbLink('Customer',$cId,'QB')."  - ".$customer[$cId]->FullyQualifiedName?></td>
                                 <?php } ?>  
                                 <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td><td><?php print implode(", ",array_keys($matchedOn));?></td></tr><?php
                                 $i++;
@@ -836,7 +836,7 @@ class QuickBooks extends ModelLite
                     <table class="dp"><tr><th>&#8592;</th><th>QuickBooks</th><th>Link to Donor Id</th><th>Partial matches</th></tr>                  
                     <?php
                     foreach($notFound as $cId){ ?>
-                        <tr><td>&#8592;</td><td><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId])?></td>
+                        <tr><td>&#8592;</td><td><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.esc_html($cId)."</a> ".wp_kses_post(QuickBooks::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId]))?></td>
                         <td><input type="number" id="match_<?php print esc_html($cId)?>" name="match[<?php print esc_html($cId)?>]" value="" step=1></td>
                         <td><?php
                         if ($match->partial[$cId]){
@@ -874,7 +874,7 @@ class QuickBooks extends ModelLite
                                 foreach($donorIds as $donorId){
                                     ?><tr>                                
                                     <?php if ($i==0){?>
-                                        <td rowspan="<?php print sizeof($donorIds)?>"><?php print '<a href="?page=donor-quickbooks&table=Customer&Id='.$cId.'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')." - ".self::show_customer_name($customer[$cId])?></td>
+                                        <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a> ".QuickBooks::qbLink('Customer',$cId,'QB')." - ".self::show_customer_name($customer[$cId])?></td>
                                     <?php } ?>  
                                     <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td></tr><?php
                                     $i++;
@@ -1211,7 +1211,7 @@ class QuickBooks extends ModelLite
                 print ' | <button type="button" style="background-color:lightgreen;" onclick="syncDonationToQb(\''.$donation->DonationId.'\');">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId.'">Ignore/Don\'t Sync to QB</a>';
             }
         }else{
-            print '<a style="background-color:lightgreen;" target="QB" a href="?page=donor-quickbooks&syncDonorId='.$donation->DonorId.'">Create Donor in QB</a>';
+            print '<a style="background-color:lightgreen;" target="QB" href="'.esc_url('?page=donor-quickbooks&syncDonorId='.$donation->DonorId).'">Create Donor in QB</a>';
             $return['newCustomerFromDonor'][]=$donation->DonorId;              
         }
         return  $return;      
@@ -1334,16 +1334,16 @@ class QuickBooks extends ModelLite
         if (!$labelOverride) $labelOverride=$v;
         switch($type){
             case "Payment":
-                return '<a target="QB" href="'.self::get_QB_url().'app/recvpayment?txnId='.$v.'">'.$labelOverride.'</a>';
+                return '<a target="QB" href="'.esc_url(self::get_QB_url().'app/recvpayment?txnId='.$v).'">'.esc_html($labelOverride).'</a>';
                 break;	
             case "Invoice":
-                return '<a target="QB" href="'.self::get_QB_url().'app/invoice?txnId='.$v.'">'.$labelOverride.'</a>';
+                return '<a target="QB" href="'.esc_url(self::get_QB_url().'app/invoice?txnId='.$v).'">'.esc_html($labelOverride).'</a>';
                 break;          
             case "Customer":
-                return '<a target="QB" href="'.self::get_QB_url().'app/customerdetail?nameId='.$v.'">'.$labelOverride.'</a>';
+                return '<a target="QB" href="'.esc_url(self::get_QB_url().'app/customerdetail?nameId='.$v).'">'.esc_html($labelOverride).'</a>';
                 break;
             case "Item": //not currently linkable
-                return '<a target="QB" href="?page=donor-quickbooks&table=Item&Id='.$v.'">'.$labelOverride.'</a>';
+                return '<a target="QB" href="'.esc_url('?page=donor-quickbooks&table=Item&Id='.$v).'">'.esc_html($labelOverride).'</a>';
                
                 //return $labelOverride; //return '<a target="QB" href="'.self::get_QB_url().'app/items?itemId='.$v.'">'.$labelOverride.'</a>';
                 break;

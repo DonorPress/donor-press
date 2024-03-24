@@ -576,7 +576,6 @@ function donor_regression($where=[]){
 		?><th>Avg</th><th>%</th></tr><?php
 		foreach ($amountDiff as $donorId=>$diff){
 			$years=$donorYear[$donorId];
-			//dd($years); //<a href="?page=donor-index&DonorId=print $donorId"> </a>
 			if ($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg']<0){
 			?><tr>
 				<td><?php print esc_html($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donor-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
@@ -599,7 +598,6 @@ function donor_regression($where=[]){
 		?></tr><?php
 		foreach ($amountDiff as $donorId=>$diff){
 			$years=$donorCount[$donorId];
-			//dd($years); //<a href="?page=donor-index&DonorId=print $donorId"> </a>
 			if ($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg']<0){
 			?><tr>
 				<td><?php print esc_html($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donor-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>

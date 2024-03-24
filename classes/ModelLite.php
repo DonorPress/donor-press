@@ -525,15 +525,15 @@ class ModelLite{
 	}
 
 	static public function display_notice($html){
-		print "<div class=\"notice notice-success is-dismissible\">".$html."</div>";
+		print "<div class=\"notice notice-success is-dismissible\">".wp_kses_post($html)."</div>";
 	}
 
 	static public function display_warning($html){
-		print "<div class=\"notice notice-warning is-dismissible\">".$html."</div>";
+		print "<div class=\"notice notice-warning is-dismissible\">".wp_kses_post($html)."</div>";
 	}
 
 	static public function display_error($html){
-		print "<div class=\"notice notice-error is-dismissible\">".$html."</div>";
+		print "<div class=\"notice notice-error is-dismissible\">".wp_kses_post($html)."</div>";
 	}
 
 	static public function show_tabs($tabs){
@@ -541,7 +541,7 @@ class ModelLite{
 		?>
 		<div class="dp-tab-links">
 			<?php foreach ($tabs as $tab=>$label){
-				print '<a href="?page='.self::input('page','get').'&tab='.$tab.'" class="tab'.($active_tab==$tab?" active":"").'">'.$label.'</a>';			
+				print '<a href="'.url_esc('?page='.self::input('page','get').'&tab='.$tab.'" class="tab'.($active_tab==$tab?" active":"")).'">'.esc_html($label).'</a>';			
 			}?>
 		</div>
 		<?php

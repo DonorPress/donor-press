@@ -104,7 +104,7 @@ class DonorType extends ModelLite
              $results = $wpdb->get_results("SELECT * FROM ".self::get_table_name()." WHERE TypeId<>'".$this->TypeId."' Order BY Title");
              foreach($results as $r){
                 ?><option value="<?php print esc_attr($r->TypeId)?>"<?php print ($r->TypeId==$this->TypeId?" selected":"")?>><?php
-                print $r->Title." (".$r->TypeId.")";?></option><?php
+                print esc_html($r->Title." (".$r->TypeId.")")?></option><?php
              }?></select> <button type="submit" name="Function" value="DonorTypeMergeTo">Merge</button>
             <?php }?>           
 		</form><?php

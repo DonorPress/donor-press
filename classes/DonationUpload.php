@@ -89,7 +89,7 @@ class DonationUpload extends ModelLite
         $selectDonor=Donor::s()->fillable;
         ##save .map file so if this file is reuploaded/reopened, it reads previous settings. 
         if (self::input('file','post')){
-            file_put_contents(self::upload_dir().self::input('file','post').".map",json_encode($_POST)); //encode everything passed in from POST -> if file with this filename is uploaded it again, it will map the same.
+            file_put_contents(self::upload_dir().self::input('file','post').".map",wp_json_encode($_POST)); //encode everything passed in from POST -> if file with this filename is uploaded it again, it will map the same.
         }
 
         ### Check for required fields
@@ -306,7 +306,7 @@ class DonationUpload extends ModelLite
                 
                 ?>
             </select>  <em>Key fields are used to detect duplicates</em>
-        <input type="hidden" name="columncount" value="<?php print sizeof($csv->headers)?>"/>
+        <input type="hidden" name="columncount" value="<?php print esc_html(sizeof($csv->headers))?>"/>
         <table class="dp">
             <tr><?php foreach($csv->headers as $c =>$headerField) 
                     print "<th>".$headerField."</th>";

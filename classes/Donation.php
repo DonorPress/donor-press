@@ -375,10 +375,10 @@ class Donation extends ModelLite
                     foreach($donationsByType as $donations){
                         $donation=new Donation($donations[key($donations)]);
                         ?><tr>
-                            <td  rowspan="<?php print sizeof($donations)?>"><?php                        
+                            <td  rowspan="<?php print esc_html(sizeof($donations))?>"><?php                        
                                 print $donation->show_field('DonorId');
                             ?></td>                            
-                            <td rowspan="<?php print sizeof($donations)?>"><?php
+                            <td rowspan="<?php print esc_html(sizeof($donations))?>"><?php
                         if ($donors[$donation->DonorId]){
                             //print $donors[$donation->DonorId]->display_key()." ".
                             print $donors[$donation->DonorId]->name_check();
@@ -389,7 +389,7 @@ class Donation extends ModelLite
                         }
                     
                         ?></td>
-                        <td rowspan="<?php print sizeof($donations)?>"><?php print $donors[$donation->DonorId]?$donors[$donation->DonorId]->display_email('Email'):""?></td><?php
+                        <td rowspan="<?php print esc_html(sizeof($donations))?>"><?php print $donors[$donation->DonorId]?$donors[$donation->DonorId]->display_email('Email'):""?></td><?php
                         $count=0;
                         foreach($donations as $r){                          
                             if ($count>0){
@@ -1061,20 +1061,18 @@ class Donation extends ModelLite
                             print " ".QuickBooks::qbLink('Item',$QBItemId)." ";
                         }
                     }
-                    
-                   // print '<a href="?page=donor-quickbooks&syncDonation='.$this->DonationId.'">Sync Donation to an Invoice on QuickBooks</a>';
                     ?>
                     <button type="submit" name="syncDonationToInvoiceQB" value="t" style="background-color:lightgreen;">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="<?php print esc_url('?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId)?>">Ignore/Don't Sync to QB</a>
                     </form>
                     <?php
                 }elseif(!$this->QBOPaymentId){
                     print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
-                    print '<a href="?page=donor-quickbooks&syncDonationPaid='.$this->DonationId.'">Sync Payment to QuickBooks</a>';
+                    print '<a href="'.esc_url('?page=donor-quickbooks&syncDonationPaid='.$this->DonationId).'">Sync Payment to QuickBooks</a>';
                 }else{
                     print "<div>Invoice #".$this->show_field("QBOInvoiceId")." & Payment: ".$this->show_field("QBOPaymentId")." synced to Quickbooks.</div>";
                 }
             }elseif($donor->QuickBooksId==0){
-                print '<a href="?page=donor-quickbooks&syncDonorId='.$this->DonorId.'">Create Donor in QB</a> (before sending Invoice)';
+                print '<a href="'.esc_url('?page=donor-quickbooks&syncDonorId='.$this->DonorId).'">Create Donor in QB</a> (before sending Invoice)';
             }
         }
         //$receipts[0]->content

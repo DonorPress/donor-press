@@ -436,7 +436,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         <?php if (self::input('edit','request')){?> | <a href="<?php print esc_url('?page=donor-index&DonorId='.$this->DonorId)?>">View Donor</a> <?php }?>
          | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>        
     </form>                
-    <h1>Donor Profile #<?php print self::input('DonorId','request')?> <?php print esc_html($this->Name)?></h1>
+    <h1>Donor Profile #<?php print esc_html(self::input('DonorId','request').' '.$this->Name)?></h1>
     <?php
     }
     function name_combine(){
@@ -573,7 +573,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                     <tr>
                         <td><?php print esc_html($donor->show_field('DonorId'))?></td>
                         <td><?php print esc_html($donor->name_combine())?></td>
-                        <td><?php print esc_html($donor->display_email())?></td>    
+                        <td><?php print wp_kses_post($donor->display_email())?></td>    
                         <td><?php print esc_html($donor->phone())?></td> 
                         <td><?php print esc_html($donor->mailing_address(', ',false))?></td>
                         <td><?php print esc_html($donorTypes[$donor->TypeId])?></td>
@@ -624,7 +624,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             <tr>
                 <td><a target="donor" href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$r->DonorId)?>"><?php print esc_html($r->DonorId)?></a></td>
                 <td><?php print esc_html($donor->name_check())?></td>
-                <td><?php print esc_html($donor->display_email())?></td>    
+                <td><?php print wp_kses_post($donor->display_email())?></td>    
                 <td><?php print esc_html($donor->phone())?></td> 
                 <td><?php print esc_html($donor->mailing_address(', ',false,array('AddressValidate'=>true)))?></td> 
                 <td><?php print esc_html($donorTypes[$donor->TypeId])?></td>       
@@ -680,7 +680,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             <tr><td><a target="donor" href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$r->DonorId)?>"><?php print esc_html($r->DonorId)?></a> 
             <a target="donor" href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$r->DonorId)?>&edit=t">edit</a></td>
             <td><?php print esc_html($donor->name_check())?></td>
-            <td><?php print esc_html($donor->display_email())?></td> 
+            <td><?php print wp_kses_post($donor->display_email())?></td> 
             <td><?php print $donor->mailing_address("<br>",false)?></td>             
             <td><?php print esc_html($r->donation_count)?></td>
             <td align=right><?php print number_format($r->Total,2)?></td><td><a target="donor" href="<?php print esc_url('?page='.self::input('page','get').'&DonorId='.$r->DonorId.'&f=YearReceipt&Year='.$year)?>">Receipt</a></td>
@@ -868,22 +868,22 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         }
 
 
-        print "<div class='no-print'>".$homeLinks."</div>";
+        print "<div class='no-print'>".wp_kses_post($homeLinks)."</div>";
         print '<form method="post">';
-        print "<h2>".$this->emailBuilder->subject."</h2>";             
+        print "<h2>".esc_html($this->emailBuilder->subject)."</h2>";             
        
 
         wp_editor($bodyContent, 'customMessage',array("media_buttons" => false,"wpautop"=>false));
 
         
         ### Form View
-        print '<div class="no-print"><hr>Send Receipt to: <input type="email" name="Email" value="'.(self::input('Email','post')?self::input('Email','post'):$this->Email).'"/><button type="submit" name="Function" value="SendYearReceipt">Send E-mail</button>
+        print '<div class="no-print"><hr>Send Receipt to: <input type="text" name="Email" value="'.esc_html(self::input('Email','post')?self::input('Email','post'):$this->Email).'"/><button type="submit" name="Function" value="SendYearReceipt">Send E-mail</button>
         <button type="submit" name="Function" value="YearEndReceiptPdf">Generate PDF</button>';
        
         print DonationReceipt::show_results($receipts);
         print '</form>';
         if ($this->emailBuilder->pageID){
-            print '<div><a target="pdf" href="?page=donor-settings&tab=email&DonorTemplateId='.$this->emailBuilder->pageID.'&edit=t">Edit Template</a> | <a href="?page=donor-reports&DonorId='.$this->DonorId.'&f=YearReceipt&Year='.$year.'&resetLetter=t">Reset Letter</a></div>';      
+            print '<div><a target="pdf" href="'.esc_url('?page=donor-settings&tab=email&DonorTemplateId='.$this->emailBuilder->pageID.'&edit=t').'">Edit Template</a> | <a href="'.esc_url('?page=donor-reports&DonorId='.$this->DonorId.'&f=YearReceipt&Year='.$year.'&resetLetter=t').'">Reset Letter</a></div>';      
         }
 
         return true;
@@ -1022,14 +1022,14 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 		$SQL="SELECT DonorId,Name, Name2, Email, Phone FROM ".self::s()->get_table()." ".(sizeof($where)>0?" WHERE ".implode(" AND ",$where):"").($orderby?" ORDER BY ".$orderby:"")." LIMIT 10";
 
 		$all=self::db()->get_results($SQL);
-        print json_encode($all);
+        print wp_json_encode($all);
         exit();
         //wp_die(); 
 
 		// foreach($all as $r){
         //     $return[]=$r->Name;
         // }
-        // print json_encode($return);
+        // print wp_json_encode($return);
         // wp_die(); 
       
     }

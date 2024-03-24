@@ -38,7 +38,7 @@ $active_tab=Donor::show_tabs($tabs);
                 <div>
                 <input type="file" name="fileToUpload" accept=".json">
                 <button name="Function" value="RestoreDonorPress">Restore from File</button>
-                Server Upload Limit: <?php print ini_get("upload_max_filesize");?>  <em>Caution - will remove current Donor Press Data</em>
+                Server Upload Limit: <?php print esc_html(ini_get("upload_max_filesize"));?>  <em>Caution - will remove current Donor Press Data</em>
                 </div>
                 <hr>
                 <h2>Nuke Site</h2>
