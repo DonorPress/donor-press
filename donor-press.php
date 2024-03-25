@@ -37,8 +37,6 @@ https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-s
 add_action('admin_menu', 'donorpress_plugin_create_menu_entry');
 register_activation_hook( __FILE__, 'donorpress_plugin_create_tables' );
 
-
-
 function donorpress_header_check() {
 	global $donor_press_db_version;
 	if (!session_id()) session_start();

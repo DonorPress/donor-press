@@ -65,7 +65,15 @@ class ModelLite{
 		if($type=="base"){
 			return $base;
 		}
-		$pluginprefix="donorpress_";     
+		
+		switch($base){
+			case "posts": //using existing table in wordpress
+				$pluginprefix='';
+			break;
+			default:
+				$pluginprefix="donorpress_"; 
+			break;
+		}    
         return $wpdb->prefix.$pluginprefix.$base;
 	}
 
