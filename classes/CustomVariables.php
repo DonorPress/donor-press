@@ -3,19 +3,19 @@ namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 /* Utilizes Wordpresses Built in custom variables typically in the wp_options table.
 * Use wordpress funcitons to edit these
-* all custom variables shoudl ahve a "base" of donation, example donation_Organization
+* all custom variables shoudl ahve a "base" of 'donorpress', example 'donorpress_Organization'
 */
 
 class CustomVariables extends ModelLite
 {  
-    const base = 'donation';
+    const base = 'donorpress';
     const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","DefaultCountry","QuickbooksBase","GoogleCharts"];	
     const variables_protected = ["PaypalClientId","PaypalSecret","QuickbooksClientId","QuickbooksSecret"];
 
     const variables_manual=["DefaultQBItemId","QBPaymentMethod"];
     const partialTables = [
         ['TABLE'=>'posts','WHERE'=>"post_type='donortemplate'",'COLUMN_IGNORE'=>'ID'],
-        ['TABLE'=>'options','WHERE'=>"option_name LIKE 'donation_%'",'COLUMN_IGNORE'=>'option_id']
+        ['TABLE'=>'options','WHERE'=>"option_name LIKE 'donorpress_%'",'COLUMN_IGNORE'=>'option_id']
     ];
 
     static function get_option($option,$decode=false){
@@ -216,7 +216,7 @@ class CustomVariables extends ModelLite
                             $iSQL.=")";
                             $r++;
                         }
-                        //if ($json->TABLE=="donation_category") print $iSQL;
+                        //if ($json->TABLE=="donorpress_category") print $iSQL;
                         print "<div>Table: ".$wpdb->prefix.$json->TABLE." - Chunk size: ".sizeof($rows)."</div>";//<pre>".$iSQL."</pre>";
                         $wpdb->query($iSQL);
 
@@ -290,7 +290,7 @@ class CustomVariables extends ModelLite
         ?><h2>You are about to remove all donor/donations records from the database</h2>
         <div style='color:red;'>This will be permanent. Please back up anything important before proceeding.</div>
         <form method="post" action="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>">
-            <label><input type="checkbox" name="backup" value="t" checked>Backup Existing Donor Press Records to a flat file</label><br>  
+            <!-- <label><input type="checkbox" name="backup" value="t" checked>Backup Existing Donor Press Records to a flat file</label><br>   -->
             <label><input type="checkbox" name="droptable" value="t" checked>Drop All Tables Data and Structures (Donor, Donation, Categories)</label><br>           
             <label><input type="checkbox" name="dropfields" value="t" checked>Drop All Custom Fields (Letter Templates, settings)</label><br>
             <label><input type="checkbox" name="rebuild" value="true" checked>Recreate Tables (will be blank)</input></label><br>

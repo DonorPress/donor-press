@@ -795,8 +795,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         foreach(CustomVariables::variables as $var){
             if (substr($var,0,strlen("Quickbooks"))=="Quickbooks") continue;
             if (substr($var,0,strlen("Paypal"))=="Paypal") continue;
-            $body=str_replace("##".$var."##", get_option( 'donation_'.$var),$body);
-            $subject=str_replace("##".$var."##",get_option( 'donation_'.$var),$subject);                   
+            $body=str_replace("##".$var."##", get_option( CustomVariables::base.'_'.$var),$body);
+            $subject=str_replace("##".$var."##",get_option( CustomVariables::base.'_'.$var),$subject);                   
         }
 
         ### generated variables

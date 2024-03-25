@@ -47,7 +47,7 @@ function donorpress_header_check() {
 	
 	## When Code base is updated, make sure database upgrade is run
 	if (get_option( "donor_press_db_version")!=$donor_press_db_version){		
-		donor_press_upgrade();
+		donorpress_upgrade();
 	}
 
 	if (Donor::input('redirect','get')){

@@ -64,8 +64,9 @@ class ModelLite{
 		$base=strtolower(($this->table ?? class_basename($this)));
 		if($type=="base"){
 			return $base;
-		}      
-        return $wpdb->prefix.$base;
+		}
+		$pluginprefix="donorpress_";     
+        return $wpdb->prefix.$pluginprefix.$base;
 	}
 
 	static public function get_base_table(){

@@ -114,7 +114,7 @@ class DonorTemplate extends ModelLite {
                     if (substr($var,0,strlen("Quickbooks"))=="Quickbooks") continue;
                     if (substr($var,0,strlen("Paypal"))=="Paypal") continue;                    
                     ?>
-                <tr><td>##<?php print esc_html($var)?>##</td><td>Currently Set to: <strong><?php print get_option( 'donation_'.$var)?></strong></td></tr>
+                <tr><td>##<?php print esc_html($var)?>##</td><td>Currently Set to: <strong><?php print get_option( CustomVariables::base.'_'.$var)?></strong></td></tr>
                 <?php }
                 ?>
                 </table>
