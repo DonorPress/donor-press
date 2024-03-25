@@ -1,8 +1,7 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
-require_once 'Donor.php';
-require_once 'DonationCategory.php';
-require_once 'DonorTemplate.php';
+namespace DonorPress;
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
+
 class Donation extends ModelLite
 {
     protected $table = 'donation';
@@ -769,7 +768,7 @@ class Donation extends ModelLite
 
     function receipt_email(){
         if (isset($this->emailBuilder) && $this->emailBuilder) return;
-        $this->emailBuilder=new stdClass();
+        $this->emailBuilder=new \stdClass();
 
         if ($this->CategoryId){
             $page=DonationCategory::find($this->CategoryId)->getTemplate();

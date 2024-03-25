@@ -1,4 +1,5 @@
 <?php
+namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 ### Manages the Category of a Donation
 

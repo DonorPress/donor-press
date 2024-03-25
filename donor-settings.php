@@ -1,4 +1,13 @@
 <?php
+use DonorPress\Donation;
+use DonorPress\QuickBooks;
+use DonorPress\Donor;
+use DonorPress\DonorType;
+use DonorPress\DonationCategory;
+use DonorPress\DonationUpload;
+use DonorPress\DonorTemplate;
+use DonorPress\CustomVariables; 
+use DonorPress\Paypal;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
 ?>
 <style>
@@ -49,7 +58,6 @@ $active_tab=Donor::show_tabs($tabs);
                 <h2>Load Test Data</h2>
                 <button name="Function" value="LoadTestData">Load Test Records</button>  Records: <input type="number" name="records" value="20"/> - Useful for testing the plugin.
             </form><?php
-            //dd($files);
             break;
         case "cv":  
         default:

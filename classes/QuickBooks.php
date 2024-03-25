@@ -1,4 +1,5 @@
 <?php
+namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 use QuickBooksOnline\API\DataService\DataService;
 use QuickBooksOnline\API\Facades\Invoice;
@@ -16,7 +17,6 @@ use QuickBooksOnline\API\Data\IPPPayment;
 use QuickBooksOnline\API\Data\IPPLinkedTxn;
 //use QuickBooksOnline\API\Data\IPPPaymentLineDetail;
 
-require_once 'CustomVariables.php';
 // use QuickBooksOnline\API\Core\ServiceContext;
 // use QuickBooksOnline\API\PlatformService\PlatformService;
 // use QuickBooksOnline\API\Core\Http\Serialization\XmlObjectSerializer;
@@ -652,7 +652,7 @@ class QuickBooks extends ModelLite
         $payment->TotalAmt = $donation->Gross;
         $payment->CustomerRef = $donor->QuickBooksId;
         $payment->TxnDate = date('Y-m-d', strtotime($donation->DateDeposited));
-        //$payment->DepositToAccountRef =  1;// new stdClass() ->value=1
+        //$payment->DepositToAccountRef =  1;// new \stdClass() ->value=1
         $payment->ProcessPayment = false;
         $paymentMethodId=CustomVariables::get_option('QBPaymentMethod_'.$donation->PaymentSource);
         if ($paymentMethodId && $paymentMethodId>0){
@@ -1265,7 +1265,7 @@ class QuickBooks extends ModelLite
     }
     
     public function get_all_entity($table,$where=""){ //get past the max of 1000 entries on a query from QB
-        $return = new stdClass();
+        $return = new \stdClass();
         $max=1000;
         $return->count =$this->dataService->Query("SELECT count(*) FROM ".$table.($where?" WHERE ".$where:""));
         # get past Quickbook limit of 1000 results.
@@ -1283,7 +1283,7 @@ class QuickBooks extends ModelLite
     }
 
     static function customers_to_donor_hash($customer,$hash,$settings=[]){       
-        $return = new stdClass();
+        $return = new \stdClass();
         $return->match=[];
         $return->partial=[];
         $return->donorId=[];

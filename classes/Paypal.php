@@ -1,6 +1,6 @@
 <?php
+namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
-require_once 'CustomVariables.php';
 
 class Paypal extends ModelLite{
     var $token;

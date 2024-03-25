@@ -22,15 +22,15 @@ $donor_press_db_version='0.1.0';
 if (file_exists(__DIR__ . '/vendor/autoload.php')){
 	require_once __DIR__ . '/vendor/autoload.php';
 }
-require_once 'classes/Donation.php';
-require_once 'classes/Donor.php';
-require_once 'classes/DonorType.php';
-require_once 'classes/DonationCategory.php';
-require_once 'classes/DonationUpload.php';
-require_once 'classes/DonorTemplate.php';
-require_once 'classes/CustomVariables.php'; 
-require_once 'classes/QuickBooks.php';
-require_once 'classes/Paypal.php';
+use DonorPress\Donation;
+use DonorPress\QuickBooks;
+use DonorPress\Donor;
+use DonorPress\DonorType;
+use DonorPress\DonationCategory;
+use DonorPress\DonationUpload;
+use DonorPress\DonorTemplate;
+use DonorPress\CustomVariables; 
+use DonorPress\Paypal;
 /* Resources: 
 https://www.sitepoint.com/working-with-databases-in-wordpress/
 https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-scratch--net-2668
@@ -178,7 +178,8 @@ function donor_plugin_create_tables() {
 	global $donor_press_db_version;
 	$tableNames=donor_press_tables();
 	foreach($tableNames as $table){
-		$table::create_table();
+		$class="DonorPress\\".$table; 
+		$class::create_table();
 	}
 	add_option( "donor_press_db_version", $donor_press_db_version );
 }

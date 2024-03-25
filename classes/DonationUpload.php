@@ -1,8 +1,7 @@
 <?php
+namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
-require_once 'Donor.php';
-require_once 'DonationCategory.php';
-require_once 'DonorTemplate.php';
+
 class DonationUpload extends ModelLite
 {
     protected $paypal = ["Date","Time","TimeZone","Name","Type","Status","Currency","Gross","Fee","Net","From Email Address","To Email Address","Transaction ID","Address Status","Item Title","Item ID","Option 1 Name","Option 1 Value","Option 2 Name","Option 2 Value","Reference Txn ID","Invoice Number","Custom Number","Quantity","Receipt ID","Balance","Contact Phone Number","Subject","Note","Payment Source"];

@@ -1,4 +1,5 @@
 <?php
+namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 /* Utilizes Wordpresses Built in custom variables typically in the wp_options table.
 * Use wordpress funcitons to edit these
@@ -57,7 +58,7 @@ class CustomVariables extends ModelLite
                     <?php 
                     switch($var){
                         case "QuickbooksBase":
-                            if (!isset($vals->$fullVal)) $vals->$fullVal=new stdClass();
+                            if (!isset($vals->$fullVal)) $vals->$fullVal=new \stdClass();
                             ?>
                             <label><input type="radio" name="<?php print esc_attr($var)?>" value="Production"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value=="Production"?" checked":""?>> Production </label>
                             <label><input type="radio" name="<?php print esc_attr($var)?>" value="Development"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value!="Production"?" checked":""?>> Development </label>
@@ -66,7 +67,7 @@ class CustomVariables extends ModelLite
                             break;
                         case "GoogleCharts":
                             $dependancy="https://www.gstatic.com/charts/loader.js";
-                            if (!isset($vals->$fullVal)) $vals->$fullVal=new stdClass();
+                            if (!isset($vals->$fullVal)) $vals->$fullVal=new \stdClass();
                             ?>
                             <label><input type="radio" name="<?php print esc_attr($var)?>" value="<?php print esc_attr($dependancy)?>"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value==$dependancy?" checked":""?>> On</label>
                             <label><input type="radio" name="<?php print esc_attr($var)?>" value=""<?php print !isset($vals->$fullVal->option_value) || $vals->$fullVal->option_value==""?" checked":""?>> Off </label>
@@ -239,16 +240,17 @@ class CustomVariables extends ModelLite
         $fileName="DonorPressBackup-".str_replace(" ","_",$org).date("YmdHis").".json";
         $contents=wp_json_encode(["PLUGIN"=>"DonorPress","DBPREFIX"=>$wpdb->prefix,"VERSION"=>$donor_press_db_version,"ORG"=>self::get_org(),"URL"=>get_bloginfo('url')])."\n";
         foreach(donor_press_tables() as $table){
-            $records=[];           
-            $SQL="Select * FROM ".$table::get_table_name();
-            if(!$download) print "Backing up TABLE: ".$table::get_table_name()."<br>";           
+            $records=[];  
+            $class="DonorPress\\".$table;                     
+            $SQL="Select * FROM ".$class::get_table_name();
+            if(!$download) print "Backing up TABLE: ".$class::get_table_name()."<br>";           
             $results=$wpdb->get_results($SQL);
             foreach ($results as $r){ 
                 $c=(array)$r;                
                 $cols=array_keys($c);               
                 $records[]=array_values($c) ;  
             }
-            $contents.=wp_json_encode(["TABLE"=>$table::get_base_table(),"TABLE_SRC"=>$table::get_table_name(),'COLUMNS'=>$cols,'RECORDS'=>$records])."\n";
+            $contents.=wp_json_encode(["TABLE"=>$class::get_base_table(),"TABLE_SRC"=>$class::get_table_name(),'COLUMNS'=>$cols,'RECORDS'=>$records])."\n";
         }    
        
         foreach(self::partialTables as $a){
@@ -303,7 +305,8 @@ class CustomVariables extends ModelLite
         if ($post['backup']) self::backup(); //back it up to flat file before nuke
         if ($post['droptable']){
             foreach(donor_press_tables() as $table){
-                $SQL= "DROP TABLE IF EXISTS ".$table::get_table_name();
+                $class="DonorPress\\".$table; 
+                $SQL= "DROP TABLE IF EXISTS ".$class::get_table_name();
                 print $SQL."<br>";
                 self::db()->query($SQL);
             }

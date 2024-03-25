@@ -1,7 +1,6 @@
 <?php
+namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
-require_once 'ModelLite.php';
-require_once 'Donation.php';
 
 class DonationReceipt extends ModelLite {
     protected $table = 'donation_receipt';

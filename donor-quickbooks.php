@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
-require_once 'classes/QuickBooks.php';
+use DonorPress\QuickBooks;
 $qb=new QuickBooks();
 ?>
 <div id="pluginwrap">

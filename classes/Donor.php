@@ -1,8 +1,6 @@
 <?php
+namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
-require_once 'ModelLite.php';
-require_once 'Donation.php';
-require_once 'DonationReceipt.php';
 
 class Donor extends ModelLite {
     protected $table = 'donor';
@@ -752,7 +750,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
     function year_receipt_email($year){
-        $this->emailBuilder=new stdClass();
+        $this->emailBuilder=new \stdClass();
         $page = DonorTemplate::get_by_name('donor-receiptyear');  
         //$this->dump($page);
         if (!$page){ ### Make the template page if it doesn't exist.

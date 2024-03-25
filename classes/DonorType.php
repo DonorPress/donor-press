@@ -1,4 +1,5 @@
 <?php
+namespace DonorPress;
 ### Manages the Type of Donor
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 class DonorType extends ModelLite

@@ -1,4 +1,5 @@
 <?php
+namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 /*****
 Model Lite Class to make saves/inserts/updates/forms a tad easier to develop
@@ -542,7 +543,7 @@ class ModelLite{
 		?>
 		<div class="dp-tab-links">
 			<?php foreach ($tabs as $tab=>$label){
-				print '<a href="'.url_esc('?page='.self::input('page','get').'&tab='.$tab.'" class="tab'.($active_tab==$tab?" active":"")).'">'.esc_html($label).'</a>';			
+				print '<a href="'.esc_url('?page='.self::input('page','get').'&tab='.$tab).'" class="tab'.($active_tab==$tab?" active":"").'">'.esc_html($label).'</a>';			
 			}?>
 		</div>
 		<?php

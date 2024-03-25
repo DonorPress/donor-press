@@ -1,4 +1,14 @@
 <?php
+use DonorPress\Donation;
+use DonorPress\QuickBooks;
+use DonorPress\Donor;
+use DonorPress\DonorType;
+use DonorPress\DonationCategory;
+use DonorPress\DonationUpload;
+use DonorPress\DonorTemplate;
+use DonorPress\CustomVariables; 
+use DonorPress\Paypal;
+
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 ?>
 <div id="pluginwrap">

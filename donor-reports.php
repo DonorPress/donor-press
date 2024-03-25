@@ -1,4 +1,13 @@
 <?php
+use DonorPress\Donation;
+use DonorPress\QuickBooks;
+use DonorPress\Donor;
+use DonorPress\DonorType;
+use DonorPress\DonationCategory;
+use DonorPress\DonationUpload;
+use DonorPress\DonorTemplate;
+use DonorPress\CustomVariables; 
+use DonorPress\Paypal;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
 $tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression",'tax'=>"Tax"];
 $active_tab=Donor::show_tabs($tabs);

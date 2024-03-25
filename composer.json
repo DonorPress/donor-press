@@ -5,5 +5,10 @@
         "fzaninotto/faker": "^1.5",
         "dompdf/dompdf": "^2.0",
         "larapack/dd": "1.*"
-    }
+    },
+    "autoload": {
+        "psr-4": {
+           "DonorPress\\": "classes"
+        }
+     }
 }
