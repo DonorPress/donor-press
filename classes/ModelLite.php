@@ -370,23 +370,23 @@ class ModelLite{
 			case "QBOPaymentId":
 				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
 				if ($v==0) return "<span>Not Synced to QB</span>";
-				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Payment&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Payment',$v,'QB');
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donorpress-quickbooks&table=Payment&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Payment',$v,'QB');
 				break;	
 			case "QBOInvoiceId":
 				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
 				if ($v==0) return "<span>Not Synced to QB</span>";
-				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Invoice',$v,'QB');
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donorpress-quickbooks&table=Invoice&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Invoice',$v,'QB');
 			case "QuickBooksId":
 				if ($v==-1) return "<span style='color:red;'>Ignored</span>";
 				if ($v==0) return "<span>Not Synced to QB</span>";
-				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Customer',$v,'QB');
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donorpress-quickbooks&table=Customer&Id='.$v.'">'.$v.'</a> '.QuickBooks::qbLink('Customer',$v,'QB');
 			case "DonationId":
-				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonationId='.$v.'">'.$v.'</a>';
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donorpress-index&DonationId='.$v.'">'.$v.'</a>';
 			break;
 			case "MergedId":
-				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>';
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donorpress-index&DonorId='.$v.'">'.$v.'</a>';
 			case "DonorId":
-				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donor-index&DonorId='.$v.'">'.$v.'</a>'.(isset($settings['donationlink'])?' <a href="?page=donor-index&DonorId='.$v.'&f=AddDonation">+ Donation</a>':"");
+				return '<a '.(isset($settings['target'])?'target="'.$settings['target'].'"':"").'href="?page=donorpress-index&DonorId='.$v.'">'.$v.'</a>'.(isset($settings['donationlink'])?' <a href="?page=donorpress-index&DonorId='.$v.'&f=AddDonation">+ Donation</a>':"");
 			break;
 			case "Date":
 					return str_replace(" 00:00:00","",$v);
@@ -446,7 +446,7 @@ class ModelLite{
 
 	public function display_key(){
 		$primaryKey=$this->primaryKey;
-		return '<a href="?page=donor-index&'.$primaryKey.'='.$this->$primaryKey.'">'.$this->$primaryKey."</a> ";
+		return '<a href="?page=donorpress-index&'.$primaryKey.'='.$this->$primaryKey.'">'.$this->$primaryKey."</a> ";
 	}
 
 	public function display_email($fieldName='Email'){
@@ -552,7 +552,7 @@ class ModelLite{
 	}
 
 	static public function upload_dir(){		
-		$uploadDir=donor_press_upload_dir(wp_get_upload_dir());
+		$uploadDir=donorpress_upload_dir(wp_get_upload_dir());
         return $uploadDir['path']."/";
     }
 

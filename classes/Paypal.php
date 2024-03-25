@@ -48,7 +48,7 @@ class Paypal extends ModelLite{
             if ($json->error){              
                 $this->error="<strong>".$json->error.":</strong> ".$json->error_description;
                 if ($json->error=="invalid_client"){
-                    $this->error.=". Check your PaypalClientId and Paypal Secret. You may have to <a target='paypaltoken' href='https://developer.paypal.com/dashboard/applications/live'>create a new one here</a>. Once created, make sure it is <a target='paypaltoken' href='?page=donor-settings'>set here</a>.";
+                    $this->error.=". Check your PaypalClientId and Paypal Secret. You may have to <a target='paypaltoken' href='https://developer.paypal.com/dashboard/applications/live'>create a new one here</a>. Once created, make sure it is <a target='paypaltoken' href='?page=donorpress-settings'>set here</a>.";
                 }
                 self::display_error($this->error);
             }else{

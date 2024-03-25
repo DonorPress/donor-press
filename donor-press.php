@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Author URI:        https://donorpress.com/author/
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Update URI:        https://example.com/my-plugin/
+ * Update URI:        donor-press
  * Text Domain:       donor-press
  */
 
@@ -25,9 +25,6 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')){
 use DonorPress\Donation;
 use DonorPress\QuickBooks;
 use DonorPress\Donor;
-use DonorPress\DonorType;
-use DonorPress\DonationCategory;
-use DonorPress\DonationUpload;
 use DonorPress\DonorTemplate;
 use DonorPress\CustomVariables; 
 use DonorPress\Paypal;
@@ -37,20 +34,19 @@ https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-s
 */
 // it inserts the entry in the admin menu
 //wp_enqueue_style( 'style', get_stylesheet_uri() );
-add_action('admin_menu', 'donor_plugin_create_menu_entry');
-register_activation_hook( __FILE__, 'donor_plugin_create_tables' );
+add_action('admin_menu', 'donorpress_plugin_create_menu_entry');
+register_activation_hook( __FILE__, 'donorpress_plugin_create_tables' );
 
 
 
-function donor_header_check() {
+function donorpress_header_check() {
 	global $donor_press_db_version;
 	if (!session_id()) session_start();
 
-	require_once "donor-upgrade.php";	
+	require_once "donorpress-upgrade.php";	
 	
 	## When Code base is updated, make sure database upgrade is run
-	if (get_option( "donor_press_db_version")!=$donor_press_db_version){
-		require_once "donor-upgrade.php";
+	if (get_option( "donor_press_db_version")!=$donor_press_db_version){		
 		donor_press_upgrade();
 	}
 
@@ -101,7 +97,7 @@ function donor_header_check() {
 			case 'QuickbookSessionKill';
 				$qb=new QuickBooks();
 				$qb->clearSession();
-				return header("Location: ?page=donor-quickbooks");
+				return header("Location: ?page=donorpress-quickbooks");
 			break;
 		}
 	}
@@ -117,66 +113,62 @@ function donor_header_check() {
 }
 
 //wp_register_style( 'donorPressPluginStylesheet', plugins_url( '/css/style.css', __FILE__ ) );
-add_action( 'admin_init', 'donor_header_check',1);
+add_action( 'admin_init', 'donorpress_header_check',1);
 
 
 // creating the menu entries
-function donor_plugin_create_menu_entry() {
+function donorpress_plugin_create_menu_entry() {
 	// icon image path that will appear in the menu
 	$icon = plugins_url('/images/DonorPressWPIcon2.svg', __FILE__);
 	//add_menu_page( $page_title, $menu_title, $capability, $menu_slug, $function, $icon_url, $position );
 	// adding the main manu entry
-	add_menu_page('Donors', 'Donors', 'edit_posts', 'donor-index', 'donor_show_index', $icon);
+	add_menu_page('Donors', 'Donors', 'edit_posts', 'donorpress-index', 'donorpress_show_index', $icon);
 	// adding the sub menu entry
-	add_submenu_page( 'donor-index', 'Reports', 'Reports', 'edit_posts', 'donor-reports', 'donor_show_reports',2 );	
-	if (Quickbooks::is_setup())	add_submenu_page( 'donor-index', 'QuickBooks', 'QuickBooks', 'edit_posts', 'donor-quickbooks', 'donor_show_quickbooks',4);
-	if (Paypal::is_setup()) add_submenu_page( 'donor-index', 'Paypal', 'Paypal', 'edit_posts', 'donor-paypal', 'donor_show_paypal',4);
-	add_submenu_page( 'donor-index', 'Settings', 'Settings', 'edit_posts', 'donor-settings', 'donor_show_settings',5);
+	add_submenu_page( 'donorpress-index', 'Reports', 'Reports', 'edit_posts', 'donorpress-reports', 'donorpress_show_reports',2 );	
+	if (Quickbooks::is_setup())	add_submenu_page( 'donorpress-index', 'QuickBooks', 'QuickBooks', 'edit_posts', 'donorpress-quickbooks', 'donorpress_show_quickbooks',4);
+	if (Paypal::is_setup()) add_submenu_page( 'donorpress-index', 'Paypal', 'Paypal', 'edit_posts', 'donorpress-paypal', 'donorpress_show_paypal',4);
+	add_submenu_page( 'donorpress-index', 'Settings', 'Settings', 'edit_posts', 'donorpress-settings', 'donorpress_show_settings',5);
 }
 
 // function triggered in add_menu_page
-function donor_show_index() {
-	include('donor-index.php');
+function donorpress_show_index() {
+	include('donorpress-index.php');
 }
 
 // function triggered in add_submenu_page
-function donor_show_reports() {
-	include('donor-reports.php');
+function donorpress_show_reports() {
+	include('donorpress-reports.php');
 }
 
-function donor_show_settings() {
-	include('donor-settings.php');
+function donorpress_show_settings() {
+	include('donorpress-settings.php');
 }
 
-function donor_show_paypal() {
-	include('donor-paypal.php');
+function donorpress_show_paypal() {
+	include('donorpress-paypal.php');
 }
 
-function donor_show_quickbooks() {
-	include('donor-quickbooks.php');
+function donorpress_show_quickbooks() {
+	include('donorpress-quickbooks.php');
 }
 
 
-function dn_plugin_base_dir(){
+function donorpress_plugin_base_dir(){
 	return str_replace("\\","/",dirname(__FILE__));
 }
 
-function load_initial_data(){	
-	Donor::make_receipt_year_template();
-}
-
-function donor_press_tables(){
+function donorpress_tables(){
 	return ["Donor","Donation","DonationReceipt","DonationCategory","DonorType"];
 }
 
 
-function nuke(){
+function donorpress_nuke(){
 	CustomVariables::nuke_it(['droptable'=>"t",'dropfields'=>"t",'rebuild'=>"t"]);
 }
 
-function donor_plugin_create_tables() {	
+function donorpress_plugin_create_tables() {	
 	global $donor_press_db_version;
-	$tableNames=donor_press_tables();
+	$tableNames=donorpress_tables();
 	foreach($tableNames as $table){
 		$class="DonorPress\\".$table; 
 		$class::create_table();
@@ -201,7 +193,7 @@ function donor_plugin_create_tables() {
 // add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
 
 
-function donor_press_upload_dir( $dirs ) { 
+function donorpress_upload_dir( $dirs ) { 
 	//keep uploads in their own donorpress directory, outside normal uploads
 	$dirs['subdir'] = '/donorpress';
 	$dirs['path'] = $dirs['basedir'] . $dirs['subdir'];

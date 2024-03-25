@@ -1,13 +1,9 @@
 <?php
 use DonorPress\Donation;
-use DonorPress\QuickBooks;
 use DonorPress\Donor;
 use DonorPress\DonorType;
 use DonorPress\DonationCategory;
-use DonorPress\DonationUpload;
-use DonorPress\DonorTemplate;
 use DonorPress\CustomVariables; 
-use DonorPress\Paypal;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
 $tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression",'tax'=>"Tax"];
 $active_tab=Donor::show_tabs($tabs);
@@ -264,7 +260,7 @@ function report_tax(){
 	?><th>Total</th><th>Excess contributions (Total minus 2% limitation)</th></tr>
 	<?php
 	foreach($donors as $donorId => $a){
-		?><tr><td><?php print $a['info']->Name.($a['info']->Name2?" and ".$a['info']->Name2:"")?> (<a target="lookup" href="<?php print esc_url("?page=donor-index&DonorId=".$donorId)?>"><?php print esc_html($donorId)?></a>) 
+		?><tr><td><?php print $a['info']->Name.($a['info']->Name2?" and ".$a['info']->Name2:"")?> (<a target="lookup" href="<?php print esc_url("?page=donorpress-index&DonorId=".$donorId)?>"><?php print esc_html($donorId)?></a>) 
 		<a href="<?php print basename($_SERVER['REQUEST_URI'])?>&ignore[]=<?php print esc_attr($donorId)?>">ignore</a>
 		| <?php if (in_array($donorId,$unusual) ) print "<strong>Unusual Grant*</strong>";
 		else {?> <a href="<?php print basename($_SERVER['REQUEST_URI'])?>&unusual[]=<?php print esc_attr($donorId)?>">Unusual Grant</a>
@@ -522,7 +518,7 @@ function report_top($top=20){
 		<?php
 		foreach ($results as $r){
 			?><tr>
-				<td><a href="<?php print esc_url('?page=donor-index&DonorId='.$r->DonorId)?>"><?php print esc_html($r->Name)?></a></td>
+				<td><a href="<?php print esc_url('?page=donorpress-index&DonorId='.$r->DonorId)?>"><?php print esc_html($r->Name)?></a></td>
 				<td align=right><?php print number_format($r->Total)?></td>
 				<td align=right><?php print number_format($r->Average)?></td>
 				<td align=right><?php print esc_html($r->Count)?></td>
@@ -588,7 +584,7 @@ function donor_regression($where=[]){
 			$years=$donorYear[$donorId];
 			if ($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg']<0){
 			?><tr>
-				<td><?php print esc_html($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donor-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
+				<td><?php print esc_html($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donorpress-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
 				<td><?php print esc_html($donor[$donorId]->name_combine())?></td>
 				<td><?php print esc_html($donor[$donorId]->Email)?></td>
 				<?php foreach($allYears as $year=>$total) print "<td align=right>".number_format($years[$year])."</td>";
@@ -610,7 +606,7 @@ function donor_regression($where=[]){
 			$years=$donorCount[$donorId];
 			if ($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg']<0){
 			?><tr>
-				<td><?php print esc_html($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donor-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
+				<td><?php print esc_html($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donorpress-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
 				<td><?php print esc_html($donor[$donorId]->name_combine())?></td>
 				<td><?php print esc_html($donor[$donorId]->Email)?></td>
 				<?php foreach($allYears as $year=>$total) print "<td align=right>".number_format($years[$year])."</td>";

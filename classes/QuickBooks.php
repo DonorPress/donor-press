@@ -96,7 +96,7 @@ class QuickBooks extends ModelLite
     }
 
     static public function qb_api_installed(){
-        return file_exists(dn_plugin_base_dir()."/vendor/quickbooks");
+        return file_exists(donorpress_plugin_base_dir()."/vendor/quickbooks");
        //return class_exists('DataService');
     }
 
@@ -182,7 +182,7 @@ class QuickBooks extends ModelLite
                     }
                     //dd($this->fieldLinks[$field],$table,$tableField);
 
-                    print '<a target="QBdetail" href="'.url_esc('?page=donor-quickbooks&table='.$table.'&Id='.$value).'">'.esc_html($value)."</a> ".self::qbLink($table,$value,'QB');
+                    print '<a target="QBdetail" href="'.url_esc('?page=donorpress-quickbooks&table='.$table.'&Id='.$value).'">'.esc_html($value)."</a> ".self::qbLink($table,$value,'QB');
                 }else print $value;
                 print "</td></tr>"; //rewrite this to use: $this->showQBfield($entity,$field)  -
             }
@@ -612,7 +612,7 @@ class QuickBooks extends ModelLite
 
         $QBItemId=$this->default_item_id($donation,$donor);
         if (!$QBItemId){
-            self::display_error("Quickbook <a href='?page=donor-settings'>Default Item Id Not Set</a> and <a href='?page=donor-settings&tab=type'>Donor Type</a> not set.");
+            self::display_error("Quickbook <a href='?page=donorpress-settings'>Default Item Id Not Set</a> and <a href='?page=donorpress-settings&tab=type'>Donor Type</a> not set.");
             return;
         }
 
@@ -770,7 +770,7 @@ class QuickBooks extends ModelLite
 
     public function show(){
         if ($this->authenticate()){
-            self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donor-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");            
+            self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donorpress-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");            
             if (self::input('debug','get')){
                 $this->debug();
                 return;
@@ -821,7 +821,7 @@ class QuickBooks extends ModelLite
                                 ?><tr>
                                     <td><input type="checkbox" name="match[<?php print esc_html($cId)?>]" value="<?php print esc_attr($donorId)?>"<?php if ($i==0) print " checked"?>></td>
                                 <?php if ($i==0){?>
-                                    <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a>".self::qbLink('Customer',$cId,'QB')."  - ".$customer[$cId]->FullyQualifiedName?></td>
+                                    <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donorpress-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a>".self::qbLink('Customer',$cId,'QB')."  - ".$customer[$cId]->FullyQualifiedName?></td>
                                 <?php } ?>  
                                 <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td><td><?php print implode(", ",array_keys($matchedOn));?></td></tr><?php
                                 $i++;
@@ -836,7 +836,7 @@ class QuickBooks extends ModelLite
                     <table class="dp"><tr><th>&#8592;</th><th>QuickBooks</th><th>Link to Donor Id</th><th>Partial matches</th></tr>                  
                     <?php
                     foreach($notFound as $cId){ ?>
-                        <tr><td>&#8592;</td><td><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.esc_html($cId)."</a> ".wp_kses_post(self::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId]))?></td>
+                        <tr><td>&#8592;</td><td><?php print '<a href="'.esc_url('?page=donorpress-quickbooks&table=Customer&Id='.$cId).'">'.esc_html($cId)."</a> ".wp_kses_post(self::qbLink('Customer',$cId,'QB')."- ".self::show_customer_name($customer[$cId]))?></td>
                         <td><input type="number" id="match_<?php print esc_html($cId)?>" name="match[<?php print esc_html($cId)?>]" value="" step=1></td>
                         <td><?php
                         if ($match->partial[$cId]){
@@ -874,7 +874,7 @@ class QuickBooks extends ModelLite
                                 foreach($donorIds as $donorId){
                                     ?><tr>                                
                                     <?php if ($i==0){?>
-                                        <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donor-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a> ".self::qbLink('Customer',$cId,'QB')." - ".self::show_customer_name($customer[$cId])?></td>
+                                        <td rowspan="<?php print esc_html(sizeof($donorIds))?>"><?php print '<a href="'.esc_url('?page=donorpress-quickbooks&table=Customer&Id='.$cId).'">'.$cId."</a> ".self::qbLink('Customer',$cId,'QB')." - ".self::show_customer_name($customer[$cId])?></td>
                                     <?php } ?>  
                                     <td><?php print $donors[$donorId]->show_field('DonorId')." - ".$donors[$donorId]->name_combine();?></td></tr><?php
                                     $i++;
@@ -893,11 +893,11 @@ class QuickBooks extends ModelLite
                 if (self::input('Id','get')){
                     $entity=$this->dataService->FindById(self::input('table','get'), self::input('Id','get'));
                     if($this->check_dateService_error()){
-                        print "<div><a href='?page=donor-quickbooks&table=".self::input('table','get')."'>Back to ".self::input('table','get')." list</a></div>
+                        print "<div><a href='?page=donorpress-quickbooks&table=".self::input('table','get')."'>Back to ".self::input('table','get')." list</a></div>
                         <h3>".self::input('table','get')." #".self::input('Id','get')."</h3>";
                         if (self::input('edit','get')){
                             print "                        
-                            <form method='post' action='?page=donor-quickbooks&table=".self::input('table','get')."&Id=".self::input('Id','get')."'>
+                            <form method='post' action='?page=donorpress-quickbooks&table=".self::input('table','get')."&Id=".self::input('Id','get')."'>
                             <input type='hidden' name='quickbooks_table' value='".self::input('table','get')."'/>
                             <input type='hidden' name='quickbooks_id' value='".self::input('Id','get')."'/>
                             <table class=\"dp\">";
@@ -908,7 +908,7 @@ class QuickBooks extends ModelLite
 
                         }else{
                             print "
-                            <div><a href='?page=donor-quickbooks&table=".self::input('table','get')."&Id=".self::input('Id','get')."&edit=t'>edit</a></div>
+                            <div><a href='?page=donorpress-quickbooks&table=".self::input('table','get')."&Id=".self::input('Id','get')."&edit=t'>edit</a></div>
                             <table class=\"dp\">";
                             $notset=$this->display_line('',$entity,$entity);                        
                             print "</table>";
@@ -932,14 +932,14 @@ class QuickBooks extends ModelLite
 
                     switch(self::input('table','get')){
                         case "Payment":
-                            print "<div><a href='?page=donor-quickbooks&table=".self::input('table','get')."&Report=UnMatched'>Show all unmatched Payments</a></div>";
+                            print "<div><a href='?page=donorpress-quickbooks&table=".self::input('table','get')."&Report=UnMatched'>Show all unmatched Payments</a></div>";
                         break;
                     }
 
                     $entities =$this->dataService->Query("SELECT * FROM ".self::input('table','get')." STARTPOSITION ".(($index-1)*$max)." MAXRESULTS ".$max);
                     //dd($count,$entities,"SELECT * FROM ".self::input('table','get')." STARTPOSITION ".($index*$max)." MAXRESULTS ".$max);
                     if($this->check_dateService_error()){
-                        print "<div><a href='?page=donor-quickbooks'>Back to Quickbook list</a></div>
+                        print "<div><a href='?page=donorpress-quickbooks'>Back to Quickbook list</a></div>
                         <h3>".self::input('table','get')." List <span style=\"font-size:60%\">- ".($entities?sizeof($entities).($count!=sizeof($entities)?" of ". $count:""):0)." Entries</span></h3>";
                         if (!$entities || sizeof($entities)==0){
                             self::display_error("No Results Found");
@@ -955,7 +955,7 @@ class QuickBooks extends ModelLite
                         ?></tr>
                         <?php
                         foreach ($entities as $entity){                                                      
-                            ?><tr><td><a href="<?php print esc_url('?page=donor-quickbooks&table='.self::input('table','get').'&Id='.$entity->Id)?>"><?php print esc_html($entity->Id)?></a></td><?php 
+                            ?><tr><td><a href="<?php print esc_url('?page=donorpress-quickbooks&table='.self::input('table','get').'&Id='.$entity->Id)?>"><?php print esc_html($entity->Id)?></a></td><?php 
                             if (is_array($field)){
                                 foreach($field as $f)  print "<td>".$this->showQBfield($entity,$f)."</td>"; //show
 
@@ -978,7 +978,7 @@ class QuickBooks extends ModelLite
                 <div><a href="<?php print esc_url('?page='.self::input('page','get').'&syncDonorsToQB=t')?>">Sync Donors to QuickBooks</a></div>           
                 <h3>View</h3>
                  <?php foreach ($this->QBtables as $tbl=>$key){ ?>
-                    <div><a href="<?php print esc_url('?page=donor-quickbooks&table='.$tbl)?>"><?php print esc_html($tbl)?></a></div>
+                    <div><a href="<?php print esc_url('?page=donorpress-quickbooks&table='.$tbl)?>"><?php print esc_html($tbl)?></a></div>
                  <?php 
                  }  
                          
@@ -1021,13 +1021,13 @@ class QuickBooks extends ModelLite
 
     function showQBfieldLinkB($table,$value){
         if ($value && $this->fieldLinks[$field]){
-            $result='<a target="QBdetail" href="?page=donor-quickbooks&table='.$table.'&Id='.$value.'">'.$value."</a>";
+            $result='<a target="QBdetail" href="?page=donorpress-quickbooks&table='.$table.'&Id='.$value.'">'.$value."</a>";
             return $result;
         }else return $value;
     }
 
     function showQBfieldLink($table,$value){
-        return '<a target="QBdetail" href="?page=donor-quickbooks&table='.$table.'&Id='.$value.'">'.$value."</a>";
+        return '<a target="QBdetail" href="?page=donorpress-quickbooks&table='.$table.'&Id='.$value.'">'.$value."</a>";
     }
 
     static function show_customer_name($c){
@@ -1090,7 +1090,7 @@ class QuickBooks extends ModelLite
 
     public function authorizeRedirect(){ //Captures variables returned, stores them as session variables, and then redirects to main page
         $this->requestToSession();  
-        return header("Location: ?page=donor-quickbooks");
+        return header("Location: ?page=donorpress-quickbooks");
     }
 
     public function requestToSession(){ 
@@ -1131,7 +1131,7 @@ class QuickBooks extends ModelLite
     }
 
     public function missing_api_error(){
-        self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".self::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donor-settings'>paste them in the settings</a>.");
+        self::display_error("Quickbook API Client/Password not setup. Create a <a target='quickbooktoken' href='".self::SETTING_URL."'>Client/Password on QuickBooks Developer</a> first, and then <a href='?page=donorpress-settings'>paste them in the settings</a>.");
     }
 
     public function missing_class_error(){
@@ -1204,14 +1204,14 @@ class QuickBooks extends ModelLite
                 if($donation->QBOPaymentId){     
                     print " | <strong>Payment</strong>: ".$donation->show_field("QBOPaymentId")." synced to QB";                             
                 }else{
-                    print ' | <a style="background-color:lightgreen;" target="QB" href="?page=donor-quickbooks&syncDonationPaid='.$donation->DonationId.'">Sync Payment to QuickBooks</a>';
+                    print ' | <a style="background-color:lightgreen;" target="QB" href="?page=donorpress-quickbooks&syncDonationPaid='.$donation->DonationId.'">Sync Payment to QuickBooks</a>';
                 }
             }elseif($donor->QuickBooksId>0){ //dont' create on ignored entries.
                 $return['newInvoicesFromDonation'][]=$donation->DonationId;
-                print ' | <button type="button" style="background-color:lightgreen;" onclick="syncDonationToQb(\''.$donation->DonationId.'\');">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId.'">Ignore/Don\'t Sync to QB</a>';
+                print ' | <button type="button" style="background-color:lightgreen;" onclick="syncDonationToQb(\''.$donation->DonationId.'\');">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="?page=donorpress-quickbooks&ignoreSyncDonation='.$donation->DonationId.'">Ignore/Don\'t Sync to QB</a>';
             }
         }else{
-            print '<a style="background-color:lightgreen;" target="QB" href="'.esc_url('?page=donor-quickbooks&syncDonorId='.$donation->DonorId).'">Create Donor in QB</a>';
+            print '<a style="background-color:lightgreen;" target="QB" href="'.esc_url('?page=donorpress-quickbooks&syncDonorId='.$donation->DonorId).'">Create Donor in QB</a>';
             $return['newCustomerFromDonor'][]=$donation->DonorId;              
         }
         return  $return;      
@@ -1343,7 +1343,7 @@ class QuickBooks extends ModelLite
                 return '<a target="QB" href="'.esc_url(self::get_QB_url().'app/customerdetail?nameId='.$v).'">'.esc_html($labelOverride).'</a>';
                 break;
             case "Item": //not currently linkable
-                return '<a target="QB" href="'.esc_url('?page=donor-quickbooks&table=Item&Id='.$v).'">'.esc_html($labelOverride).'</a>';
+                return '<a target="QB" href="'.esc_url('?page=donorpress-quickbooks&table=Item&Id='.$v).'">'.esc_html($labelOverride).'</a>';
                
                 //return $labelOverride; //return '<a target="QB" href="'.self::get_QB_url().'app/items?itemId='.$v.'">'.$labelOverride.'</a>';
                 break;

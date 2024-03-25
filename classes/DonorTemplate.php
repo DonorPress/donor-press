@@ -108,7 +108,7 @@ class DonorTemplate extends ModelLite {
                 <tr><td>##Year##</td><td>Year being summarized</td></tr>    
                 <tr><td>##Date## </td><td>Today's date</td></tr>        
 
-                <tr><th colspan=2>Setting Fields - <a target="settings" href="?page=donor-settings&tab=cv">edit these here</a></th></tr>
+                <tr><th colspan=2>Setting Fields - <a target="settings" href="?page=donorpress-settings&tab=cv">edit these here</a></th></tr>
                 <?php
                 foreach(CustomVariables::variables as $var){
                     if (substr($var,0,strlen("Quickbooks"))=="Quickbooks") continue;

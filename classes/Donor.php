@@ -182,7 +182,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         print "<h2>The following changes are suggested</h2><form method='post'>";
         print "<table border='1'><tr><th>#</th><th>Name</th><th>Change</th></tr>";
         foreach ($suggest_donor_changes as $donorId => $changes){
-            print "<tr><td><a target='lookup' href='?page=donor-index&DonorId=".$donorId."'>".$donorId."</td><td>".$changes['Name']['c']."</td><td>";
+            print "<tr><td><a target='lookup' href='?page=donorpress-index&DonorId=".$donorId."'>".$donorId."</td><td>".$changes['Name']['c']."</td><td>";
             foreach($changes as $field=>$values){
                if (isset($values['n'])){                               
                    //krsort($values['n']);
@@ -202,7 +202,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         }
         print "</table><button type='submit' name='Function' value='MakeDonorChanges'>Make Donor Changes</button></form>";
         print "<hr>";
-        print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeProcessed)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeProcessed)."'>View Summary</a></div>";
+        print "<div><a target='viewSummary' href='?page=donorpress-reports&UploadDate=".date("Y-m-d H:i:s",$timeProcessed)."'>View All</a> | <a target='viewSummary' href='?page=donorpress-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeProcessed)."'>View Summary</a></div>";
    
     }
 
@@ -293,7 +293,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     function quick_books_link(){
         if (CustomVariables::get_option('QuickbooksClientId',true)){
             if (!$this->QuickBooksId){                
-                print "<div><a href='?page=donor-quickbooks&syncDonorId=".$this->DonorId."'>Sync Donor to Quickbooks</a></div>";
+                print "<div><a href='?page=donorpress-quickbooks&syncDonorId=".$this->DonorId."'>Sync Donor to Quickbooks</a></div>";
             }
         }
     }
@@ -431,7 +431,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         <form method="get">
         <input type="hidden" name="page" value="<?php print self::input('page','get')?>"/>
         <div><a href="<?php print esc_url('?page='.self::input('page','get'))?>">Home</a> 
-        <?php if (self::input('edit','request')){?> | <a href="<?php print esc_url('?page=donor-index&DonorId='.$this->DonorId)?>">View Donor</a> <?php }?>
+        <?php if (self::input('edit','request')){?> | <a href="<?php print esc_url('?page=donorpress-index&DonorId='.$this->DonorId)?>">View Donor</a> <?php }?>
          | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>        
     </form>                
     <h1>Donor Profile #<?php print esc_html(self::input('DonorId','request').' '.$this->Name)?></h1>
@@ -756,7 +756,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         if (!$page){ ### Make the template page if it doesn't exist.
             self::make_receipt_year_template();
             $page = DonorTemplate::get_by_name('donor-receiptyear');  
-            self::display_notice("Page /donor-receiptyear created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+            self::display_notice("Page /donor-receiptyear created. <a target='edit' href='?page=donorpress-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
         $total=0;
@@ -834,7 +834,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $c++;
         }
         if (sizeof($variableNotFilledOut)>0){
-            self::display_error("The Following Variables need manually changed:<ul><li>##".implode("##</li><li>##",array_keys($variableNotFilledOut))."##</li></ul> Please <a target='pdf' href='?page=donor-settings&tab=email&DonorTemplateId=".$this->emailBuilder->pageID."&edit=t'>correct template</a>.");
+            self::display_error("The Following Variables need manually changed:<ul><li>##".implode("##</li><li>##",array_keys($variableNotFilledOut))."##</li></ul> Please <a target='pdf' href='?page=donorpress-settings&tab=email&DonorTemplateId=".$this->emailBuilder->pageID."&edit=t'>correct template</a>.");
         }
     }
 
@@ -861,7 +861,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         }else{
             $bodyContent=$receipts[$lastReceiptKey]->Content?$receipts[$lastReceiptKey]->Content:$this->emailBuilder->body;
             if ($receipts &&$bodyContent!=$this->emailBuilder->body){
-                $homeLinks.= "| <a href='?page=donor-index&DonorId=".self::input('DonorId','request')."&f=YearReceipt&Year=".self::input('Year')."&reset=t'>Update/Reset Letter with latest information</a>";
+                $homeLinks.= "| <a href='?page=donorpress-index&DonorId=".self::input('DonorId','request')."&f=YearReceipt&Year=".self::input('Year')."&reset=t'>Update/Reset Letter with latest information</a>";
             }
         }
 
@@ -881,7 +881,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         print DonationReceipt::show_results($receipts);
         print '</form>';
         if ($this->emailBuilder->pageID){
-            print '<div><a target="pdf" href="'.esc_url('?page=donor-settings&tab=email&DonorTemplateId='.$this->emailBuilder->pageID.'&edit=t').'">Edit Template</a> | <a href="'.esc_url('?page=donor-reports&DonorId='.$this->DonorId.'&f=YearReceipt&Year='.$year.'&resetLetter=t').'">Reset Letter</a></div>';      
+            print '<div><a target="pdf" href="'.esc_url('?page=donorpress-settings&tab=email&DonorTemplateId='.$this->emailBuilder->pageID.'&edit=t').'">Edit Template</a> | <a href="'.esc_url('?page=donorpress-reports&DonorId='.$this->DonorId.'&f=YearReceipt&Year='.$year.'&resetLetter=t').'">Reset Letter</a></div>';      
         }
 
         return true;
@@ -891,7 +891,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         if (!Donation::pdf_class_check()) return false;        
         $this->year_receipt_email($year);
         ob_clean();
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
         $pdf->SetMargins($margin,$margin,$margin);
         $html="<h2>".$this->emailBuilder->subject."</h2>".$customMessage?$customMessage:$this->emailBuilder->body;
@@ -899,10 +899,9 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
         $pdf->AddPage();
-        $pdf->writeHTML($html, true, false, true, false, '');
-        $f=$this->receipt_file_info($year);
-        $file="YearEndReceipt-".$year."-D".$this->DonorId.".pdf";
-        $path=$f['path'];
+        $pdf->writeHTML($html, true, false, true, false, '');  
+        $file=$this->receipt_file_info($year);    
+        
 
         $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"m","Address"=>$this->mailing_address(),"Subject"=>$this->emailBuilder->subject,"Content"=>$html,"DateSent"=>date("Y-m-d H:i:s")));
 		$dr->save();  
@@ -926,7 +925,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             }
             $donorList=self::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
             ob_clean();
-            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);            
+            $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);            
             $pdf->setPrintHeader(false);
             $pdf->setPrintFooter(false); 				
             foreach ($donorList as $donor){
@@ -972,7 +971,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $margin['x']=13.5;// 3/16th x
         $margin['y']=.5*$dpi;
         ob_clean();
-        $pdf = new TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false); 
+        $pdf = new \TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false); 
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false); 	
@@ -1003,10 +1002,8 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     }
 
 
-    function receipt_file_info($year){
-        $file=substr(str_replace(" ","",get_bloginfo('name')),0,12)."-D".$this->DonorId.'-'.$year.'.pdf';
-        $link=dn_plugin_base_dir()."/resources/".$file; //Not acceptable on live server... May need to scramble code name on file so it isn't guessale.
-        return array('path'=>$link,'file'=>$file,'link'=>$link);
+    function receipt_file_info($year){            
+        return substr(str_replace(" ","",get_bloginfo('name')),0,12)."-YearEndReceipt-D".$this->DonorId.'-'.$year.'.pdf';
     }
 
     static function autocomplete($query){       
@@ -1035,7 +1032,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     static function make_receipt_year_template(){
         $page = DonorTemplate::get_by_name('donor-receiptyear');  
         if (!$page){
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_year.html";   
+            $tempLoc=donorpress_plugin_base_dir()."/resources/template_default_receipt_year.html";   
             $t=new selfTemplate();          
             $t->post_content=file_get_contents($tempLoc);            
             $t->post_title='##Organization## ##Year## Year End Receipts';
@@ -1063,9 +1060,9 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $match= $stats['e'][strtolower($r->Email)];
             if ($match->Address1 && !$r->Address1){            
                 ?><tr>
-                    <td><a target='match' href="<?php print esc_url('?page=donor-index&DonorId='.$r->DonorId)?>"><?php print esc_html($r->DonorId)?></a> - <?php print  esc_html($r->Name)?></td><td><?php print esc_html($r->Address1)?></td>
-                    <td><a target='match' href="<?php print esc_url('?page=donor-index&DonorId='.$match->DonorId)?>"><?php print esc_html($match->DonorId)?></a> -<?php print  esc_html($match->Name)?></td><td><?php print  esc_html($match->Address1)?></td>
-                    <td><a target='match' href='<?php print esc_url('?page=donor-index&Function=MergeConfirm&MergeFrom='.$match->DonorId.'&MergedId='.$r->DonorId)?>'><-Merge</a></td></tr><?php
+                    <td><a target='match' href="<?php print esc_url('?page=donorpress-index&DonorId='.$r->DonorId)?>"><?php print esc_html($r->DonorId)?></a> - <?php print  esc_html($r->Name)?></td><td><?php print esc_html($r->Address1)?></td>
+                    <td><a target='match' href="<?php print esc_url('?page=donorpress-index&DonorId='.$match->DonorId)?>"><?php print esc_html($match->DonorId)?></a> -<?php print  esc_html($match->Name)?></td><td><?php print  esc_html($match->Address1)?></td>
+                    <td><a target='match' href='<?php print esc_url('?page=donorpress-index&Function=MergeConfirm&MergeFrom='.$match->DonorId.'&MergedId='.$r->DonorId)?>'><-Merge</a></td></tr><?php
             }
             $current[$r->DonorId]=$r;
             $match->DonorId=$r->DonorId;
@@ -1084,7 +1081,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
     //     WHERE D.Email<>'' AND D.EmailStatus=1 AND D.MergedId=0        
     //     Group BY D.DonorId, D.Name, D.Name2,`Email` Order BY D.Name";
     //     $results = self::db()->get_results($SQL);
-    //     $fp = fopen(dn_plugin_base_dir()."/resources/email_list.csv", 'w');
+    //     $fp = fopen(donorpress_plugin_base_dir()."/resources/email_list.csv", 'w');
     //     fputcsv($fp, array_keys((array)$results[0]));//write first line with field names
     //     foreach ($results as $r){
     //         fputcsv($fp, (array)$r);
@@ -1144,17 +1141,17 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             <table border=1><th>Donor</th><th>Merge To</th></tr><?php
             foreach($merge as $from=>$to){
                 print '<tr><td>';              
-                print '<div><a target="donor" href="?page=donor-index&DonorId='.$donors[$from]->DonorId.'">'.$donors[$from]->DonorId.'</a> '.$donors[$from]->Name.' (merged id: '.$donors[$from]->MergedId.') <a target="donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$from]->DonorId.'&MergedId='.$donors[$to]->DonorId.'">Merge To -></a></div>';   
+                print '<div><a target="donor" href="?page=donorpress-index&DonorId='.$donors[$from]->DonorId.'">'.$donors[$from]->DonorId.'</a> '.$donors[$from]->Name.' (merged id: '.$donors[$from]->MergedId.') <a target="donor" href="?page=donorpress-index&Function=MergeConfirm&MergeFrom='.$donors[$from]->DonorId.'&MergedId='.$donors[$to]->DonorId.'">Merge To -></a></div>';   
                           
-                print '</td><td><a target="donor" href="?page=donor-index&DonorId='.$donors[$to]->DonorId.'">'.$donors[$to]->DonorId.'</a> '.$donors[$to]->Name."</td></tr>";
+                print '</td><td><a target="donor" href="?page=donorpress-index&DonorId='.$donors[$to]->DonorId.'">'.$donors[$to]->DonorId.'</a> '.$donors[$to]->Name."</td></tr>";
             }
             foreach($cache as $key=>$a){
                 if (sizeof($a)>1){                  
                     print '<tr><td>';
                     for($i=1;$i<sizeof($a);$i++){
-                        print '<div><a target="donor" href="?page=donor-index&DonorId='.$donors[$a[$i]]->DonorId.'">'.$donors[$a[$i]]->DonorId.'</a> '.$donors[$a[$i]]->Name.($donors[$a[$i]]->Name2?" & ".$donors[$a[$i]]->Name2:"").' <a target="donor" href="?page=donor-index&Function=MergeConfirm&MergeFrom='.$donors[$a[$i]]->DonorId.'&MergedId='.$donors[$a[0]]->DonorId.'">Merge To -></a></div>';   
+                        print '<div><a target="donor" href="?page=donorpress-index&DonorId='.$donors[$a[$i]]->DonorId.'">'.$donors[$a[$i]]->DonorId.'</a> '.$donors[$a[$i]]->Name.($donors[$a[$i]]->Name2?" & ".$donors[$a[$i]]->Name2:"").' <a target="donor" href="?page=donorpress-index&Function=MergeConfirm&MergeFrom='.$donors[$a[$i]]->DonorId.'&MergedId='.$donors[$a[0]]->DonorId.'">Merge To -></a></div>';   
                     }                 
-                    print '</td><td><a target="donor" href="?page=donor-index&DonorId='.$donors[$a[0]]->DonorId.'">'.$donors[$a[0]]->DonorId.'</a> '.$donors[$a[0]]->Name.($donors[$a[0]]->Name2?" & ".$donors[$a[0]]->Name2:"")."</td></tr>";
+                    print '</td><td><a target="donor" href="?page=donorpress-index&DonorId='.$donors[$a[0]]->DonorId.'">'.$donors[$a[0]]->DonorId.'</a> '.$donors[$a[0]]->Name.($donors[$a[0]]->Name2?" & ".$donors[$a[0]]->Name2:"")."</td></tr>";
                 }
             }
             ?></table><?php

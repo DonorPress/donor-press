@@ -451,8 +451,8 @@ class Donation extends ModelLite
                         if ($r->ReceiptType){
                             print "Sent: ".$r->ReceiptType." ".$r->Address;
                         }else{
-                            ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print esc_attr($donation->DonationId)?>" checked/> <a target="donation" href="<?php print esc_url('?page=donor-index&DonationId='.$donation->DonationId)?>">Custom Response</a><?php
-                        }?></td><td><?php print esc_html($donation->display_key())?></td><td><?php print esc_html($donation->Date)?></td><td <?php print ($donorCount[$donation->DonorId]==1?" style='background-color:orange;'":"")?>><?php
+                            ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print esc_attr($donation->DonationId)?>" checked/> <a target="donation" href="<?php print esc_url('?page=donorpress-index&DonationId='.$donation->DonationId)?>">Custom Response</a><?php
+                        }?></td><td><?php print wp_kses_post($donation->display_key())?></td><td><?php print esc_html($donation->Date)?></td><td <?php print ($donorCount[$donation->DonorId]==1?" style='background-color:orange;'":"")?>><?php
                         if ($donors[$donation->DonorId]){
                             print $donors[$donation->DonorId]->display_key()." ".$donors[$donation->DonorId]->name_check();
                         }else print $donation->DonorId;
@@ -674,9 +674,9 @@ class Donation extends ModelLite
     public function full_view(){?>
         <div>
             <form method="get">
-                <input type="hidden" name="page" value="donor-index"/>
+                <input type="hidden" name="page" value="donorpress-index"/>
                 <div><a href="<?php print esc_url('?page='.self::input('page','get'))?>">Home</a> |
-                <a href="<?php print esc_url('?page=donor-index&DonorId='.$this->DonorId)?>">View Donor</a> | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>
+                <a href="<?php print esc_url('?page=donorpress-index&DonorId='.$this->DonorId)?>">View Donor</a> | Donor Search: <input id="donorSearch" name="dsearch" value=""> <button>Go</button></div>
             </form>
             <h1>Donation #<?php print $this->DonationId?$this->DonationId:"Not Found"?></h1><?php
             if ($this->DonationId){
@@ -684,7 +684,7 @@ class Donation extends ModelLite
                     if (self::input('raw','request')) $this->edit_form();
                     else{ $this->edit_simple_form(); }
                 }else{
-                    ?><div><a href="<?php print esc_url('?page=donor-index&DonationId='.$this->DonationId)?>&edit=t">Edit Donation</a></div><?php
+                    ?><div><a href="<?php print esc_url('?page=donorpress-index&DonationId='.$this->DonationId)?>&edit=t">Edit Donation</a></div><?php
                     $this->view();
                     $this->receipt_form();
                 }
@@ -706,11 +706,11 @@ class Donation extends ModelLite
     }
     public function edit_simple_form(){  
         $hiddenFields=['DonationId','ToEmailAddress','ReceiptID','AddressStatus']; //these fields more helpful when using paypal import, but are redudant/not necessary when manually entering a transaction
-        //?page=donor-index&DonationId=4458&edit=t
+        //?page=donorpress-index&DonationId=4458&edit=t
         if ($this->DonationId){
-            ?><div><a href="<?php print esc_url('?page=donor-index&DonationId='.$this->DonationId)?>&edit=t&raw=t">Edit Raw</a></div><?php
+            ?><div><a href="<?php print esc_url('?page=donorpress-index&DonationId='.$this->DonationId)?>&edit=t&raw=t">Edit Raw</a></div><?php
         }?>
-        <form method="post" action="<?php print esc_url('?page=donor-index'.($this->DonationId?'&DonationId='.$this->DonationId:''))?>" style="border: 1px solid #999; padding:20px; width:90%;">
+        <form method="post" action="<?php print esc_url('?page=donorpress-index'.($this->DonationId?'&DonationId='.$this->DonationId:''))?>" style="border: 1px solid #999; padding:20px; width:90%;">
         <input type="hidden" name="table" value="donation">
         <?php foreach ($hiddenFields as $field){?>
 		    <input type="hidden" name="<?php print esc_attr($field)?>" value="<?php print esc_attr($this->$field)?>"/>
@@ -779,21 +779,21 @@ class Donation extends ModelLite
                 if (!$page){ ### Make the template page if it doesn't exist.
                     self::make_receipt_template_no_tax();
                     $page = DonorTemplate::get_by_name('no-tax-thank-you');  
-                    self::display_notice("Email Template /no-tax-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                    self::display_notice("Email Template /no-tax-thank-you created. <a target='edit' href='?page=donorpress-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
                 }
             }elseif ($this->TransactionType==3){                   
                 $page = DonorTemplate::get_by_name('ira-qcd');  
                 if (!$page){ ### Make the template page if it doesn't exist.
                     self::make_receipt_template_ira_qcd();
                     $page = DonorTemplate::get_by_name('ira-qcd');  
-                    self::display_notice("Email Template /ira-qcd created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                    self::display_notice("Email Template /ira-qcd created. <a target='edit' href='?page=donorpress-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
                 }
             }else{
                 $page = DonorTemplate::get_by_name('receipt-thank-you');  
                 if (!$page){ ### Make the template page if it doesn't exist.
                     self::make_receipt_template_thank_you();
                     $page = DonorTemplate::get_by_name('receipt-thank-you');  
-                    self::display_notice("Email Template /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+                    self::display_notice("Email Template /receipt-thank-you created. <a target='edit' href='?page=donorpress-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
                 }
             }
         }
@@ -801,7 +801,7 @@ class Donation extends ModelLite
         if (!$page){ ### Make the template page if it doesn't exist.
             self::make_receipt_template_thank_you();
             $page = DonorTemplate::get_by_name('receipt-thank-you');  
-            self::display_notice("Page /receipt-thank-you created. <a target='edit' href='?page=donor-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
+            self::display_notice("Page /receipt-thank-you created. <a target='edit' href='?page=donorpress-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
        
@@ -838,7 +838,7 @@ class Donation extends ModelLite
     static function make_receipt_template_no_tax(){
         $page = DonorTemplate::get_by_name('no-tax-thank-you');  
         if (!$page){                   
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_no_tax.html"; 
+            $tempLoc=donorpress_plugin_base_dir()."/resources/template_default_receipt_no_tax.html"; 
             $t=new DonorTemplate();          
             $t->post_content=file_get_contents($tempLoc);            
             $t->post_title='Thank You For Your ##Organization## Gift';
@@ -853,7 +853,7 @@ class Donation extends ModelLite
     static function make_receipt_template_ira_qcd(){
         $page = DonorTemplate::get_by_name('ira-qcd');  
         if (!$page){
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_ira_qcd.html"; 
+            $tempLoc=donorpress_plugin_base_dir()."/resources/template_default_receipt_ira_qcd.html"; 
             $t=new DonorTemplate();          
             $t->post_content=file_get_contents($tempLoc);            
             $t->post_title='Thank You For IRA Qualified Charitable Distribution To ##Organization##';
@@ -867,7 +867,7 @@ class Donation extends ModelLite
     static function make_receipt_template_thank_you(){
         $page = DonorTemplate::get_by_name('receipt-thank-you');  
         if (!$page){
-            $tempLoc=dn_plugin_base_dir()."/resources/template_default_receipt_thank_you.html";
+            $tempLoc=donorpress_plugin_base_dir()."/resources/template_default_receipt_thank_you.html";
             $t=new DonorTemplate();          
             $t->post_content=file_get_contents($tempLoc);            
             $t->post_title='Thank You For Your ##Organization## Donation';
@@ -926,13 +926,13 @@ class Donation extends ModelLite
         if ($pdfLib=="dompdf"){
             //$margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.5)*$dpi;
             //print $customMessage?$customMessage:$this->emailBuilder->body; exit();
-            $options = new Dompdf\Options();
+            $options = new \Dompdf\Options();
             $options->setDpi($dpi);
             $options->set('defaultFont', 'Helvetica');
             $options->set('isRemoteEnabled', true);
             $options->set('isHtml5ParserEnabled',true);
             //$options->set('tempDir', '/tmp'); //folder name and location can be changed
-            $dompdf = new Dompdf\Dompdf($options);
+            $dompdf = new \Dompdf\Dompdf($options);
     
             $style="<style>@page { font-size:".(($this->emailBuilder->fontsize?$this->emailBuilder->fontsize:12))."px;";
             if ($this->emailBuilder->margin) $style.="margin:".$this->emailBuilder->margin."in;";
@@ -946,7 +946,7 @@ class Donation extends ModelLite
             return true;
         
         }else{
-            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
             $pdf->SetMargins($margin,$margin,$margin);
             $pdf->SetFont('helvetica', '', $this->emailBuilder->fontsize?$this->emailBuilder->fontsize:12);
@@ -1062,17 +1062,17 @@ class Donation extends ModelLite
                         }
                     }
                     ?>
-                    <button type="submit" name="syncDonationToInvoiceQB" value="t" style="background-color:lightgreen;">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="<?php print esc_url('?page=donor-quickbooks&ignoreSyncDonation='.$donation->DonationId)?>">Ignore/Don't Sync to QB</a>
+                    <button type="submit" name="syncDonationToInvoiceQB" value="t" style="background-color:lightgreen;">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="<?php print esc_url('?page=donorpress-quickbooks&ignoreSyncDonation='.$donation->DonationId)?>">Ignore/Don't Sync to QB</a>
                     </form>
                     <?php
                 }elseif(!$this->QBOPaymentId){
                     print "Invoice #".$this->show_field("QBOInvoiceId")." synced, but Payment has NOT been synced.";
-                    print '<a href="'.esc_url('?page=donor-quickbooks&syncDonationPaid='.$this->DonationId).'">Sync Payment to QuickBooks</a>';
+                    print '<a href="'.esc_url('?page=donorpress-quickbooks&syncDonationPaid='.$this->DonationId).'">Sync Payment to QuickBooks</a>';
                 }else{
                     print "<div>Invoice #".$this->show_field("QBOInvoiceId")." & Payment: ".$this->show_field("QBOPaymentId")." synced to Quickbooks.</div>";
                 }
             }elseif($donor->QuickBooksId==0){
-                print '<a href="'.esc_url('?page=donor-quickbooks&syncDonorId='.$this->DonorId).'">Create Donor in QB</a> (before sending Invoice)';
+                print '<a href="'.esc_url('?page=donorpress-quickbooks&syncDonorId='.$this->DonorId).'">Create Donor in QB</a> (before sending Invoice)';
             }
         }
         //$receipts[0]->content
@@ -1088,7 +1088,7 @@ class Donation extends ModelLite
                 <button type="submit" name="Function" value="SendDonationReceipt">Send E-mail Receipt</button> 
                 <button type="submit" name="Function" value="DonationReceiptPdf">Generate PDF</button>                  
             </div>
-            <div><a target='pdf' href='<?php print esc_url('?page=donor-settings&tab=email&DonorTemplateId='.$this->emailBuilder->pageID.'&edit=t')?>'>Edit Template</a> | <a href="<?php print esc_url('?page=donor-reports&DonationId='.$this->DonationId)?>&resetLetter=t">Reset Letter</a></div>
+            <div><a target='pdf' href='<?php print esc_url('?page=donorpress-settings&tab=email&DonorTemplateId='.$this->emailBuilder->pageID.'&edit=t')?>'>Edit Template</a> | <a href="<?php print esc_url('?page=donorpress-reports&DonationId='.$this->DonationId)?>&resetLetter=t">Reset Letter</a></div>
             <div style="font-size:18px;"><strong>Email Subject:</strong> <input style="font-size:18px; width:500px;" name="EmailSubject" value="<?php print esc_attr($subject);?>"/>
             <?php wp_editor($bodyContent, 'customMessage',array("media_buttons" => false,"wpautop"=>false)); ?>
         </form>
@@ -1128,7 +1128,7 @@ class Donation extends ModelLite
         $margin['x']=13.5;// 3/16th x
         $margin['y']=.5*$dpi;
         ob_clean();
-        $pdf = new TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false); 
+        $pdf = new \TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false); 
         $pdf->SetFont('helvetica', '', 12);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false); 	
@@ -1221,7 +1221,7 @@ class Donation extends ModelLite
                 $donor=new Donor($r);
                 ?>
                 <tr>
-                <td><a target="donation" href="<?php print esc_url('?page=donor-reports&DonationId='.$r->DonationId)?>"><?php print esc_html($r->DonationId)?></a> | <a target="donation" href="<?php print esc_url('?page=donor-reports&DonationId='.$r->DonationId)?>&edit=t">Edit</a></td>
+                <td><a target="donation" href="<?php print esc_url('?page=donorpress-reports&DonationId='.$r->DonationId)?>"><?php print esc_html($r->DonationId)?></a> | <a target="donation" href="<?php print esc_url('?page=donorpress-reports&DonationId='.$r->DonationId)?>&edit=t">Edit</a></td>
                     <td><?php print esc_html($donor->name_combine())?></td>
                 <td><?php print ($donation->Source?$donation->Source." | ":"").$donation->show_field("PaymentSource")." - ".$r->TransactionID?></td>
                 <td align=right><?php print number_format($r->Gross,2)?></td>

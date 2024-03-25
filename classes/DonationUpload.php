@@ -249,7 +249,7 @@ class DonationUpload extends ModelLite
         if ($stats['donorCreated']) $notice.="<li>".$stats['donorCreated']." Donors Created.</li>";
         if ($stats['donationsAdded']) $notice.="<li>".$stats['donationsAdded']." Donations Added.</li>";
         $notice.="</ul>";
-        $notice.="<div><a href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timestamp)."'>View added donations</a></div>";
+        $notice.="<div><a href='?page=donorpress-reports&UploadDate=".date("Y-m-d H:i:s",$timestamp)."'>View added donations</a></div>";
         self::display_notice($notice);
         //delete file after process so it isn't left on server... wondering if we should do this higher up so on fail it is deleted.
         wp_delete_file(self::upload_dir().self::input('file','post'));
@@ -531,9 +531,9 @@ class DonationUpload extends ModelLite
             $originalFile=sanitize_file_name(basename($_FILES["fileToUpload"]["name"]));
             $target_file=self::upload_dir().$originalFile;
             wp_delete_file($target_file);
-            add_filter( 'upload_dir', 'donor_press_upload_dir' );
+            add_filter( 'upload_dir', 'donorpress_upload_dir' );
             $uploadresult=wp_handle_upload($_FILES["fileToUpload"],array('test_form' => FALSE, 'unique_filename_callback' => 'your_custom_callback'));
-            remove_filter( 'upload_dir', 'donor_press_upload_dir' );  
+            remove_filter( 'upload_dir', 'donorpress_upload_dir' );  
             $originalFile=basename($uploadresult['file']);
             //dd($uploadresult,$target_file, $basename());      
             if ($uploadresult['error']){
@@ -578,7 +578,7 @@ class DonationUpload extends ModelLite
                         print "</table><button type='submit' name='Function' value='MakeDonorChanges'>Make Donor Changes</button></form>";
                         //To do: timezone off. by -5
                         print "<hr>";
-                        print "<div><a target='viewSummary' href='?page=donor-reports&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View All</a> | <a target='viewSummary' href='?page=donor-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View Summary</a></div>";
+                        print "<div><a target='viewSummary' href='?page=donorpress-reports&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View All</a> | <a target='viewSummary' href='?page=donorpress-reports&SummaryView=t&UploadDate=".date("Y-m-d H:i:s",$timeNow)."'>View Summary</a></div>";
                     }
                 }else{ 
                     $result=self::csv_read_file_map($originalFile,$firstLineColumns=true,$timeNow);

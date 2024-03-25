@@ -1,5 +1,5 @@
 = 0.1.0 =
-* Implement Feedback from Plugin Submission REview
+* Implement Feedback from Plugin Submission Review to adhear better to Wordpress plug Standards
 
 = 0.0.9 =
 * Added address status for tracking returned mail and people who opt out of mailing list. *

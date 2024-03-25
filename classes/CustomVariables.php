@@ -154,7 +154,7 @@ class CustomVariables extends ModelLite
         if (CustomVariables::get_option('QuickbooksClientId',true) && QuickBooks::qb_api_installed()){
             self::display_notice("Allow Redirect access in the <a target='quickbooks' href='https://developer.intuit.com/app/developer/dashboard'>QuickBook API</a> for: ".QuickBooks::redirect_url());
         }
-        print "<div><strong>Plugin base dir:</strong> ".dn_plugin_base_dir()."</div>";       
+        print "<div><strong>Plugin base dir:</strong> ".donorpress_plugin_base_dir()."</div>";       
         
     }
     
@@ -239,7 +239,7 @@ class CustomVariables extends ModelLite
         $org= mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', self::get_org());
         $fileName="DonorPressBackup-".str_replace(" ","_",$org).date("YmdHis").".json";
         $contents=wp_json_encode(["PLUGIN"=>"DonorPress","DBPREFIX"=>$wpdb->prefix,"VERSION"=>$donor_press_db_version,"ORG"=>self::get_org(),"URL"=>get_bloginfo('url')])."\n";
-        foreach(donor_press_tables() as $table){
+        foreach(donorpress_tables() as $table){
             $records=[];  
             $class="DonorPress\\".$table;                     
             $SQL="Select * FROM ".$class::get_table_name();
@@ -304,7 +304,7 @@ class CustomVariables extends ModelLite
     static public function nuke_it($post){
         if ($post['backup']) self::backup(); //back it up to flat file before nuke
         if ($post['droptable']){
-            foreach(donor_press_tables() as $table){
+            foreach(donorpress_tables() as $table){
                 $class="DonorPress\\".$table; 
                 $SQL= "DROP TABLE IF EXISTS ".$class::get_table_name();
                 print $SQL."<br>";
@@ -320,7 +320,7 @@ class CustomVariables extends ModelLite
         }
 
         if ($post['rebuild']){ 
-            donor_plugin_create_tables();
+            donorpress_plugin_create_tables();
             print "TABLES Rebuilt";    
         }
 
@@ -336,7 +336,7 @@ class CustomVariables extends ModelLite
             case 'RestoreDonorPress':
                 if ($_FILES["fileToUpload"]["tmp_name"]){
                     //self::backup(); //backup current first.                    
-                    nuke(); //clear out current files
+                    donorpress_nuke(); //clear out current files
                     self::restore($_FILES["fileToUpload"]["tmp_name"]);  
                     print self::display_notice("Restore Complete");
                     return true;
