@@ -28,6 +28,7 @@ use DonorPress\Donor;
 use DonorPress\DonorTemplate;
 use DonorPress\CustomVariables; 
 use DonorPress\Paypal;
+use DonorPress\DonationCategory;
 /* Resources: 
 https://www.sitepoint.com/working-with-databases-in-wordpress/
 https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-scratch--net-2668
@@ -209,6 +210,22 @@ function loadTestData($count=20){
 		//    
 		return false;
 	}
+
+	$donationCategory = new DonationCategory();
+	$donationCategory->Category="Where Needed Most";
+	$donationCategory->save();
+	for($i=0;$i<8;$i++){
+		$donationCategory = new DonationCategory();
+		$faker = Faker\Factory::create();
+		$donationCategory->Category=ucfirst($faker->word());
+		if ($faker->numberBetween(0, 1)==1){
+			$donationCategory->Category.=" ".ucfirst($faker->word());
+		}
+		$donationCategory->save();
+
+	}	
+	$donationCategories=DonationCategory::get();
+	//dd($donationCategories);
 	for($i=0;$i<$count;$i++){
 		$faker = Faker\Factory::create();
 		$donor=new Donor();
@@ -261,7 +278,14 @@ function loadTestData($count=20){
 			$donation->TransactionID=$faker->numberBetween(100, 2000);
 			$donation->Type=1;
 			if ($faker->numberBetween(0, 3)==1){
-				$donation->note="Note from Donor";//$faker->sentence();
+				$donation->Note="Note from Donor";//$faker->sentence();
+			}
+			if ($faker->numberBetween(0, 3)==1){
+				$donation->TransactionType=1; //not tax deductible
+				$donation->TransactionID=$faker->numberBetween(100000, 300000);
+			}
+			if ($faker->numberBetween(0, 5)>1){
+				$donation->CategoryId=$donationCategories[$faker->numberBetween(0, count($donationCategories)-1)]->CategoryId;
 			}
 			
 			$donation->save();
@@ -272,6 +296,10 @@ function loadTestData($count=20){
 			$amount=$faker->numberBetween(2, 40)*5;
 			/* Add monthly giving from that start date till now */
 			$months=round((strtotime(date("Y-m-d"))-strtotime($startDate))/(60*60*24*30));
+			$categoryId=0;
+			//if ($faker->numberBetween(0, 5)>1){
+				$categoryId=$donationCategories[$faker->numberBetween(0, count($donationCategories)-1)]->CategoryId;
+			//}
 			for($m=0;$m<$months;$m++){				
 				$donation=new Donation();
 				$donation->DonorId=$donor->DonorId;
@@ -288,6 +316,7 @@ function loadTestData($count=20){
 				$donation->PaymentSource=10;  //set to Paypal 
 				$donation->TransactionType=0;//set to tax deductible
 				$donation->TransactionID= bin2hex(random_bytes(5));	
+				$donation->CategoryId=$categoryId;
 				$donation->Type=5; //subscription
 				$donation->save();
 			}
