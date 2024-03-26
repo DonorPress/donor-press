@@ -414,7 +414,7 @@ function donorpress_report_donations(){
 		Amount:  <input type="number" step=".01" name="af" value="<?php print esc_attr(Donor::input('af','get'))?>" style="width:120px;"/>
 		to <input type="number" step=".01" name="at" value="<?php print esc_attr(Donor::input('at','get'))?>" style="width:120px;"/>
 		Category:
-		<?php print esc_html(DonationCategory::select(['Name'=>'CategoryId','Count'=>true]))?>
+		<?php print wp_kses_post(DonationCategory::select(['Name'=>'CategoryId','Count'=>true]))?>
 		SQL WHERE QUERY:<input name="where" value="<?php print stripslashes_deep(Donor::input('where','get'))?>" style="width:400px;"/> (advanced)
 		<br>
 		Source:
@@ -542,7 +542,7 @@ function donorpress_donor_regression($where=[]){
 	?><form method="get">
 			<input type="hidden" name="page" value="<?php print esc_attr(Donor::input('page','get'))?>" />
 			<input type="hidden" name="tab" value="<?php print esc_attr(Donor::input('tab','get'))?>" />
-			Year: <input type="number" name="yf" value="<?php printesc_attr( Donor::input('yf','get'))?>"/> to <input type="number" name="yt" value="<?php print esc_attr(Donor::input('yt','get'))?>"/>
+			Year: <input type="number" name="yf" value="<?php print esc_attr( Donor::input('yf','get'))?>"/> to <input type="number" name="yt" value="<?php print esc_attr(Donor::input('yt','get'))?>"/>
 			<button>Go</button>		
 	</form>
 	<?php
@@ -584,7 +584,7 @@ function donorpress_donor_regression($where=[]){
 			$years=$donorYear[$donorId];
 			if ($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg']<0){
 			?><tr>
-				<td><?php print esc_html($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donorpress-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
+				<td><?php print wp_kses_post($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donorpress-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
 				<td><?php print esc_html($donor[$donorId]->name_combine())?></td>
 				<td><?php print esc_html($donor[$donorId]->Email)?></td>
 				<?php foreach($allYears as $year=>$total) print "<td align=right>".number_format($years[$year])."</td>";
@@ -606,9 +606,9 @@ function donorpress_donor_regression($where=[]){
 			$years=$donorCount[$donorId];
 			if ($years[Donor::input('yt','get')]-$donorStats[$donorId]['avg']<0){
 			?><tr>
-				<td><?php print esc_html($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donorpress-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
+				<td><?php print wp_kses_post($donor[$donorId]->show_field('DonorId',['target'=>'donor']))?> <a href="<?php print esc_url('?page=donorpress-reports&tab=stats&RegressionDonorId='.$donorId)?>" target="donor">Summary</a></td>
 				<td><?php print esc_html($donor[$donorId]->name_combine())?></td>
-				<td><?php print esc_html($donor[$donorId]->Email)?></td>
+				<td><?php print wp_kses_post($donor[$donorId]->show_field('Email'))?></td>
 				<?php foreach($allYears as $year=>$total) print "<td align=right>".number_format($years[$year])."</td>";
 				?>				
 			</tr>

@@ -396,7 +396,7 @@ class Donation extends ModelLite
                                 $donation=new self($r);
                                 print "<tr>";
                             } 
-                           ?><td><?php print esc_html($donation->show_field('Date'))?></td><td align=right><?php print esc_html($donation->show_field('Gross')." ".$donation->Currency)?></td><td><?php
+                           ?><td><?php print wp_kses_post($donation->show_field('Date'))?></td><td align=right><?php print esc_html($donation->show_field('Gross')." ".$donation->Currency)?></td><td><?php
                             if ($donation->CategoryId) print $donation->show_field("CategoryId");
                             else print $donation->Subject;
                             ?></td><td><?php print $donation->show_field("Note")?></td>  
@@ -1160,7 +1160,7 @@ class Donation extends ModelLite
 
     static function report($top=null,$dateField=null){
         if (!$dateField) $dateField=Donor::input('dateField','get')?Donor::input('dateField','get'):'Date';
-        $where=["DT.Status>0"];
+        $where=["(DT.Status>=0 OR DT.Status IS NULL)"];
 		if (Donor::input('PaymentSource','get')){
 			$where[]="PaymentSource='".(Donor::input('PaymentSource','get')=="ZERO"?0:Donor::input('PaymentSource','get'))."'";		
 		}	
@@ -1201,7 +1201,7 @@ class Donation extends ModelLite
 		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
         FROM ".Donor::get_table_name()." D INNER JOIN ".self::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId ".($top?" LIMIT ".$top:""); 
-		//print $SQL;     
+		//print "<pre>".$SQL."</pre>";     
         $results = self::db()->get_results($SQL);
 		if (Donor::input('Function','get')=="DonationListCsv"){
 			$fileName="all";
@@ -1224,13 +1224,13 @@ class Donation extends ModelLite
                 <td><a target="donation" href="<?php print esc_url('?page=donorpress-reports&DonationId='.$r->DonationId)?>"><?php print esc_html($r->DonationId)?></a> | <a target="donation" href="<?php print esc_url('?page=donorpress-reports&DonationId='.$r->DonationId)?>&edit=t">Edit</a></td>
                     <td><?php print esc_html($donor->name_combine())?></td>
                 <td><?php print ($donation->Source?$donation->Source." | ":"").$donation->show_field("PaymentSource")." - ".$r->TransactionID?></td>
-                <td align=right><?php print number_format($r->Gross,2)?></td>
+                <td style="text-align:right;"><?php print number_format($r->Gross,2)?></td>
                 <td><?php print esc_html($r->Date)?></td>
                 <td><?php print esc_html($r->DateDeposited)?></td>
-                <td><?php print $donation->show_field("TransactionType");?></td>
-                <td><?php print $donation->show_field("CategoryId");?></td>
+                <td><?php print wp_kses_post($donation->show_field("TransactionType"));?></td>
+                <td><?php print wp_kses_post($donation->show_field("CategoryId"));?></td>
                 <td><?php print esc_html($r->Subject)?></td>
-                <td><?php print $donation->show_field("Note");?></td>
+                <td><?php print wp_kses_post($donation->show_field("Note"));?></td>
                 </tr>
                 <?php
             }

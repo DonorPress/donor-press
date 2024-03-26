@@ -370,7 +370,7 @@ class CustomVariables extends ModelLite
                 self::evaluate_post_save($var);   
             }
             foreach(self::variables_protected as $var){
-                if (self::input($var,$post)!=""){
+                if (self::input($var,'post')!=""){
                     self::evaluate_post_save($var,true);                   
                 }
             }

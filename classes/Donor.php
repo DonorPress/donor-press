@@ -569,7 +569,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                     $donorList[]=$donor->DonorId;                
                     ?>  
                     <tr>
-                        <td><?php print esc_html($donor->show_field('DonorId'))?></td>
+                        <td><?php print wp_kses_post($donor->show_field('DonorId'))?></td>
                         <td><?php print esc_html($donor->name_combine())?></td>
                         <td><?php print wp_kses_post($donor->display_email())?></td>    
                         <td><?php print esc_html($donor->phone())?></td> 
