@@ -19,8 +19,8 @@ $active_tab=Donor::show_tabs($tabs);
 	if (Donor::input('view','get')=='detail'){
 		?><h2>Detailed View: <?php print esc_html(Donor::input('view','report'))?></h2><?php
 		switch(Donor::input('view','report')){
-			case "reportMonthly":
-				reportMonthly();
+			case "donorpress_report_monthly":
+				donorpress_report_monthly();
 			break;
 		}
 		print "</div>";
@@ -32,34 +32,34 @@ $active_tab=Donor::show_tabs($tabs);
 			Donation::donation_upload_groups();
 		break;
 		case "year":
-			year_end_summmaries();
+			donorpress_year_end_summmaries();
 			break;
 		case "donors":
-			report_donors();
+			donorpress_report_donors();
 		break;
 		case "merge":
 			Donor::merge_suggestions();
 		break;
 		case "donations":
-			report_donations();
+			donorpress_report_donations();
 		break;
 		case "reg":
-			donor_regression();
+			donorpress_donor_regression();
 		break;
 		case "trends":
-			report_top();
-			report_current_monthly();
-			reportMonthly();
+			donorpress_report_top();
+			donorpress_report_current_monthly();
+			donorpress_report_monthly();
 		break;
 		case "tax":
-			report_tax();
+			donorpress_report_tax();
 		break;
 	}
 	?>	
 </div>
 <?php
 
-function year_end_summmaries(){ ?>	
+function donorpress_year_end_summmaries(){ ?>	
 	<div><strong>Year End Tax Summaries:</strong> <?php
 	for($y=date("Y");$y>=date("Y")-4;$y--){
 		?><a href="<?php print esc_url('?page=' . Donor::input('page','get') . '&tab=' . Donor::input('tab','get') . '&f=YearSummaryList&Year=' . $y)?>"><?php print esc_html($y)?></a> | <?php
@@ -95,7 +95,7 @@ function year_end_summmaries(){ ?>
 	}
 }
 
-function report_donors(){	
+function donorpress_report_donors(){	
 	$dateField=Donor::input('dateField','get')?Donor::input('dateField','get'):'Date';
 
 	$typeIds=is_array($_GET['typeIds'])?$_GET['typeIds']:array();	//if ($donorTypes[0]=="") $donorTypes=array();
@@ -165,7 +165,7 @@ function report_donors(){
 	//print "survived";
 }
 
-function report_tax(){
+function donorpress_report_tax(){
 	$taxYear=Donor::input('TaxYear','get')?Donor::input('TaxYear','get'):date("Y")-1;
 	$taxMonthStart=Donor::input('TaxMonthStart','get')?Donor::input('TaxMonthStart','get'):1;
 	?>
@@ -395,7 +395,7 @@ organization, check this box and stop here</td>
 
 }
 
-function report_donations(){ 
+function donorpress_report_donations(){ 
 	$top=is_int(Donor::input('top','get'))?Donor::input('top','get'):1000;	
 	$dateField=Donor::input('dateField','get')?Donor::input('dateField','get'):'Date';
 	?>
@@ -450,7 +450,7 @@ function report_donations(){
 }
 
 
-function report_current_monthly(){
+function donorpress_report_current_monthly(){
 	global $wpdb;
 
 	$where=array("`Type` IN (5)","Date>='".date("Y-m-d",strtotime("-3 months"))."'");
@@ -475,7 +475,7 @@ function report_current_monthly(){
 	}
 }
 
-function report_top($top=20){
+function donorpress_report_top($top=20){
 	global $wpdb,$wp;
 	$dateFrom=Donor::input('topDf','get');
 	$dateTo=Donor::input('topDt','get');
@@ -531,7 +531,7 @@ function report_top($top=20){
 	}
 }
 
-function donor_regression($where=[]){
+function donorpress_donor_regression($where=[]){
 	global $wpdb,$wp;
 	if (!Donor::input('yt','get')) $_GET['yt']=date('m')<5?date("Y")-1:date("Y");
 	if (!Donor::input('yf','get')){
@@ -620,11 +620,11 @@ function donor_regression($where=[]){
 
 }
 
-function reportMonthly(){
+function donorpress_report_monthly(){
 	global $wpdb,$wp;
 	$where=array("Gross>0","Currency='USD'","Status=9");
 	//,"`Type` IN ('Subscription Payment','Donation Payment','Website Payment')"
-	if (Donor::input('view','report')=="reportMonthly"&&Donor::input('view','get')=='detail'){
+	if (Donor::input('view','report')=="donorpress_report_monthly" && Donor::input('view','get')=='detail'){
 		if (Donor::input('month','get')){
 			$where[]="EXTRACT(YEAR_MONTH FROM `Date`)='".addslashes(Donor::input('month','get'))."'";
 		}
@@ -695,10 +695,10 @@ function reportMonthly(){
 
 	$weekDays=array("1"=>"Mon","2"=>"Tue","3"=>"Wed","4"=>"Thu","5"=>"Fri",6=>"Sat",7=>"Sun");
 
-
-	if (sizeof($graph['Type'])>0){	
+	$google_charts=CustomVariables::get_option('GoogleCharts');
+	if ($graph['Type'] && sizeof($graph['Type'])>0){	
 		ksort($graph[$countField=="Gross"?'Total':'Count']);
-		$google_charts=CustomVariables::get_option('GoogleCharts');
+		
 		if ($google_charts){
 		?>
   <script type="text/javascript" src="<?php print esc_url($google_charts)?>"></script>
@@ -845,7 +845,7 @@ function reportMonthly(){
 		foreach ($graph['Total'] as $yearMonth =>$types){
 			foreach($types as $type=>$total){
 				?><tr><td><?php print  $yearMonth?></td><td><?php print esc_html(Donation::get_tiny_description('Type',$type)?Donation::get_tiny_description('Type',$type):$type)?></td>
-				<td align=right><a href="<?php print esc_url("?page=".Donor::input('page','get').'&tab='.Donor::input('tab','get').'&report=reportMonthly&view=detail&month='.$yearMonth.'&type='.$type)?>"><?php print number_format($total,2)?></a></td><td align=right><?php print esc_html($graph['Count'][$yearMonth][$type])?></td></tr><?php
+				<td align=right><a href="<?php print esc_url("?page=".Donor::input('page','get').'&tab='.Donor::input('tab','get').'&report=donorpress_report_monthly&view=detail&month='.$yearMonth.'&type='.$type)?>"><?php print number_format($total,2)?></a></td><td align=right><?php print esc_html($graph['Count'][$yearMonth][$type])?></td></tr><?php
 		
 			}
 		}
