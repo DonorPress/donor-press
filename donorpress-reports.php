@@ -414,7 +414,7 @@ function donorpress_report_donations(){
 		Amount:  <input type="number" step=".01" name="af" value="<?php print esc_attr(Donor::input('af','get'))?>" style="width:120px;"/>
 		to <input type="number" step=".01" name="at" value="<?php print esc_attr(Donor::input('at','get'))?>" style="width:120px;"/>
 		Category:
-		<?php print wp_kses_post(DonationCategory::select(['Name'=>'CategoryId','Count'=>true]))?>
+		<?php print (DonationCategory::select(['Name'=>'CategoryId','Count'=>true]))?>
 		SQL WHERE QUERY:<input name="where" value="<?php print stripslashes_deep(Donor::input('where','get'))?>" style="width:400px;"/> (advanced)
 		<br>
 		Source:
@@ -533,10 +533,10 @@ function donorpress_report_top($top=20){
 
 function donorpress_donor_regression($where=[]){
 	global $wpdb,$wp;
-	if (!Donor::input('yt','get')) $_GET['yt']=date('m')<5?date("Y")-1:date("Y");
 	if (!Donor::input('yf','get')){
-		$results = $wpdb->get_results("SELECT MIN(Year(`Date`)) as Year	FROM ".Donation::get_table_name());
-		$_GET['yt']=isset($results[0]->Year)?$results[0]->Year:date("Y")-1;
+		$results = $wpdb->get_results("SELECT MIN(Year(`Date`)) as YearMin, MAX(Year(`Date`)) as YearMax	FROM ".Donation::get_table_name());
+		$_GET['yf']=isset($results[0]->YearMin)?$results[0]->YearMin:date("Y")-1;
+		if (!Donor::input('yt','get')) $_GET['yt']=isset($results[0]->YearMax)?$results[0]->YearMax:date("Y");
 	}
 
 	?><form method="get">
