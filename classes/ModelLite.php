@@ -27,10 +27,18 @@ class ModelLite{
 	}
 	
 	public function fill(array $attributes){
-		$fields=$this->get_viewable_fields();		
+		$fields=$this->get_viewable_fields();
 		
 		if (is_array($attributes)){ ### flip array to object
 			$attributes=(object)$attributes;
+		}
+		### Set default values if not passed in...
+		if (is_array($this->attributes)){
+			foreach ($this->attributes as $key=>$value){
+				if (!isset($attributes->$key)){
+					$attributes->$key=$value;
+				}
+			}
 		}
 
 		if (is_array($fields)){
