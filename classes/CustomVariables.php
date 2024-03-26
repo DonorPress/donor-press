@@ -170,21 +170,28 @@ class CustomVariables extends ModelLite
     }
 
     static function restore($file,$chunksize=500){ 
-        global $wpdb;
-        $version="";
+        global $wpdb,$donor_press_db_version;
+        //$currentversion=$donor_press_db_version;
         if ($lines = file($file)){                   
             foreach($lines as $line){
                 if (trim($line)=="") continue;
                 $json=json_decode($line);
-                $json->TABLE=strtolower($json->TABLE);
-                if ($json->PLUGIN && $json->VERSION){
+                $json->TABLE=strtolower($json->TABLE); 
+                if ($json->PLUGIN=="DonorPress" && $json->VERSION){
                     $version=$json->VERSION;
+                    if (version_compare($donor_press_db_version, $version, '<')){
+                        print self::display_error("Current installed DB Version of Donor Press is ".$donor_press_db_version." which is less than the this backup: ".$version.". Please upgrade Donorpress to ".$version." before restoring backup.");
+                        return;
+                    }
+                    update_option('donor_press_db_version',$version);
+                    //dump("version",$version,$donor_press_db_version,get_option('donor_press_db_version'));
                 }elseif ($json->TABLE && sizeof($json->RECORDS)>0){
-                    print "<h2>Restoring to ".$wpdb->prefix.$json->TABLE." ".sizeof($json->RECORDS)." records.</h2>";
+                    $tablename=$wpdb->prefix.(!in_array($json->TABLE,['options','posts'])?'donorpress_':"").$json->TABLE;
+                    print "<h2>Restoring to ".$tablename." ".sizeof($json->RECORDS)." records.</h2>";
                     //$json->COLUMNS;
                     $columns=[];
                     $results=$wpdb->get_results("SELECT COLUMN_NAME,IS_NULLABLE,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
-                            WHERE table_name = '".$wpdb->prefix.$json->TABLE."'");
+                            WHERE table_name = '".$tablename."'");
                      foreach($results as $r){
                         $columns[$r->COLUMN_NAME]=$r;
                      }
@@ -192,7 +199,7 @@ class CustomVariables extends ModelLite
                     $chunk=array_chunk($json->RECORDS,$chunksize); //insert 500 rows at a time                    
                     foreach($chunk as $rows){
                          //todo in the future check $version against upgrade table, and shift columns/fields if necessary.
-                        $iSQL="INSERT INTO ".$wpdb->prefix.$json->TABLE." (".implode(",",$json->COLUMNS).") VALUES \r\n";
+                        $iSQL="INSERT INTO ".$tablename." (".implode(",",$json->COLUMNS).") VALUES \r\n";
                         $r=0;
                         foreach($rows as $row){
                             $c=0;
@@ -217,12 +224,17 @@ class CustomVariables extends ModelLite
                             $r++;
                         }
                         //if ($json->TABLE=="donorpress_category") print $iSQL;
-                        print "<div>Table: ".$wpdb->prefix.$json->TABLE." - Chunk size: ".sizeof($rows)."</div>";//<pre>".$iSQL."</pre>";
+                        print "<div>Table: ".$tablename." - Chunk size: ".sizeof($rows)."</div>";
+                        //if (in_array($json->TABLE,['options','posts'])) print "<pre>".$iSQL."</pre>";
                         $wpdb->query($iSQL);
 
                     }
                 }                          
             }
+        }
+        if ($version && $donor_press_db_version!=$version){            
+            print self::display_notice("Attempting upgrade of backup version of: ".$version." to current Donor Press version of: ".$donor_press_db_version);            
+            donorpress_upgrade();
         }
     }
     
