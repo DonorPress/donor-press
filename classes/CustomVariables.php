@@ -14,7 +14,7 @@ class CustomVariables extends ModelLite
 
     const variables_manual=["DefaultQBItemId","QBPaymentMethod"];
     const partialTables = [
-        ['TABLE'=>'posts','WHERE'=>"post_type='donortemplate'",'COLUMN_IGNORE'=>'ID'],
+        ['TABLE'=>'posts','WHERE'=>"post_type='donorpress'",'COLUMN_IGNORE'=>'ID'],
         ['TABLE'=>'options','WHERE'=>"option_name LIKE 'donorpress_%'",'COLUMN_IGNORE'=>'option_id']
     ];
 

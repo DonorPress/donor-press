@@ -11,7 +11,7 @@ class DonorTemplate extends ModelLite {
     
 	### Default Values
 	protected $attributes = [        
-        'post_type' => 'donortemplate',
+        'post_type' => 'donorpress',
         'post_status'=> 'private',
         'comment_status'=>'closed',
         'ping_status'=>'closed'
@@ -21,7 +21,7 @@ class DonorTemplate extends ModelLite {
 	const UPDATED_AT = 'post_modified'; 
 
     static public function get_by_name($name){
-        $temp=self::get(array("post_name='".$name."'","post_type='donortemplate'"));
+        $temp=self::get(array("post_name='".$name."'","post_type='donorpress'"));
         return $temp[0];
     }
 
@@ -67,7 +67,7 @@ class DonorTemplate extends ModelLite {
         <form method="post" action="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&'.$primaryKey.'='.$this->$primaryKey)?>">
 		<input type="hidden" name="table" value="<?php print esc_attr($this->table)?>"/>
 		<input type="hidden" name="<?php print esc_attr($primaryKey)?>" value="<?php print esc_attr($this->$primaryKey)?>"/>
-        <input type="hidden" name="post_type" value="donortemplate"/>
+        <input type="hidden" name="post_type" value="donorpress"/>
         <input type="hidden" name="post_author" value="<?php print esc_attr($this->post_author?$this->post_author:get_current_user_id())?>"/>
         <input type="hidden" name="post_date" value="<?php print esc_attr($this->post_date?$this->post_date:date("Y-m-d H:i:s"))?>"/>
 
@@ -156,7 +156,7 @@ class DonorTemplate extends ModelLite {
 
     static public function request_handler(){        
         $wpdb=self::db();  
-        if (self::input('Function','post') == 'Save' && self::input('table','post')=="posts" && self::input('post_type','post') == 'donortemplate'){
+        if (self::input('Function','post') == 'Save' && self::input('table','post')=="posts" && self::input('post_type','post') == 'donorpress'){
             $template=new self(self::input_model('post'));
             $template->post_excerpt=$template->post_to_settings('post');          
             $template->post_modified=time();
@@ -190,7 +190,7 @@ class DonorTemplate extends ModelLite {
   
     static function list(){       
         $wpdb=self::db();          
-        $SQL="SELECT * FROM ".self::get_table_name()." WHERE post_type='donortemplate' AND post_parent=0 Order BY post_name,post_title";
+        $SQL="SELECT * FROM ".self::get_table_name()." WHERE post_type='donorpress' AND post_parent=0 Order BY post_name,post_title";
         $results = $wpdb->get_results($SQL);        
         ?><h2>Template List</h2>
         <div><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>&CreateDonorTemplateId=t&edit=t">Add Blank Template</a></div>

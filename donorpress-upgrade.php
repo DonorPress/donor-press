@@ -112,4 +112,8 @@ function donorpress_upgrade_010(){
 	}
 	$aSQL="UPDATE ".$wpdb->prefix."options SET option_name=REPLACE(option_name,'donation_','donorpress_') WHERE option_name LIKE 'donation_%';";
 	$wpdb->query( $aSQL );
+
+	// add an update Donation thank youtemplates
+	$aSQL="UPDATE ".$wpdb->prefix."posts SET post_type='donorpress' WHERE post_type='donortemplate'";
+	$wpdb->query( $aSQL );
 }

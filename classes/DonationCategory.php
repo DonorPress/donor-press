@@ -12,7 +12,7 @@ class DonationCategory extends ModelLite
     protected $fillable = ["Category","Description","ParentId","TemplateId","TransactionType","QBItemId"];	 
   	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';  
-    //NOte: TemplateId links to table posts -> ID, but uses post_type='donortemplate' 
+    //NOte: TemplateId links to table posts -> ID, but uses post_type='donorpress' 
 
     static public function request_handler(){
         $wpdb=self::db();  
@@ -125,7 +125,7 @@ class DonationCategory extends ModelLite
 
              </td></tr>
             <tr><td align="right">Response Template</td><td><select name="TemplateId"><option value="">default</option><?php
-            $list=DonorTemplate::get(array("post_type='donortemplate'","post_parent=0"),"post_name,post_title");
+            $list=DonorTemplate::get(array("post_type='donorpress'","post_parent=0"),"post_name,post_title");
             foreach($list as $t){
                 print '<option value="'.$t->ID.'"'.($t->ID==$this->TemplateId?" selected":"").'>'.$t->post_name.'</option>';
             }
