@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Plugin Name: Donor Press - A Donation Tracking System
  * Plugin URI: https://donorpress.com/
  * Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. You can manually enter donations, upload a .csv file, or  optionally integrates with Paypal and Quickbooks.
- * Version:           0.1.0
+ * Version:           0.1.1
  * Requires at least: 0.1
  * Requires PHP:      7.2
  * Author:            Denver Steiner
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  */
 
 global $donor_press_db_version;
-$donor_press_db_version='0.1.0';
+$donor_press_db_version='0.1.1';
 
 ### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
 if (file_exists(__DIR__ . '/vendor/autoload.php')){
@@ -29,21 +29,15 @@ use DonorPress\DonorTemplate;
 use DonorPress\CustomVariables; 
 use DonorPress\Paypal;
 use DonorPress\DonationCategory;
-/* Resources: 
-https://www.sitepoint.com/working-with-databases-in-wordpress/
-https://webdesign.tutsplus.com/tutorials/create-a-custom-wordpress-plugin-from-scratch--net-2668
-*/
+
 // it inserts the entry in the admin menu
-//wp_enqueue_style( 'style', get_stylesheet_uri() );
 add_action('admin_menu', 'donorpress_plugin_create_menu_entry');
 register_activation_hook( __FILE__, 'donorpress_plugin_create_tables' );
 
 function donorpress_header_check() {
 	global $donor_press_db_version;
 	if (!session_id()) session_start();
-
-	require_once "donorpress-upgrade.php";	
-	
+	require_once "donorpress-upgrade.php";		
 	## When Code base is updated, make sure database upgrade is run
 	if (get_option( "donor_press_db_version")!=$donor_press_db_version){		
 		donorpress_upgrade();
@@ -92,7 +86,6 @@ function donorpress_header_check() {
 			case 'DonationListCsv':
 				Donation::report();
 			break;
-
 			case 'QuickbookSessionKill';
 				$qb=new QuickBooks();
 				$qb->clearSession();
@@ -176,22 +169,6 @@ function donorpress_plugin_create_tables() {
 }
 
 
-## Search record
-//add_action( 'wp_ajax_searchDonorList', 'searchDonorList_callback' );
-//add_action( 'wp_ajax_nopriv_searchDonorList', 'searchDonorList_callback' );
-// add_action("init", "ur_theme_start_session", 1);
-// function ur_theme_start_session(){
-// 	if (!session_id()) session_start();
-// }
-
-// function wpdocs_register_plugin_styles() {
-// 	wp_register_style( 'donor-press', plugins_url( 'donor-press/css/style.css' ) );
-// 	wp_enqueue_style( 'donor-press' );
-// }
-// // Register style sheet.
-// add_action( 'wp_enqueue_scripts', 'wpdocs_register_plugin_styles' );
-
-
 function donorpress_upload_dir( $dirs ) { 
 	//keep uploads in their own donorpress directory, outside normal uploads
 	$dirs['subdir'] = '/donorpress';
@@ -200,11 +177,7 @@ function donorpress_upload_dir( $dirs ) {
 	return $dirs;
 } 
 
-
-
-
-
-function loadTestData($count=20){
+function donorpress_load_test_data($count=20){
 	if (!class_exists("Faker\Factory")){
 		Donor::display_error("Faker Class is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function.");         
 		//    
@@ -321,8 +294,6 @@ function loadTestData($count=20){
 				$donation->save();
 			}
 		}
-		
-
 	}
 }
 
