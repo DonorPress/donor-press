@@ -243,7 +243,6 @@ function donorpress_report_tax(){
 
 	 $totalSupport=$total['donated']['total']+$total['interest']['total']+intval(Donor::input('extraIncome23','get'))+intval(Donor::input('extraIncome810','get'));
 	 $twoPercent=round($totalSupport*.02,0);
-	 //dump($total,$twoPercent);
 	 $SQL="Select D.DonorId,D.Name,D.Name2, YEAR(DT.Date) as TaxYear,SUM(DT.Gross) as Gross
 	  FROM  ".Donor::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId  
 		WHERE YEAR(DT.Date) BETWEEN ".($taxYear-4)." AND ".$taxYear." AND DT.TransactionType Between 0 AND 89 AND ".(sizeof($ignore)>0?" D.DonorId NOT IN (".implode(",",$ignore).") AND ":"")."
@@ -418,7 +417,7 @@ function donorpress_report_donations(){
 		to <input type="number" step=".01" name="at" value="<?php print esc_attr(Donor::input('at','get'))?>" style="width:120px;"/>
 		Category:
 		<?php print (DonationCategory::select(['Name'=>'CategoryId','Count'=>true]))?>
-		SQL WHERE QUERY:<input name="where" value="<?php print stripslashes_deep(Donor::input('where','get'))?>" style="width:400px;"/> (advanced)
+		<?php /*SQL WHERE QUERY:<input name="where" value="<?php print stripslashes_deep(Donor::input('where','get'))?>" style="width:400px;"/> (advanced)*/?>
 		<br>
 		Source:
 		<select name="PaymentSource">
@@ -565,7 +564,6 @@ function donorpress_donor_regression($where=[]){
 		$donor[$r->DonorId]=new Donor(['DonorId'=>$r->DonorId,'Name'=>$r->Name,'Name2'=>$r->Name2,'Email'=>$r->Email]);
 		//$donorEmail[$r->DonorId]=$r->Email;
 	}
-	//dd($donorYear);
 	//Stategy: take the earliest donor year for a specific donor. Compare the average of that start date to last year to this year, and show as a percentage and total.
 	foreach ($donorYear as $donorId=>$years){
 		ksort($years);
@@ -577,7 +575,6 @@ function donorpress_donor_regression($where=[]){
 		$amountDiff[$donorId]=$donorYear[$donorId][Donor::input('yt','get')]-$donorStats[$donorId]['avg'];
 	}
 	asort($amountDiff);
-	//dd($donorStats,$donorYear,$amountDiff);
 
 	if (sizeof($results)>0){?>		
 		<table class="dp"><tr><th>#</th><th>Name</th><th>Email</th><?php
@@ -640,7 +637,6 @@ function donorpress_report_monthly(){
 		if (Donor::input('type','get')){
 			$where[]="`Type`='".addslashes(Donor::input('type','get'))."'";
 		}
-		//dd($where);
 		$results=Donation::get($where);
 		print Donation::show_results($results);		
 		return;
@@ -659,7 +655,6 @@ function donorpress_report_monthly(){
 	$countField=(Donor::input('s','get')=="Count"?"Count":"Gross");	
 
 	$graph=array('Month'=>array(),'WeekDay'=>array(),'YearMonth'=>array(),'Total'=>array(),'Count'=>array(),'time'=>array());
-	//Donor::dump($graph);
 	$SQL="SELECT `Date`, `Type`, Gross, PaymentSource FROM ".Donation::get_table_name()." WHERE ".(sizeof($where)>0?implode(" AND ",$where):"1")."";
 	$results = $wpdb->get_results($SQL);		
 	foreach ($results as $r){

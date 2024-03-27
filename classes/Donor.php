@@ -172,7 +172,6 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 } 
             }
         }
-        //self::dump($suggest_donor_changes);
         self::donor_update_suggestion_form($suggest_donor_changes,$timeProcessed);          
     }
 
@@ -221,7 +220,6 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         foreach ($results as $r){
             $stats[$r->DonorId]=$r;
         }
-        //self::dump($stats);
         foreach($oldDonor as $field=>$value){
             if ($value!=$this->$field){
                 $changes[$field]=$value;
@@ -700,7 +698,6 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 ?><input name="pdf[]" type="checkbox" value="<?php print esc_attr($r->DonorId)?>" <?php print ($receipts[$r->DonorId]?"":" checked")?>/><?php
              //}
             ?></td><td><?php
-            //self::dump($receipts[$r->DonorId]);
             print DonationReceipt::displayReceipts($receipts[$r->DonorId]);
             ?></td>
             <td><?php 
@@ -759,8 +756,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     function year_receipt_email($year){
         $this->emailBuilder=new \stdClass();
-        $page = DonorTemplate::get_by_name('donor-receiptyear');  
-        //$this->dump($page);
+        $page = DonorTemplate::get_by_name('donor-receiptyear'); 
         if (!$page){ ### Make the template page if it doesn't exist.
             self::make_receipt_year_template();
             $page = DonorTemplate::get_by_name('donor-receiptyear');  
@@ -1111,8 +1107,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $SQL="Select D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId, COUNT(DT.DonationId) as donation_count
         FROM ".self::get_table_name()." D LEFT JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId
         Group BY D.DonorId, D.Name, D.Name2,D.Email,D.Phone,D.Address1,MergedId Order BY  D.DonorId";
-        $results = self::db()->get_results($SQL); 
-       // dd($results);
+        $results = self::db()->get_results($SQL);
         $show=false;
         $merge=[];
         $cache=[];
@@ -1142,7 +1137,6 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 }              
             }            
         }
-        //dd( $cache);
         if (sizeof($merge)>0) $show=true;
         if ($show){
             ?><h2>Entries Found to Merge</h2>

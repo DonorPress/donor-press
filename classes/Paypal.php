@@ -151,8 +151,7 @@ class Paypal extends ModelLite{
             }
             $donations[$r->transaction_info->transaction_id]=Donation::from_paypal_api_detail($r);
         }
-        //self::dd($donors);
-       
+
         //Do a database check on donors to ensure no duplicates - If not found, insert.
         $SQL="SELECT * FROM ".Donor::get_table_name()." WHERE (Source='paypal' AND SourceId IN ('".implode("','",array_keys($donors))."')) OR (Email<>'' AND Email IS NOT NULL AND Email IN ('".implode("','",array_keys($donorEmails))."'))";
         $results = self::db()->get_results($SQL);        
@@ -166,7 +165,6 @@ class Paypal extends ModelLite{
             }           
         }       
         Donor::donor_update_suggestion($donorOriginal,$donors,$process['time']);
-        //self::dd($donors,$donorOriginal);
 
         ### need to do some sort of compare -> check out existing...
         foreach($donors as $account_id=>$donor){            

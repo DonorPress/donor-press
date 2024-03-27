@@ -24,8 +24,7 @@ class DonationUpload extends ModelLite
         $row=0;
         $headerRow=array();
         if (($handle = fopen($csvFile, "r")) !== FALSE) {
-            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                //print "data:"; self::dump($data);
+            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {                
                 if ($firstLineColumns && $row==0){
                     $headerRow= preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $data);		
                 }else{
@@ -64,10 +63,6 @@ class DonationUpload extends ModelLite
                                        
                     $obj=new Donation($donationFill);
                     $obj->donation_to_donor($donorFill,true);  //Will Set DonorId on Donation Table.    
-                    // print "<pre>"; print_r($obj); print "</pre>";
-                    // print "<pre>"; print_r($donorFill); print "</pre>";
-                    // exit();  
-                    //self::dd($obj);         
                     $q[]=$obj;
                 }	
                 $row++;
@@ -150,7 +145,6 @@ class DonationUpload extends ModelLite
                                 $donor->Name=trim($v);
                             }
                             $donation->Name=trim($v);
-                            //dd($donor);
                             //print "pattern $field set to $v on Index $c. <br>";
                         break;
                         case 'City, Region Postal Country':
@@ -420,7 +414,6 @@ class DonationUpload extends ModelLite
         $row=0;
         if (($handle = fopen($csvFile, "r")) !== FALSE) {
             while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
-                //print "data:"; self::dump($data);
                 if ($firstLineColumns && $row==0){
                     $headerRow= preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $data);
                     $paypalPass=true;
@@ -534,8 +527,7 @@ class DonationUpload extends ModelLite
             add_filter( 'upload_dir', 'donorpress_upload_dir' );
             $uploadresult=wp_handle_upload($_FILES["fileToUpload"],array('test_form' => FALSE, 'unique_filename_callback' => 'your_custom_callback'));
             remove_filter( 'upload_dir', 'donorpress_upload_dir' );  
-            $originalFile=basename($uploadresult['file']);
-            //dd($uploadresult,$target_file, $basename());      
+            $originalFile=basename($uploadresult['file']); 
             if ($uploadresult['error']){
                 self::display_error("Sorry, there was an error uploading your file: ". $uploadresult['error']);
             }elseif ( $uploadresult['file']) { 

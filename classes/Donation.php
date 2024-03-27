@@ -79,7 +79,6 @@ class Donation extends ModelLite
             $donation->Name="Bank Withdrawal";
             if (!$donation->SourceId) $donation->SourceId=$transaction->bank_reference_id;
         }
-        //if (!$payer->payer_name->alternate_full_name) self::dd($payer->payer_name);
         $donation->FromEmailAddress=$payer->email_address;
         $donation->PaymentSource=10;
         $donation->Type=self::transaction_event_code_to_type($transaction->transaction_event_code);
@@ -196,9 +195,7 @@ class Donation extends ModelLite
                 }
             }
         }
-       
-        //self::dump($newEntry);
-       // self::dd($newEntry);
+
        $newEntry=$this->new_from_donation($override);
         if (sizeof($newEntry)>0){
             $donor=new Donor($newEntry);
@@ -384,8 +381,6 @@ class Donation extends ModelLite
                             print $donors[$donation->DonorId]->name_check();
                         }else{ 
                             print $donation->DonorId;
-                            //self::dd($donations);
-                            //exit();
                         }
                     
                         ?></td>
@@ -654,8 +649,7 @@ class Donation extends ModelLite
                     }
                     if (self::input('dt','get')){
                         $where[]="DATE(`$dateField`)<='".self::input('dt','get')."'";
-                    } 
-                    //dd($where);                   
+                    }               
                     self::view_donations($where,
                         array(
                             'unsent'=>self::input('unsent','get')=="t"?true:false,
@@ -1030,8 +1024,6 @@ class Donation extends ModelLite
         $bodyContent=self::input('customMessage','post')?stripslashes_deep(self::input('customMessage','post')):$bodyContent; //Post value overrides this though.
         $subject=self::input('EmailSubject','post')?stripslashes_deep(self::input('EmailSubject','post')):$this->emailBuilder->subject;
 
-        //dump($receipts[$lastReceiptKey]);
-
         if (self::input('resetLetter','get')=="t"){
             $subject=$this->emailBuilder->subject;
             $bodyContent=$this->emailBuilder->body;
@@ -1186,16 +1178,16 @@ class Donation extends ModelLite
 			$where[]="DT.Gross='".Donor::input('at','get')."'";
 		}
 
-        if (Donor::input('where','get')){
+        // if (Donor::input('where','get')){
            
-            $whereTxt=stripslashes_deep(Donor::input('where','get'));
-            $removeTxt=array('insert','update','replace','delete','drop','alter','create','truncate','grant','revoke','union','select','from','where');
-             /* remove the following words from the query regardless if they are upper or lower case */
-            foreach ($removeTxt as $word){
-                $whereTxt=str_ireplace($word,"",$whereTxt);
-            }
-            $where[]=$whereTxt;
-        }
+        //     $whereTxt=stripslashes_deep(Donor::input('where','get'));
+        //     $removeTxt=array('insert','update','replace','delete','drop','alter','create','truncate','grant','revoke','union','select','from','where');
+        //      /* remove the following words from the query regardless if they are upper or lower case */
+        //     foreach ($removeTxt as $word){
+        //         $whereTxt=str_ireplace($word,"",$whereTxt);
+        //     }
+        //     $where[]=$whereTxt;
+        // }
 
 		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
         FROM ".Donor::get_table_name()." D INNER JOIN ".self::get_table_name()." DT ON D.DonorId=DT.DonorId 

@@ -41,8 +41,7 @@ class CustomVariables extends ModelLite
 
     static public function form(){
         $wpdb=self::db();  
-        $vals=self::get_custom_variables(); 
-        //dump($vals);     
+        $vals=self::get_custom_variables();  
         ?>
         <h2>Edit Donor Variables</h2>
         <form method="post">

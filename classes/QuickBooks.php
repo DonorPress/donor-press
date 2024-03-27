@@ -176,12 +176,9 @@ class QuickBooks extends ModelLite
                     if (substr($this->fieldLinks[$field],0,1)=="+"){ //special type of "+" in front allows it to read another field
                         $tableField=substr($this->fieldLinks[$field],1);               
                         $table=$this->showQBfield($entity,$tableField);
-                    //dd($tableField,$this->fieldLinks[$field],$entity,$table);
                     }else{
                         $table=$this->fieldLinks[$field];
                     }
-                    //dd($this->fieldLinks[$field],$table,$tableField);
-
                     print '<a target="QBdetail" href="'.url_esc('?page=donorpress-quickbooks&table='.$table.'&Id='.$value).'">'.esc_html($value)."</a> ".self::qbLink($table,$value,'QB');
                 }else print $value;
                 print "</td></tr>"; //rewrite this to use: $this->showQBfield($entity,$field)  -
@@ -340,9 +337,7 @@ class QuickBooks extends ModelLite
                     if ($resultObj->Id){
                         $donation->QBOInvoiceId=$resultObj->Id;
                         $donation->save();
-                        self::display_notice("Quick Books Invoice Id #".$donation->show_field('QBOInvoiceId')." created and linked to Donation #".$donation->show_field('DonationId'));
-                        //dd($resultObj,$invoice,$donation,$donor);
-                        
+                        self::display_notice("Quick Books Invoice Id #".$donation->show_field('QBOInvoiceId')." created and linked to Donation #".$donation->show_field('DonationId'));                        
                         $payment=$this->donation_to_payment($donation,$donor);
                         $this->process_payment_obj($payment,$donation);
                         
@@ -353,7 +348,6 @@ class QuickBooks extends ModelLite
                     return null;
                 }
             }
-            //dd($invoice,$donation,$donor);
         }       
     }
 
@@ -1011,7 +1005,6 @@ class QuickBooks extends ModelLite
             if (substr($this->fieldLinks[$field],0,1)=="+"){ //special type of "+" in front allows it to read another field
                 $tableField=substr($this->fieldLinks[$field],1);               
                 $table=$this->showQBfield($entity,$tableField);
-                //dd($tableField,$this->fieldLinks[$field],$entity,$table);
             }
             $result=$this->showQBfieldLink($table,$result); 
         }
@@ -1233,7 +1226,7 @@ class QuickBooks extends ModelLite
                 if($error){
                     self::display_error("<strong>Error Refreshing Token</strong> ".$error->getResponseBody()."</div>");
                 }else{
-                    dump($result);
+                    self::dump($result);
                 }                
             }
             
@@ -1249,7 +1242,6 @@ class QuickBooks extends ModelLite
     public function reportUnMatchedPayments(){
         $unmatched=[];
         $payments=self::get_all_entity('Payment');
-        //dump($payments);
         foreach($payments as $p){
             if (!$p->LinkedTxn){
                 $unmatched[$p->Id]=$p;

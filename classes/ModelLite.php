@@ -128,8 +128,7 @@ class ModelLite{
 		}else{
 			if (static::CREATED_AT && !$data[static::CREATED_AT]){
 				$data[static::CREATED_AT]= date("Y-m-d H:i:s",$time);
-			}
-			//dump($data);		 	
+			}	 	
 			if (!$wpdb->insert($this->get_table(),$data)){				
 				print $wpdb->print_error();
 				self::dump($data);
