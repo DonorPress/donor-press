@@ -69,7 +69,7 @@ class ModelLite{
 
 	public function get_table($type="full"){
 		$wpdb=self::db(); 
-		$base=strtolower(($this->table ?? class_basename($this)));
+		$base=strtolower(($this->table ?? get_class($this)));
 		if($type=="base"){
 			return $base;
 		}

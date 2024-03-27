@@ -4,6 +4,8 @@ use DonorPress\Donor;
 use DonorPress\DonorType;
 use DonorPress\DonationCategory;
 use DonorPress\CustomVariables; 
+use DonorPress\DonationReceipt;
+
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
 $tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression",'tax'=>"Tax"];
 $active_tab=Donor::show_tabs($tabs);
@@ -80,7 +82,7 @@ function donorpress_year_end_summmaries(){ ?>
 				$donorList=Donor::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
 				foreach ($donorList as $donor){                        
 					$donor->year_receipt_email($year);					
-					if (wp_mail($this->email_string_to_array($donor->Email), $donor->emailBuilder->subject, $donor->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){                            
+					if (wp_mail($donor->email_string_to_array($donor->Email), $donor->emailBuilder->subject, $donor->emailBuilder->body,array('Content-Type: text/html; charset=UTF-8'))){                            
 						$dr=new DonationReceipt(array("DonorId"=>$donor->DonorId,"KeyType"=>"YearEnd","KeyId"=>$year,"Type"=>"e","Address"=>$donor->Email,
 						"Subject"=>$donor->emailBuilder->subject,"Content"=>$donor->emailBuilder->body,"DateSent"=>date("Y-m-d H:i:s")));                            
 						$dr->save();                     
@@ -99,7 +101,7 @@ function donorpress_report_donors(){
 	$dateField=Donor::input('dateField','get')?Donor::input('dateField','get'):'Date';
 
 	$typeIds=is_array($_GET['typeIds'])?$_GET['typeIds']:array();	//if ($donorTypes[0]=="") $donorTypes=array();
-	
+	$top=is_int(Donor::input('top','get'))?Donor::input('top','get'):1000;	
 	?><form method="post">
 		<button name="Function" value="ExportAllDonors">Export All Donors</button>
 	</form>
@@ -200,6 +202,7 @@ function donorpress_report_tax(){
 	<div>Reviews giving for the past 5 years, and anybody who gave over 2% of the 5 year total.</div>
 	
 	<?php
+	$total=[];
 	### GET Qualifying Yearly Totals (TransationType ID between 0 to 99 are gifts)
 	$SQL="SELECT YEAR(Date) as TaxYear,SUM(Gross) as Gross
 		FROM ".Donation::get_table_name()."
@@ -532,7 +535,7 @@ function donorpress_report_top($top=20){
 }
 
 function donorpress_donor_regression($where=[]){
-	global $wpdb,$wp;
+	global $wpdb;
 	if (!Donor::input('yf','get')){
 		$results = $wpdb->get_results("SELECT MIN(Year(`Date`)) as YearMin, MAX(Year(`Date`)) as YearMax	FROM ".Donation::get_table_name());
 		$_GET['yf']=isset($results[0]->YearMin)?$results[0]->YearMin:date("Y")-1;

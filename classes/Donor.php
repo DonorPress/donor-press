@@ -605,9 +605,17 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, D.TypeId,COUNT(*) as donation_count, SUM(Gross)  as Total , MIN(DT.Date) as DateEarliest, MAX(DT.Date) as DateLatest 
         FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$where)
-        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, D.TypeId "
-        .(sizeof($settings['having'])>0?" HAVING ".implode(" AND ",$settings['having']):"")
-        ." Order BY ".$settings['orderBy'];
+        ." Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,`Phone`, `Address1`, `Address2`, `City`, `Region`, `PostalCode`, `Country`, D.TypeId ";
+        if (isset($settings['having'])){
+            if (is_array($settings['having'])){
+                if (sizeof($settings['having'])>0){
+                    $SQL.=" HAVING ".implode(" AND ",$settings['having']);
+                }
+            }elseif($settings['having']){
+                $SQL.=" HAVING ".$settings['having'];
+            }
+        }
+        $SQL.=" Order BY ".$settings['orderBy'];
 
         $results = self::db()->get_results($SQL);
         ?><div><a href="<?php print esc_url('?page='.self::input('page','get'))?>">Return</a></div><form method=post><input type="hidden" name="Year" value="<?php print esc_attr($year)?>"/>
@@ -759,7 +767,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             self::display_notice("Page /donor-receiptyear created. <a target='edit' href='?page=donorpress-settings&tab=email&DonorTemplateId=".$page->ID."&edit=t'>Edit Template</a>");
         }
         $this->emailBuilder->pageID=$page->ID;
-        $total=0;
+        $nteTotal=$total=0;
         $taxDeductible=[];
         $NotTaxDeductible=[];
         $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'"),'Date');
@@ -1006,7 +1014,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         return substr(str_replace(" ","",get_bloginfo('name')),0,12)."-YearEndReceipt-D".$this->DonorId.'-'.$year.'.pdf';
     }
 
-    static function autocomplete($query){       
+    static function autocomplete($query,$orderby=null){       
         $searchText = strtoupper($query);
         $where= array("(UPPER(Name) LIKE '%".$searchText."%' 
         OR UPPER(Name2)  LIKE '%".$searchText."%'
@@ -1033,7 +1041,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $page = DonorTemplate::get_by_name('donor-receiptyear');  
         if (!$page){
             $tempLoc=donorpress_plugin_base_dir()."/resources/template_default_receipt_year.html";   
-            $t=new selfTemplate();          
+            $t=new DonorTemplate();          
             $t->post_content=file_get_contents($tempLoc);            
             $t->post_title='##Organization## ##Year## Year End Receipts';
             $t->post_name='donor-receiptyear';

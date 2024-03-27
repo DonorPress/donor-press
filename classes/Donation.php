@@ -564,7 +564,6 @@ class Donation extends ModelLite
             ### Defaults set IF prevous donation not pulled.
             $donation->PaymentSource=$donation->PaymentSource?$donation->PaymentSource:1;
             $donation->Type=$donation->Type?$donation->Type:1;
-
             $donation->Status=9;
 
             $donation->edit_simple_form();           
@@ -889,7 +888,7 @@ class Donation extends ModelLite
                 $customMessage=null; //don't bother saving if template hasn't changed.
             }
             $notice="<div class=\"notice notice-success is-dismissible\">E-mail sent to ".$email."</div>";
-            $dr=new selfReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s"),
+            $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"e","Address"=>$email,"DateSent"=>date("Y-m-d H:i:s"),
             "Subject"=>$subject,"Content"=>$customMessage));
             $dr->save();
         }else{
@@ -959,7 +958,7 @@ class Donation extends ModelLite
                 return false; 
             }
         } 
-        $dr=new selfReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
+        $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
         $dr->save();        
         return true;        
     }
@@ -1062,7 +1061,7 @@ class Donation extends ModelLite
                         }
                     }
                     ?>
-                    <button type="submit" name="syncDonationToInvoiceQB" value="t" style="background-color:lightgreen;">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="<?php print esc_url('?page=donorpress-quickbooks&ignoreSyncDonation='.$donation->DonationId)?>">Ignore/Don't Sync to QB</a>
+                    <button type="submit" name="syncDonationToInvoiceQB" value="t" style="background-color:lightgreen;">Create Invoice & Payment In QB</button> | <a style="background-color:orange;" target="QB" a href="<?php print esc_url('?page=donorpress-quickbooks&ignoreSyncDonation='.$this->DonationId)?>">Ignore/Don't Sync to QB</a>
                     </form>
                     <?php
                 }elseif(!$this->QBOPaymentId){
@@ -1139,7 +1138,7 @@ class Donation extends ModelLite
         $pdf->SetMargins($margin['x'],$margin['y'],$margin['x']);
         $pdf->SetCreator('Donor-Press Plugin');
         $pdf->SetAuthor('Donor-Press');
-        $pdf->SetTitle($year.'Year End Labels');	 
+        $pdf->SetTitle('Year End Labels');	 
         $starti=($col_start>0?($col_start-1)%3:0)+($row_start>0?3*floor($row_start-1):0);
         $border=0; $j=0;
         for ($i=$starti;$i<sizeof($a)+$starti;$i++){

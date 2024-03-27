@@ -52,7 +52,7 @@ $active_tab=Donor::show_tabs($tabs);
                 <h2>Nuke Site</h2>
                 <button name="Function" value="NukeDonorPress">Clear Out Donor Press Files</button> - Useful for uninstalls or during testing.
                 <h2>Load Test Data</h2>
-                <button name="Function" value="LoadTestData">Load Test Records</button>  Records: <input type="number" name="records" value="20"/> - Useful for testing the plugin.
+                <button name="Function" value="LoadTestData">Load Test Records</button>  Records: <input type="number" name="records" value="20"/> - Useful for testing the plugin. This will add new donor and donations records (but not remove existing data).
             </form><?php
             break;
         case "cv":  

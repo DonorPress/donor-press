@@ -141,9 +141,7 @@ class CustomVariables extends ModelLite
                             <input type="hidden" name="<?php print esc_attr($var)?>_id" value="<?php print esc_attr($vals->$fullVal?$vals->$fullVal->option_id:"")?>"/>    
                             <input type="hidden" name="<?php print esc_attr($var)?>_was" value="<?php print esc_attr($val)?>"/> </td></tr>
                             <?php
-                            
-                        }   
-
+                        }  
                     }
             } ?>                
             </table>           
@@ -371,7 +369,7 @@ class CustomVariables extends ModelLite
                print self::display_notice("Site Nuked. Data erased");
                 break;
             case 'LoadTestData':
-                loadTestData(self::input('records','post'));
+                donorpress_load_test_data(self::input('records','post'));
                 print self::display_notice("Test Data Loaded. ".self::input('records','post')." Records Created");
                 break;            
         }		

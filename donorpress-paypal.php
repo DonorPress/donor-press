@@ -2,6 +2,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 use DonorPress\Donor;
 use DonorPress\Paypal;
+use DonorPress\CustomVariables;
 if (Donor::request_handler())  { print "</div>"; return;}
 
 $paypal = new Paypal();
