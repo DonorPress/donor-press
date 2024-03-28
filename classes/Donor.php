@@ -230,7 +230,9 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         <input type='hidden' name='donorIds[]' value='<?php print esc_html($oldDonor->DonorId)?>'>
         <h2>The following changes are suggested</h2>
         <form method='post'>
-        <table border='1'><tr><th>Field</th><th>Donor A</th><th>Donor B</th></tr><?php
+        <table border='1'><tr>
+            <th></th><th><?php print esc_attr($changes['Name'])?></th><th><?php print esc_attr($this->Name)?></th></tr>
+            <th>Field</th><th>Donor A</th><th>Donor B</th></tr><?php
         foreach($changes as $field=>$value){
             if ($field=="MergedId") continue; //don't allow mergeing of merge IF it is the original donor
             ?><tr><td><?php print esc_html($field)?></td>
@@ -1119,7 +1121,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 if ($r->donation_count>0){ 
                     $merge[$r->DonorId]=$r->MergedId;                   
                 }
-            }elseif(!$r->MergedId){
+            }else{
                 foreach($matchField as $field){
                     if (trim($r->$field)){
                         $val=preg_replace("/[^a-zA-Z0-9]+/", "", strtolower($r->$field));
@@ -1149,13 +1151,16 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                           
                 print '</td><td><a target="donor" href="?page=donorpress-index&DonorId='.$donors[$to]->DonorId.'">'.$donors[$to]->DonorId.'</a> '.$donors[$to]->Name."</td></tr>";
             }
+            $displayed=[];            
             foreach($cache as $key=>$a){
-                if (sizeof($a)>1){                  
+                if ($displayed[$donors[$a[$i]]->DonorId][$donors[$a[0]]->DonorId]) continue;
+                if (sizeof($a)>1){             
                     print '<tr><td>';
                     for($i=1;$i<sizeof($a);$i++){
                         print '<div><a target="donor" href="?page=donorpress-index&DonorId='.$donors[$a[$i]]->DonorId.'">'.$donors[$a[$i]]->DonorId.'</a> '.$donors[$a[$i]]->Name.($donors[$a[$i]]->Name2?" & ".$donors[$a[$i]]->Name2:"").' <a target="donor" href="?page=donorpress-index&Function=MergeConfirm&MergeFrom='.$donors[$a[$i]]->DonorId.'&MergedId='.$donors[$a[0]]->DonorId.'">Merge To -></a></div>';   
                     }                 
                     print '</td><td><a target="donor" href="?page=donorpress-index&DonorId='.$donors[$a[0]]->DonorId.'">'.$donors[$a[0]]->DonorId.'</a> '.$donors[$a[0]]->Name.($donors[$a[0]]->Name2?" & ".$donors[$a[0]]->Name2:"")."</td></tr>";
+                    $displayed[$donors[$a[$i]]->DonorId][$donors[$a[0]]->DonorId]++;
                 }
             }
             ?></table><?php
