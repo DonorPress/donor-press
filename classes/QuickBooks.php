@@ -553,10 +553,10 @@ class QuickBooks extends ModelLite
 
     static function is_setup(){ 
         if (CustomVariables::get_option('QuickbooksClientId') && CustomVariables::get_option('QuickbooksSecret')){
-            return true;
-        }else{
-            return false;
+            if (file_exists('../vendor/quickbooks/v3-php-sdk')) return true;
         }
+        return false;
+        
     }
 
     public function default_item_id($donation,$donor=null){
