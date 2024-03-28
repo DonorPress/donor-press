@@ -124,9 +124,10 @@ class DonorTemplate extends ModelLite {
     }
 
     public function pdf_preview(){
-        if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
-            return false;
+        $type=Donation::pdf_class_check();
+        if ($type!='tcpdf'){
+            self::display_error("TCPDF is required to generate this PDF.");
+            wp_die();
         }
         ob_clean();
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);

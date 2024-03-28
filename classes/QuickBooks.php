@@ -97,7 +97,6 @@ class QuickBooks extends ModelLite
 
     static public function qb_api_installed(){
         return file_exists(donorpress_plugin_base_dir()."/vendor/quickbooks");
-       //return class_exists('DataService');
     }
 
     static public function redirect_url(){
@@ -553,7 +552,7 @@ class QuickBooks extends ModelLite
 
     static function is_setup(){ 
         if (CustomVariables::get_option('QuickbooksClientId') && CustomVariables::get_option('QuickbooksSecret')){
-            if (file_exists('../vendor/quickbooks/v3-php-sdk')) return true;
+            if (self::qb_api_installed()) return true;
         }
         return false;
         

@@ -892,21 +892,23 @@ class Donation extends ModelLite
     }
 
     static function pdf_class_check(){
-        if (class_exists("Dompdf\Dompdf")){        
-             //return "dompdf";    
-        }
-        self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");         
-
         if (class_exists("TCPDF")){
             return "tcpdf";
         }else{
-            require ( WP_PLUGIN_DIR.'/doublewp-tcpdf-wrapper/lib/tcpdf/tcpdf.php' );
+            if (file_exists(WP_PLUGIN_DIR.'/doublewp-tcpdf-wrapper/lib/tcpdf/tcpdf.php')){
+             require ( WP_PLUGIN_DIR.'/doublewp-tcpdf-wrapper/lib/tcpdf/tcpdf.php' );
+            }
         }
 
         if (class_exists("TCPDF")){
             return "tcpdf";
         }
-        return false;
+        if (class_exists("Dompdf\Dompdf")){        
+            return "dompdf";    
+       }
+       self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function or install <a href='/wp-admin/plugin-install.php?s=DoublewP%2520TCPDF%2520Wrapper&tab=search&type=term'>DoublewP TCPDF Wrapper</a> ");
+       wp_die(); 
+       return false;
     }
 
     public function pdf_receipt($customMessage=null){
@@ -1088,10 +1090,11 @@ class Donation extends ModelLite
 
     static function label_by_id($donationIds,$col_start=1,$row_start=1,$limit=100000){
         if (sizeof($donationIds)<$limit) $limit=sizeof($donationIds);
-        if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
-            return false;
-        }      
+        $type=Donation::pdf_class_check();
+        if ($type!='tcpdf'){
+            self::display_error("TCPDF is required to generate this PDF.");
+            wp_die();
+        }     
         $SQL="Select DT.DonationId,DR.*
         FROM ".self::get_table_name()." DT
         INNER JOIN ".Donor::get_table_name()." DR ON DT.DonorId=DR.DonorId 

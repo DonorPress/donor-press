@@ -923,10 +923,11 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $donorIds[]=$donorIdPost[$i];
         }
         if (sizeof($donorIds)>0){
-            if (!class_exists("TCPDF")){
-                Donation::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
-                return false;
-            }
+            $type=Donation::pdf_class_check();
+            if ($type!='tcpdf'){
+                self::display_error("TCPDF is required to generate this PDF.");
+                wp_die();
+            } 
             $donorList=self::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
             ob_clean();
             $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);            
@@ -954,10 +955,11 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
 
     static function YearEndLabels($year,$donorIdPost,$col_start=1,$row_start=1,$limit=100000){
         if (sizeof($donorIdPost)<$limit) $limit=sizeof($donorIdPost);
-        if (!class_exists("TCPDF")){
-            self::display_error("PDF Writing is not installed. You must run 'composer install' on the donor-press plugin directory to get this to funciton.");
-            return false;
-        }       
+        $type=Donation::pdf_class_check();
+        if ($type!='tcpdf'){
+            self::display_error("TCPDF is required to generate this PDF.");
+            wp_die();
+        }     
 
         $donors=self::get(["DonorId IN ('".implode("','",$donorIdPost)."')"],"",['key'=>true]);        
         $a=[];

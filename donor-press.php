@@ -183,7 +183,7 @@ function donorpress_upload_dir( $dirs ) {
 function donorpress_load_test_data($count=20){
 	if (!class_exists("Faker\Factory")){
 		Donor::display_error("Faker Class is not installed. You must run 'composer install' on the donor-press plugin directory to get this to function.");         
-		//    
+		wp_die();   
 		return false;
 	}
 
@@ -297,6 +297,7 @@ function donorpress_load_test_data($count=20){
 			}
 		}
 	}
+	return true;
 }
 
 //adapted from: https://www.php-fig.org/psr/psr-4/examples/ -> used to autolad the DonorPress namespace

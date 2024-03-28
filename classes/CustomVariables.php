@@ -368,8 +368,9 @@ class CustomVariables extends ModelLite
                print self::display_notice("Site Nuked. Data erased");
                 break;
             case 'LoadTestData':
-                donorpress_load_test_data(self::input('records','post'));
-                print self::display_notice("Test Data Loaded. ".self::input('records','post')." Records Created");
+                if (donorpress_load_test_data(self::input('records','post'))){
+                    print self::display_notice("Test Data Loaded. ".self::input('records','post')." Records Created");
+                }               
                 break;            
         }		
 
