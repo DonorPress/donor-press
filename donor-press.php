@@ -1,5 +1,6 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
+define(__NAMESPACE__ . '\GOODBYE', 'Goodbye cruel world!');   
 /*
  * Plugin Name: Donor Press - A Donation Tracking System
  * Plugin URI: https://donorpress.com/
@@ -22,6 +23,8 @@ $donor_press_db_version='0.1.1';
 if (file_exists(__DIR__ . '/vendor/autoload.php')){
 	require_once __DIR__ . '/vendor/autoload.php';
 }
+
+
 use DonorPress\Donation;
 use DonorPress\QuickBooks;
 use DonorPress\Donor;
@@ -296,5 +299,34 @@ function donorpress_load_test_data($count=20){
 	}
 }
 
+//adapted from: https://www.php-fig.org/psr/psr-4/examples/ -> used to autolad the DonorPress namespace
+spl_autoload_register(function ($class) {
+
+    // project-specific namespace prefix
+    $prefix = 'DonorPress\\';
+
+    // base directory for the namespace prefix
+    $base_dir = __DIR__ . '/classes/';
+
+    // does the class use the namespace prefix?
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        // no, move to the next registered autoloader
+        return;
+    }
+
+    // get the relative class name
+    $relative_class = substr($class, $len);
+
+    // replace the namespace prefix with the base directory, replace namespace
+    // separators with directory separators in the relative class name, append
+    // with .php
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+
+    // if the file exists, require it
+    if (file_exists($file)) {
+        require $file;
+    }
+});
 
 

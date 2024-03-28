@@ -4,10 +4,5 @@
         "quickbooks/v3-php-sdk": "^6.1",
         "fzaninotto/faker": "^1.5",
         "dompdf/dompdf": "^2.0"
-    },
-    "autoload": {
-        "psr-4": {
-           "DonorPress\\": "classes"
-        }
-     }
+    }    
 }
