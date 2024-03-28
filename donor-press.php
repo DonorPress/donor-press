@@ -5,14 +5,14 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
  * Plugin URI: https://donorpress.com/
  * Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. You can manually enter donations, upload a .csv file, or  optionally integrates with Paypal and Quickbooks.
  * Version:           0.1.1
- * Requires at least: 0.1
- * Requires PHP:      7.2
+ * Requires at least: 0.1.1
+ * Requires PHP:      7.0
  * Author:            Denver Steiner
  * Author URI:        https://donorpress.com/author/
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Update URI:        donor-press
- * Text Domain:       donor-press
+ * Update URI:        https://github.com/DonorPress/donor-press
+ * Text Domain:       donor-press 
  */
 
 global $donor_press_db_version;
@@ -198,7 +198,6 @@ function donorpress_load_test_data($count=20){
 
 	}	
 	$donationCategories=DonationCategory::get();
-	//dd($donationCategories);
 	for($i=0;$i<$count;$i++){
 		$faker = Faker\Factory::create();
 		$donor=new Donor();
