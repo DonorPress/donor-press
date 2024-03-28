@@ -3,7 +3,6 @@ namespace DonorPress;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly      
 ### Manages the Category of a Donation
 
-require_once 'Donation.php';
 class DonationCategory extends ModelLite
 {
     protected $table = 'donation_category';
