@@ -711,6 +711,7 @@ class Donation extends ModelLite
         <script>
             function calculateNet(){
                 var net= document.getElementById('donation_gross').value-document.getElementById('donation_fee').value;
+                net = net.toFixed(2);
                 document.getElementById('donation_net').value=net;
                 document.getElementById('donation_net_show').innerHTML=net;
             }
