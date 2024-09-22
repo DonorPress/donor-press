@@ -12,7 +12,6 @@ define(__NAMESPACE__ . '\GOODBYE', 'Goodbye cruel world!');
  * Author URI:        https://donorpress.com/author/
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Update URI:        https://github.com/DonorPress/donor-press
  * Text Domain:       donor-press 
  */
 
