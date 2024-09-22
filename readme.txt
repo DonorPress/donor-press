@@ -2,8 +2,8 @@
 Contributors: steinerd
 Tags: nonprofit, donation tracker, donations, donation manager, quickbooks, paypal, donors
 Requires at least: 0.1.1
-Tested up to: 0.1.1
-Stable tag: 0.1.1
+Tested up to: 0.6.5
+Stable tag: 0.1.2
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -42,6 +42,7 @@ Optional Depenancies include:
 Google Charts allow you to view different graphs on certain report pages. To turn on this dependancy, go to:
 "Settings -> Site Variables" tab and set "GoogleCharts" to "on". (By default it is off)
 Turning this on utilizes the following external library: https://www.gstatic.com/charts/loader.js 
+Due to the terms of service, you are NOT allowed to host this library locally, so it is added as an optional external dependancy that can be added via the setting menu. 
 Read more about Google Charts here: https://developers.google.com/chart
 Terms of Service: https://developers.google.com/chart/terms
 Security and Privacy Notice: https://developers.google.com/chart/interactive/docs/security_privacy
@@ -58,6 +59,8 @@ To enable Paypal integration, you must first get an API key from Paypal:
     - For QuickBook base, selected "production" or "development"
 By entering a value, it will override what is currently there. Values are encrypted on the database.
 Paypal API relies on the following external API: https://api-m.paypal.com/v1/
+Paypal Terms of Use/Developer Agreement: https://www.paypal.com/us/legalhub/xdeveloper-full
+Paypal Privacy Statemetn: https://www.paypal.com/us/legalhub/privacy-full
 
 # Optional Features that require additional libraries
 The following functionality is not included with the base DonorPress installation due the size of the libraries, however they are recommended add ons.
@@ -66,7 +69,6 @@ To install these libaries you will need shell access, and composer installed.
 1. Navigate to the Donor-Press plugin directory located at: [wordpressinstalldirectory]/wp-content/plugins/donor-press
 2. run 'composer install'.
 
-The following Libaries are included:
 
 ## Quickbooks API
 Quickbooks expands functionality by allowing you to sync Donor and donations information to Quickbooks.
@@ -77,6 +79,8 @@ Login to to your wordpress Admin interface, and navigate to: "DonorPress -> Sett
 Here you sould be able to enter api credentials. Obtaining these credentials requires sighning up for api access at: https://www.developer.intuit.com/app/developer/dashboard
 
 Quickbooks Library information: https://github.com/intuit/PHP-Payments-SDK
+Quickbooks/Intuit Terms of Service: https://developer.intuit.com/app/developer/qbo/docs/legal-agreements/intuit-terms-of-service-for-intuit-developer-services
+Intuit Privacy Statement: https://quickbooks.intuit.com/hk/privacy/
 
 ## PDF Generation
 Generating PDFs are helpful when you need to printout and physcially mail a donor receipt or year end receipt. However this functionaly requires external libraries to work.
