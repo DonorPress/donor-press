@@ -120,7 +120,7 @@ class Paypal extends ModelLite{
                     'grant_type'=>'client_credentials'
                 )            
             );
-            $response = wp_remote_get( $this->get_url().'reporting/transactions?fields=transaction_info,payer_info,shipping_info&start_date='.$start_date.'&end_date='.$end_date, $args);
+            $response = wp_remote_get( $this->get_url().'reporting/transactions?fields=transaction_info,payer_info,shipping_info,cart_info&start_date='.$start_date.'&end_date='.$end_date, $args);
             if ( is_wp_error( $response ) ) {
                 $this->error="Error from ".$this->get_url()."oauth2/token: ". $response->get_error_message();
                 self::display_error($this->error);           

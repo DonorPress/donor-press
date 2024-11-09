@@ -61,6 +61,7 @@ class Donation extends ModelLite
     
     static public function from_paypal_api_detail($detail){               
         $transaction=$detail->transaction_info;
+        $item=$detail->cart_info?$detail->cart_info->item_details:[];
         $payer=$detail->payer_info;
         $donation=new self();
         $donation->Source='paypal';
@@ -72,13 +73,22 @@ class Donation extends ModelLite
         $donation->Currency=$transaction->transaction_amount->currency_code;
         $donation->Fee=$transaction->fee_amount->value;
         $donation->Net=$donation->Gross+$donation->Fee;
-        if ($transaction->transaction_subject){ //lookup categoryId based on subject
-            $category=DonationCategory::get(array("Category = '".$transaction->transaction_subject."'"));
+        $categoryName=$transaction->transaction_subject;
+        if(!$categoryName && isset($item[0]->item_code)){
+            $categoryName=$item[0]->item_code;
+        }
+        if (trim($categoryName)){ //lookup categoryId based on subject
+            $category=DonationCategory::get(array("Category = '".trim(addslashes($categoryName))."'"));
             if ($category){
                 $donation->CategoryId=$category[0]->CategoryId;
+            }else{ //may want to limit this to $item[0]->item_code entries... not sure if custom text makes it to this field.
+                $donationCategory=new DonationCategory();
+                $donationCategory->Category=$categoryName;
+                $donationCategory->save();
+                $donation->CategoryId=$donationCategory->CategoryId;
             }
         }            
-        $donation->Subject=$transaction->transaction_subject;
+        $donation->Subject=$categoryName;
         $donation->Note=$transaction->transaction_note;
         $donation->Name=$payer->payer_name->alternate_full_name;
         if (!$donation->Name && $transaction->bank_reference_id){
