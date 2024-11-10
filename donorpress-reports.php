@@ -7,7 +7,7 @@ use DonorPress\CustomVariables;
 use DonorPress\DonationReceipt;
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
-$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression",'tax'=>"Tax"];
+$tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression",'tax'=>"Tax",'sanity'=>"Sanity Check"];
 $active_tab=Donor::show_tabs($tabs);
 ?>
 <div id="pluginwrap">
@@ -55,6 +55,9 @@ $active_tab=Donor::show_tabs($tabs);
 		break;
 		case "tax":
 			donorpress_report_tax();
+		break;
+		case "sanity":
+			donorpress_report_sanity();
 		break;
 	}
 	?>	
@@ -165,6 +168,99 @@ function donorpress_report_donors(){
 	}
 	
 	//print "survived";
+}
+
+function donorpress_report_sanity(){
+	$dupcheck=[];
+	$donors=Donor::get(array("(MergedId IS NULL OR MergedId =0)"),null,['key'=>true]);
+	//dd($donors);
+	foreach($donors as $donor){
+		if($donor->Email) $dupcheck["Email"][strtolower($donor->Email)][]=$donor->DonorId;
+		$name=  preg_replace( '/[^a-z]/i', '', strtolower($donor->Name));
+		if ($name) $dupcheck["Name"][$name][]=$donor->DonorId;
+		$name=  preg_replace( '/[^a-z]/i', '', strtolower($donor->Name2));
+		//remove last word of sentance $sentance
+		$address=preg_replace( '/[^a-z]/i', '',preg_replace('/\W\w+\s*(\W*)$/', '$1', strtolower($donor->Address1)).substr($donor->PostalCode,0,5));
+		if ($address && $donor->Address1){
+			$dupcheck["Address"][$address][]=$donor->DonorId;
+		}
+		
+	}
+	//dd($dupcheck);
+	if(sizeof($dupcheck)>0){
+		?><h2>Donor Duplicate Check</h2>
+		<table class="dp">
+		<tr><th>Field</th><th>Value</th><th>Count</th><th>DonorIds</th></tr>
+		<?php
+		foreach($dupcheck as $field=>$values){
+			foreach($values as $value=>$donorIds){
+				if (sizeof($donorIds)>1){
+					$lastDonor=null;
+					?><tr><td><?php print esc_html($field)?></td><td><?php print esc_html($value)?></td><td><?php print sizeof($donorIds)?></td><td><?php 
+					foreach($donorIds as $donorId){
+						?><div><a href="<?php print esc_url("?page=donorpress-index&DonorId=".$donorId)?>"><?php print esc_html($donorId)?></a> <?php
+						$donor=$donors[$donorId];
+						if ($donor){
+							print $donor->Name." ".$donor->Address;
+						}
+						if ($lastDonor){
+							?> <a target="merge" href="<?php print esc_url("?page=donorpress-index&DonorId=".$donorId."&Function=MergeConfirm&MergeFrom=".$donorId."&MergedId=".$lastDonor)?>">Merge</a><?php
+						}
+						$lastDonor=$donorId;						
+						?>
+				
+						</div><?php
+					}?>
+					</td></tr><?php
+				}
+			}
+		}
+		?></table><?php
+	}
+
+	$ddupcheck=[];
+	$donations=Donation::get([],null,['key'=>true]);
+	foreach($donations as $donation){
+		$date=substr($donation->Date,0,10);
+		if ($donation->TransactionID){			
+			$ddupcheck["TransactionID"][$donation->DonorId."|".$donation->TransactionID][]=$donation->DonationId;
+			$ddupcheck["TransactionIDDate"][$date."|".$donation->TransactionID][]=$donation->DonationId;
+		}
+		$ddupcheck["DateAmount"][$donation->DonorId."|".$date."|".$donation->Gross][]=$donation->DonationId;		
+	}
+	if(sizeof($ddupcheck)>0){
+		?><h2>Donation Duplicate Check</h2>
+		<table class="dp">
+		<tr><th>Field</th><th>Value</th><th>Count</th><th>DonationIds</th></tr>
+		<?php
+		foreach($ddupcheck as $field=>$values){
+			foreach($values as $value=>$donationIds){
+				if (sizeof($donationIds)>1){
+					?><tr><td><?php print esc_html($field)?></td><td><?php print esc_html($value)?></td><td><?php print sizeof($donationIds)?></td><td><?php 
+					foreach($donationIds as $donationId){
+						?><div><a href="<?php print esc_url("?page=donorpress-index&DonationId=".$donationId)?>"><?php print esc_html($donationId)?></a> <?php
+						$donation=$donations[$donationId];
+						if($donation){
+							$donor=$donors[$donation->DonorId];
+							if ($donor){
+								print $donor->Name." ";
+							}
+							print "$".number_format($donation->Gross,2)." on ".$donation->Date." Transaction: ".$donation->TransactionID;
+						}						
+						
+						
+						?></div><?php
+					}?>
+					</td></tr><?php
+				}
+			}
+		}
+		?></table><?php
+	}
+
+	if (sizeof($dupcheck)==0 && sizeof($ddupcheck)==0){
+		print "No duplicates found.";
+	}
 }
 
 function donorpress_report_tax(){
