@@ -963,17 +963,26 @@ class QuickBooks extends ModelLite
                         print self::pagination($index,$max,$count);
                     }                           
                 }
-            }else{ 
-                $companyInfo = $this->dataService->getCompanyInfo();               
-                ?>
-                <h2>Company: <?php print esc_html($companyInfo->LegalName." | ".CustomVariables::get_option('QuickbooksBase'))?></h2> 
-                <div><a href="<?php print esc_url('?page='.self::input('page','get').'&debug=t')?>">Debug Mode</a></div> 
-                <div><a href="<?php print esc_url('?page='.self::input('page','get').'&syncDonorsToQB=t')?>">Sync Donors to QuickBooks</a></div>           
-                <h3>View</h3>
-                 <?php foreach ($this->QBtables as $tbl=>$key){ ?>
-                    <div><a href="<?php print esc_url('?page=donorpress-quickbooks&table='.$tbl)?>"><?php print esc_html($tbl)?></a></div>
-                 <?php 
-                 }  
+            }else{
+                if ($this->dataService){
+                    try{
+                        $companyInfo = $this->dataService->getCompanyInfo();               
+                        ?>
+                        <h2>Company: <?php print esc_html($companyInfo->LegalName." | ".CustomVariables::get_option('QuickbooksBase'))?></h2> 
+                        <div><a href="<?php print esc_url('?page='.self::input('page','get').'&debug=t')?>">Debug Mode</a></div> 
+                        <div><a href="<?php print esc_url('?page='.self::input('page','get').'&syncDonorsToQB=t')?>">Sync Donors to QuickBooks</a></div>           
+                        <h3>View</h3>
+                        <?php 
+                        foreach ($this->QBtables as $tbl=>$key){ ?>
+                            <div><a href="<?php print esc_url('?page=donorpress-quickbooks&table='.$tbl)?>"><?php print esc_html($tbl)?></a></div>
+                        <?php 
+                        }
+                    }catch(\Exception $e) {
+                        echo 'Message: ' .$e->getMessage();
+                    }
+                }else{
+                    print "<div>Refresh Page to complete authentication.</div>";
+                }  
                          
             }
             return;           
