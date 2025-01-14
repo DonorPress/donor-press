@@ -666,8 +666,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         }
 
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, D.TypeId,COUNT(*) as donation_count, SUM(Gross) as Total FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-        WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";
-        //print "<pre>".$SQL."</pre>";
+        WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";       
         $results = self::db()->get_results($SQL);
         ?><form method=post><input type="hidden" name="Year" value="<?php print esc_attr($year)?>"/>
         <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Mailing</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');")/>
