@@ -718,7 +718,7 @@ function donorpress_donor_regression($where=[]){
 
 function donorpress_report_monthly(){
 	global $wpdb,$wp;
-	$where=array("Gross>0","Currency='USD'","Status=9");
+	$where=array("Gross>0"); //,"Status=9"//,"Currency='USD'"
 	//,"`Type` IN ('Subscription Payment','Donation Payment','Website Payment')"
 	if (Donor::input('view','report')=="donorpress_report_monthly" && Donor::input('view','get')=='detail'){
 		if (Donor::input('month','get')){
