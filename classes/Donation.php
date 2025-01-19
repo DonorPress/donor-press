@@ -661,10 +661,10 @@ class Donation extends ModelLite
                     
                     $dateField=(isset(self::s()->dateFields[self::input('dateField','get')])?self::input('dateField','get'):key(self::s()->dateFields));
                     if (self::input('df','get')){
-                        $where[]="DATE(`$dateField`)>='".self::input('df','get')."'";
+                        $where[]="DATE(`$dateField`)>='".self::input('df','get').($dateField=="Date"?"":" 00:00:00")."'";
                     }
                     if (self::input('dt','get')){
-                        $where[]="DATE(`$dateField`)<='".self::input('dt','get')."'";
+                        $where[]="DATE(`$dateField`)<='".self::input('dt','get').($dateField=="Date"?"":" 23:59:59")."'";
                     }               
                     self::view_donations($where,
                         array(
