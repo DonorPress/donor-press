@@ -749,7 +749,9 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
                 break;                  
             } 
             if (!$r->Subject && $r->CategoryId  && $r->CategoryId<>0) $reference.=($reference?" - ":"").$r->show_field("CategoryId",['showId'=>false]) ;
-                        
+            if ($r->TransactionType==3){
+                $reference.=" (IRA QCD)";
+            }
             $ReceiptTable.=$reference."</td><td align=\"right\">".trim(number_format($r->Gross,2)." ".$r->Currency).'</td></tr>';            
         }
         $ReceiptTable.="<tr><td colspan=\"2\"><strong>Total:</strong></td><td align=\"right\"><strong>".trim(number_format($total,2)." ".$lastCurrency)."</strong></td></tr></table>";
@@ -770,7 +772,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         $NotTaxDeductible=[];
         $donations=Donation::get(array("DonorId=".$this->DonorId,"YEAR(Date)='".$year."'"),'Date');
         foreach($donations as $r){
-            if ($r->TransactionType==0){
+            if (in_array($r->TransactionType,[0,3])){
                 $taxDeductible[]=$r;
                 $total+=$r->Gross;                
             }elseif($r->TransactionType==1){
@@ -790,7 +792,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             
             $ReceiptTable.=$this->receipt_table_generate($NotTaxDeductible);
         }
-        if ($ReceiptTable=="") $ReceiptTable="<div><em>No Donations found in ".$year."</div>";
+        if ($ReceiptTable=="") $ReceiptTable="<div><em>>";
         
         $organization=get_option( 'donation_Organization');
         if (!$organization) $organization=get_bloginfo('name');
