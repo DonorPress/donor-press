@@ -5,8 +5,8 @@ define(__NAMESPACE__ . '\GOODBYE', 'Goodbye cruel world!');
  * Plugin Name: Donor Press - A Donation Tracking System
  * Plugin URI: https://donorpress.com/
  * Description: A plugin for non-profits used to track donations and send donation acknowledgements and year end receipts. You can manually enter donations, upload a .csv file, or  optionally integrates with Paypal and Quickbooks.
- * Version:           0.1.1
- * Requires at least: 0.1.1
+ * Version:           0.1.2
+ * Requires at least: 0.1.2
  * Requires PHP:      7.0
  * Author:            Denver Steiner
  * Author URI:        https://donorpress.com/author/
@@ -16,7 +16,7 @@ define(__NAMESPACE__ . '\GOODBYE', 'Goodbye cruel world!');
  */
 
 global $donor_press_db_version;
-$donor_press_db_version='0.1.1';
+$donor_press_db_version='0.1.2';
 
 ### recommended to run "composer install" on the plugin directory to add PDF and other functionality, but not required
 if (file_exists(__DIR__ . '/vendor/autoload.php')){

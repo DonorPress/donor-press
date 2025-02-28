@@ -44,6 +44,9 @@ function donorpress_upgrade(){
 	if (version_compare($current_db_version, '0.1.1', '<')){ 
 		donorpress_upgrade_0_1_1();
 	}
+	if (version_compare($current_db_version, '0.1.2', '<')){ 
+		donorpress_upgrade_0_1_2();
+	}
 
 	if ($current_db_version){
 		update_option( "donor_press_db_version", $donor_press_db_version );
@@ -122,4 +125,11 @@ function donorpress_upgrade_0_1_1(){
 	// add an update Donation thank youtemplates
 	$aSQL="UPDATE ".$wpdb->prefix."posts SET post_type='donorpress' WHERE post_type='donortemplate'";
 	$wpdb->query( $aSQL );
+}
+
+function donorpress_upgrade_0_1_2(){
+	$wpdb=Donor::db();
+	$aSQL="ALTER TABLE `".DonationCategory::get_table_name()."`
+	ADD COLUMN `NoReceipt` tinyint(1) NULL DEFAULT NULL AFTER `QBItemId`;";	
+	$wpdb->query( $aSQL );	
 }

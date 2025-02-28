@@ -462,22 +462,29 @@ class Donation extends ModelLite
                     Labels Start At: <strong>Column:</strong> (1-3) &#8594; <input name="col" type="number" value="1"  min="1" max="3" /> &#8595; <strong>Row:</strong> (1-10)<input name="row" type="number" value="1" min="1" max="10"   />
 
                 <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th><th>Transaction Type</th><?php if (Quickbooks::is_setup()){ print "<th>Quickbooks Link</th>"; } ?></tr><?php
+                $category=[];
                 foreach($donations as $r){
                     $donation=new self($r);
+                    if ($donation->CategoryId && !isset($category[$donation->CategoryId])){
+                        $category[$donation->CategoryId]=DonationCategory::find($donation->CategoryId);                        
+                    }
                     ?><tr><td><?php
                         if ($r->ReceiptType){
                             print "Sent: ".$r->ReceiptType." ".$r->Address;
                         }else{
-                            ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print esc_attr($donation->DonationId)?>" checked/> <a target="donation" href="<?php print esc_url('?page=donorpress-index&DonationId='.$donation->DonationId)?>">Custom Response</a><?php
+                            ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print esc_attr($donation->DonationId)?>" <?php
+                            if ($donation->CategoryId && isset( $category[$donation->CategoryId]) && $category[$donation->CategoryId]->NoReceipt==1){ }
+                            else {  print " checked";}                           
+                            ?>/> <a target="donation" href="<?php print esc_url('?page=donorpress-index&DonationId='.$donation->DonationId)?>">Custom Response</a><?php
                         }?></td><td><?php print wp_kses_post($donation->display_key())?></td><td><?php print esc_html($donation->Date)?></td><td <?php print ($donorCount[$donation->DonorId]==1?" style='background-color:orange;'":"")?>><?php
                         if ($donors[$donation->DonorId]){
                             print $donors[$donation->DonorId]->display_key()." ".$donors[$donation->DonorId]->name_check();
-                        }else print $donation->DonorId;
+                        }else print $donation->DonorId; 
                         print " (x".$donorCount[$donation->DonorId]
                         .($donorCount[$donation->DonorId]==1?" FIRST TIME!":"")
                         .")";
                         ?></td><td><?php print esc_html($donation->show_field('Gross')." ".$donation->Currency)?></td><td><?php
-                        if ($donation->CategoryId) print $donation->show_field("CategoryId",false);
+                        if ($donation->CategoryId && isset( $category[$donation->CategoryId])) print  $category[$donation->CategoryId]->Category;
                         else print $donation->Subject;
                         ?></td>
                         <td><?php print $donation->show_field("Note")?></td>

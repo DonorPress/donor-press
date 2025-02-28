@@ -8,7 +8,7 @@ class DonationCategory extends ModelLite
     protected $table = 'donation_category';
 	protected $primaryKey = 'CategoryId';
 	### Fields that can be passed 
-    protected $fillable = ["Category","Description","ParentId","TemplateId","TransactionType","QBItemId"];	 
+    protected $fillable = ["Category","Description","ParentId","TemplateId","TransactionType","QBItemId","NoReceipt"];	 
   	const CREATED_AT = 'CreatedAt';
 	const UPDATED_AT = 'UpdatedAt';  
     //NOte: TemplateId links to table posts -> ID, but uses post_type='donorpress' 
@@ -51,8 +51,13 @@ class DonationCategory extends ModelLite
 
             if (self::input('Function','post')=="Save" && self::input('table','post')=="donation_category"){              
                 $donationCategory=new self(self::input_model('post'));
+                if (self::input('NoReceipt','post')==1){
+                    $donationCategory->NoReceipt=1;
+                }else{
+                    $donationCategory->NoReceipt=0;
+                }
                 if ($donationCategory->save()){
-                    self::display_notice("Donation Category#".$donationCategory->show_field("CategoryId")." - ".$donationCategory->Cateogry." saved.");
+                    self::display_notice("Donation Category #".$donationCategory->show_field("CategoryId")." - ".$donationCategory->Cateogry." saved.");
                     $_REQUEST['CategoryId']=$donationCategory->CategoryId;
                 }
             }
@@ -129,6 +134,7 @@ class DonationCategory extends ModelLite
                 print '<option value="'.$t->ID.'"'.($t->ID==$this->TemplateId?" selected":"").'>'.$t->post_name.'</option>';
             }
             ?></select></td></tr>
+            <tr><td align="right">No Receipt</td><td><label><input type="checkbox" name="NoReceipt" value="1" <?php print ($this->NoReceipt==1?" checked":"");?>/> By default do not send receipt</label></td></tr>
             <?php            
             if (Quickbooks::is_setup()){?>
                 <tr>
@@ -347,6 +353,7 @@ class DonationCategory extends ModelLite
             `TemplateId` int(11) DEFAULT NULL,
             `TransactionType` int(11) DEFAULT NULL,
             `QBItemId` int(11) DEFAULT NULL,
+            `NoReceipt` tinyint(1) DEFAULT NULL,
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`CategoryId`),
