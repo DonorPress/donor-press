@@ -72,10 +72,16 @@ class Donation extends ModelLite
         $donation->Gross=$transaction->transaction_amount->value;
         $donation->Currency=$transaction->transaction_amount->currency_code;
         $donation->Fee=$transaction->fee_amount->value;
-        $donation->Net=$donation->Gross+$donation->Fee;
-        $categoryName=$transaction->transaction_subject;
+        $donation->Net=$donation->Gross+$donation->Fee; 
+        $categoryName="";
+        if (isset($item[0]->item_name)){
+            $categoryName=$donation->Subject=$item[0]->item_name;
+        }
         if(!$categoryName && isset($item[0]->item_code)){
             $categoryName=$item[0]->item_code;
+        }
+        if(!$categoryName && isset($transaction->transaction_subject)){
+            $categoryName=$transaction->transaction_subject;
         }
         if (trim($categoryName)){ //lookup categoryId based on subject
             $category=DonationCategory::get(array("Category = '".trim(addslashes($categoryName))."'"));
