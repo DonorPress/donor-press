@@ -336,10 +336,10 @@ class QuickBooks extends ModelLite
                     if ($resultObj->Id){
                         $donation->QBOInvoiceId=$resultObj->Id;
                         $donation->save();
+                        $donation->updateQBLastSync();
                         self::display_notice("Quick Books Invoice Id #".$donation->show_field('QBOInvoiceId')." created and linked to Donation #".$donation->show_field('DonationId'));                        
                         $payment=$this->donation_to_payment($donation,$donor);
                         $this->process_payment_obj($payment,$donation);
-                        
                         return $donation->QBOInvoiceId;
                     }
                 }else{
@@ -361,6 +361,7 @@ class QuickBooks extends ModelLite
                     if ($resultObj->Id){
                         $donation->QBOInvoiceId=$resultObj->Id;
                         $donation->save();
+                        $donation->updateQBLastSync();
                         $payment=$this->donation_to_payment($donation,$donor);
                         $this->process_payment_obj($payment,$donation,array('silent'=>true));
                     }
@@ -966,9 +967,13 @@ class QuickBooks extends ModelLite
             }else{
                 if ($this->dataService){
                     try{
-                        $companyInfo = $this->dataService->getCompanyInfo();               
+                        $companyInfo = $this->dataService->getCompanyInfo();  
+                        $dateLastSync=CustomVariables::get_option('QuickbooksLastSyncDate');             
                         ?>
                         <h2>Company: <?php print esc_html($companyInfo->LegalName." | ".CustomVariables::get_option('QuickbooksBase'))?></h2> 
+                        <?php if ($dateLastSync){?>                          
+                        <div><a href="<?php print esc_url('?page=donorpress-reports&limit=200&df='.$dateLastSync.'&dateField=CreatedAt&ActionView=t');?>">Sync Transactions since last sync date: <?php print $dateLastSync;?></a></div>
+                        <?php }?>                       
                         <div><a href="<?php print esc_url('?page='.self::input('page','get').'&debug=t')?>">Debug Mode</a></div> 
                         <div><a href="<?php print esc_url('?page='.self::input('page','get').'&syncDonorsToQB=t')?>">Sync Donors to QuickBooks</a></div>           
                         <h3>View</h3>
@@ -978,7 +983,13 @@ class QuickBooks extends ModelLite
                         <?php 
                         }
                     }catch(\Exception $e) {
+                        $dateLastSync=CustomVariables::get_option('QuickbooksLastSyncDate');
                         echo 'Message: ' .$e->getMessage();
+                        if ($dateLastSync){ ?>                          
+                        <div><a href="<?php print esc_url('?page=donorpress-reports&limit=200&df='.$dateLastSync.'&dateField=CreatedAt&ActionView=t');?>">Sync Transactions since last sync date: <?php print $dateLastSync;?></a></div>
+                        <?php 
+                        }
+
                     }
                 }else{
                     print "<div>Refresh Page to complete authentication.</div>";

@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 class CustomVariables extends ModelLite
 {  
     const base = 'donorpress';
-    const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","DefaultCountry","QuickbooksBase","GoogleCharts"];	
+    const variables = ["Organization","ContactName","ContactTitle","ContactEmail","FederalId","PaypalLastSyncDate","QuickbooksLastSyncDate","DefaultCountry","QuickbooksBase","GoogleCharts"];	
     const variables_protected = ["PaypalClientId","PaypalSecret","QuickbooksClientId","QuickbooksSecret"];
 
     const variables_manual=["DefaultQBItemId","QBPaymentMethod"];
@@ -71,6 +71,11 @@ class CustomVariables extends ModelLite
                             <label><input type="radio" name="<?php print esc_attr($var)?>" value="<?php print esc_attr($dependancy)?>"<?php print isset($vals->$fullVal->option_value) && $vals->$fullVal->option_value==$dependancy?" checked":""?>> On</label>
                             <label><input type="radio" name="<?php print esc_attr($var)?>" value=""<?php print !isset($vals->$fullVal->option_value) || $vals->$fullVal->option_value==""?" checked":""?>> Off </label>
                             Note: Turning on Google Charts. Requires external Library.
+                            <?php
+                            break;
+                        case "PaypalLastSyncDate":
+                        case "QuickbooksLastSyncDate":?>
+                             <input type="date" name="<?php print esc_attr($var)?>" value="<?php print isset($vals->$fullVal)?$vals->$fullVal->option_value:""?>"/>
                             <?php
                             break;
                         default:?>

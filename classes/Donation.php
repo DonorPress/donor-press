@@ -643,7 +643,7 @@ class Donation extends ModelLite
             
         }elseif(self::input('Function','post')=="QBDonationToInvoice" && self::input('DonationsToCreateInQB','post')){
             $donationIds=explode("|",self::input('DonationsToCreateInQB','post'));            
-            $donations=self::get(["DonationId IN ('".implode("','",$donationIds)."')"]);            
+            $donations=self::get(["DonationId IN ('".implode("','",$donationIds)."')"]);
             foreach($donations as $donation){
                 $donation->QBItemId=self::input ('QBItemId_'.$donation->DonationId,'post');
                 $donation->send_to_QB(array('silent'=>true));
@@ -1182,6 +1182,14 @@ class Donation extends ModelLite
     public function send_to_QB($settings=[]){
         $qb=new QuickBooks();
         return $qb->donation_to_invoice_process($this);
+    }
+
+    public function updateQBLastSync(){
+        if (!$this->QBOInvoiceId) return; //don't bother if QBO not set yet.
+        $lastCreatedDate=CustomVariables::get_option('QuickbooksLastSyncDate');
+        if ($lastCreatedDate<date("Y-m-d",strtotime($this->CreatedDate))){
+            CustomVariables::set_option('QuickbooksLastSyncDate',date("Y-m-d",strtotime($this->CreatedDate)));
+        }       
     }
 
     static function report($top=null,$dateField=null){
