@@ -471,6 +471,8 @@ class Donation extends ModelLite
                     ?><tr><td><?php
                         if ($r->ReceiptType){
                             print "Sent: ".$r->ReceiptType." ".$r->Address;
+                        }elseif($r->Gross<0){
+                            print "Negative Transaction";
                         }else{
                             ?> <input type="checkbox" name="EmailDonationId[]" value="<?php print esc_attr($donation->DonationId)?>" <?php
                             if ($donation->CategoryId && isset( $category[$donation->CategoryId]) && $category[$donation->CategoryId]->NoReceipt==1){ }
