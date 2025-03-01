@@ -249,7 +249,7 @@ class DonationCategory extends ModelLite
                 <td style="padding-left:<?php print esc_html($level*20)?>px"><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CategoryId='.$dc->CategoryId)?>"><?php print esc_html($dc->CategoryId)?></a></td>
                 <td><?php print esc_html($dc->Category)?></td>
                 <td><?php print esc_html($dc->Description)?></td>
-                <td><?php print $dc->TransactionType." ".$dc->tinyIntDescriptions["TransactionType"][$dc->TransactionType]?></td>
+                <td><?php print $dc->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$dc->TransactionType]?></td>
                 <td><?php print esc_html($dc->ParentId)?></td>
                 <td><?php print $dc->NoReceipt?"Yes":""?></td>
                 <td><?php print $dc->show_field('TemplateId',['idShow'=>true])?></td>                
