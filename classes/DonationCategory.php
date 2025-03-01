@@ -123,7 +123,8 @@ class DonationCategory extends ModelLite
                 <option value="">--None--</option>
                 <?php
                 foreach(Donation::s()->tinyIntDescriptions["TransactionType"] as $key=>$label){
-                    ?><option value="<?php print esc_attr($key==0?"ZERO":$key)?>"<?php print (($key==0?"ZERO":$key)==$this->TransactionType?" selected":"")?>><?php print $key." - ".$label?></option><?php
+                    $value=($key===0 && $key !== null?"ZERO":$key);
+                    ?><option value="<?php print esc_attr($value)?>"<?php print ($key==$this->TransactionType?" selected":"")?>><?php print $key." - ".$label?></option><?php
                 }?>
             </select>
 
