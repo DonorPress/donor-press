@@ -123,7 +123,7 @@ class DonationCategory extends ModelLite
                 <option value="">--None--</option>
                 <?php
                 foreach(Donation::s()->tinyIntDescriptions["TransactionType"] as $key=>$label){
-                    ?><option value="<?php print esc_attr($key==0?"ZERO":$key)?>"<?php print ($key==0?"ZERO":$key)==self::input('Type','get')?" selected":""?>><?php print $key." - ".$label?></option><?php
+                    ?><option value="<?php print esc_attr($key==0?"ZERO":$key)?>"<?php print (($key==0?"ZERO":$key)==$this->TransactionType?" selected":"")?>><?php print $key." - ".$label?></option><?php
                 }?>
             </select>
 
@@ -232,7 +232,7 @@ class DonationCategory extends ModelLite
         ?>
         <h2>Donation Categories</h2>
         <a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>&CategoryId=new&edit=t">Add Category</a>
-        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>Transaction Type</th><th>ParentId</th>
+        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>Transaction Type</th><th>ParentId</th><th>No Receipt</th>
         <?php if (Quickbooks::is_setup()) print  "<th>QuickBooks Item Id</th>";?>
         <th>Total Donations</th><th></th></tr><?php
          self::show_children(0,$parent,0);         
@@ -249,6 +249,7 @@ class DonationCategory extends ModelLite
                 <td><?php print esc_html($r->Description)?></td>
                 <td><?php print $r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]?></td>
                 <td><?php print esc_html($r->ParentId)?></td>
+                <td><?php print $r->NoReceipt?"Yes":""?></td>                
                 <?php if (Quickbooks::is_setup()) print  "<td>".($r->QBItemId>0?Quickbooks::qbLink('Item',$r->QBItemId):"")."</td>";?>
 
                 <td><a target='lookup' href='<?php print esc_url('?page=donorpress-reports&tab=donations&CategoryId='.$r->CategoryId);?>&Function=DonationList'><?php print esc_html($r->donation_count)?></a></td>
