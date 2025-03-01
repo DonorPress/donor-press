@@ -412,6 +412,20 @@ class ModelLite{
 			case "Email":
 				return $this->display_email($fieldName); //'<a href="mailto:'.$v.'?Subject=">'.$v.'</a>';
 			break;
+			case "TemplateId":
+				$template=DonorTemplate::find($v);
+				if ($template){
+					$label=$template->post_name;
+				}else{
+					$label="";
+				}				
+				if ($settings['idShow']){
+					return '<a href="?page='.self::input('page','get').'&tab=email&DonorTemplateId='.$v.'">'.$v.'</a> - '.$label;
+				}else{
+					return $label;
+				}
+
+			break;
 			case "CategoryId":
 				$label="";
 				if ($this->table=='DonationCategory' && !isset($settings['idShow'])) {

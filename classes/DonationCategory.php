@@ -233,7 +233,7 @@ class DonationCategory extends ModelLite
         ?>
         <h2>Donation Categories</h2>
         <a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get'))?>&CategoryId=new&edit=t">Add Category</a>
-        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>Transaction Type</th><th>ParentId</th><th>No Receipt</th>
+        <table border="1"><tr><th>Id</th><th>Category</th><th>Description</th><th>Transaction Type</th><th>ParentId</th><th>No Receipt</th><th>Template Id</th>
         <?php if (Quickbooks::is_setup()) print  "<th>QuickBooks Item Id</th>";?>
         <th>Total Donations</th><th></th></tr><?php
          self::show_children(0,$parent,0);         
@@ -244,20 +244,22 @@ class DonationCategory extends ModelLite
     static function show_children($parentId,$parent,$level=0){
         if (!$parent[$parentId]) return;
         foreach ($parent[$parentId] as $r){
+            $dc=new self($r);
             ?><tr>
-                <td style="padding-left:<?php print esc_html($level*20)?>px"><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CategoryId='.$r->CategoryId)?>"><?php print esc_html($r->CategoryId)?></a></td>
-                <td><?php print esc_html($r->Category)?></td>
-                <td><?php print esc_html($r->Description)?></td>
-                <td><?php print $r->TransactionType." ".Donation::s()->tinyIntDescriptions["TransactionType"][$r->TransactionType]?></td>
-                <td><?php print esc_html($r->ParentId)?></td>
-                <td><?php print $r->NoReceipt?"Yes":""?></td>                
-                <?php if (Quickbooks::is_setup()) print  "<td>".($r->QBItemId>0?Quickbooks::qbLink('Item',$r->QBItemId):"")."</td>";?>
+                <td style="padding-left:<?php print esc_html($level*20)?>px"><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CategoryId='.$dc->CategoryId)?>"><?php print esc_html($dc->CategoryId)?></a></td>
+                <td><?php print esc_html($dc->Category)?></td>
+                <td><?php print esc_html($dc->Description)?></td>
+                <td><?php print $dc->TransactionType." ".$dc->tinyIntDescriptions["TransactionType"][$dc->TransactionType]?></td>
+                <td><?php print esc_html($dc->ParentId)?></td>
+                <td><?php print $dc->NoReceipt?"Yes":""?></td>
+                <td><?php print $dc->show_field('TemplateId',['idShow'=>true])?></td>                
+                <?php if (Quickbooks::is_setup()) print  "<td>".($dc->QBItemId>0?Quickbooks::qbLink('Item',$dc->QBItemId):"")."</td>";?>
 
-                <td><a target='lookup' href='<?php print esc_url('?page=donorpress-reports&tab=donations&CategoryId='.$r->CategoryId);?>&Function=DonationList'><?php print esc_html($r->donation_count)?></a></td>
-                <td><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CategoryId='.$r->CategoryId.'&edit=t')?>">edit</a></td>
+                <td><a target='lookup' href='<?php print esc_url('?page=donorpress-reports&tab=donations&CategoryId='.$dc->CategoryId);?>&Function=DonationList'><?php print esc_html($dc->donation_count)?></a></td>
+                <td><a href="<?php print esc_url('?page='.self::input('page','get').'&tab='.self::input('tab','get').'&CategoryId='.$dc->CategoryId.'&edit=t')?>">edit</a></td>
             </tr>
             <?php
-            self::show_children($r->CategoryId,$parent,$level+1);
+            self::show_children($dc->CategoryId,$parent,$level+1);
         }
     }
 
