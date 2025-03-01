@@ -1187,6 +1187,7 @@ class Donation extends ModelLite
     public function updateQBLastSync(){
         if (!$this->QBOInvoiceId) return; //don't bother if QBO not set yet.
         $lastCreatedDate=CustomVariables::get_option('QuickbooksLastSyncDate');
+        print self::display_notice("Last Sync Date: ".$lastCreatedDate." Compare to: created date: ".date("Y-m-d",strtotime($this->CreatedDate)));
         if ($lastCreatedDate<date("Y-m-d",strtotime($this->CreatedDate))){
             CustomVariables::set_option('QuickbooksLastSyncDate',date("Y-m-d",strtotime($this->CreatedDate)));
         }       
