@@ -243,7 +243,7 @@ class DonationUpload extends ModelLite
         if ($stats['donorCreated']) $notice.="<li>".$stats['donorCreated']." Donors Created.</li>";
         if ($stats['donationsAdded']) $notice.="<li>".$stats['donationsAdded']." Donations Added.</li>";
         $notice.="</ul>";
-        $notice.="<div><a href='?page=donorpress-reports&UploadDate=".date("Y-m-d H:i:s",$timestamp)."'>View added donations</a></div>";
+        $notice.="<div><a href='?page=donorpress-reports&UploadDate=".urlencode(date("Y-m-d H:i:s",$timestamp))."'>View added donations</a></div>";
         self::display_notice($notice);
         //delete file after process so it isn't left on server... wondering if we should do this higher up so on fail it is deleted.
         wp_delete_file(self::upload_dir().self::input('file','post'));
