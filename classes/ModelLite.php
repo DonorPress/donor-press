@@ -515,6 +515,7 @@ class ModelLite{
             if (strpos($field,"Date")>-1){
                 $type="date";
 			}
+			if ($field=="Note") $type='textarea';
 			if ($field=="Date") $this->Date=substr($this->$field,0,10); //$type="datetime-local";
 			?><tr><td align=right><?php print esc_html($field)?></td><td><?php
 
@@ -535,6 +536,8 @@ class ModelLite{
 						?><option value="<?php print esc_attr($this->$field)?>" selected><?php print $this->$field." - Not Set"?></option><?php
 					}
 					?></select><?php
+			}elseif($type=="textarea"){
+				?><textarea name="<?php print esc_attr($field)?>" rows=5 cols=40><?php print esc_html($this->$field)?></textarea><?php
 			}else{
 				?><input type="<?php print esc_attr($type)?>" name="<?php print esc_attr($field)?>" value="<?php print esc_attr($this->$field)?>"<?php
 				if ($maxlength) print ' maxlength="'.$maxlength.'"';?>/><?php

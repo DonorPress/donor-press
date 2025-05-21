@@ -6,7 +6,7 @@ class Donor extends ModelLite {
     protected $table = 'donor';
 	protected $primaryKey = 'DonorId';
 	### Fields that can be passed 
-    public $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","AddressStatus","TypeId","TaxReporting","MergedId","Source","SourceId","QuickBooksId"];	    
+    public $fillable = ["Name","Name2","Email","EmailStatus","Phone","Address1","Address2","City","Region","PostalCode","Country","AddressStatus","TypeId","TaxReporting","MergedId","Source","SourceId","QuickBooksId","Note"];	    
 	
     public $flat_key = ["Name","Name2","Email","Phone","City","Region"];
     ### Default Values
@@ -69,6 +69,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `UpdatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `TaxReporting` tinyint(4) DEFAULT '0' COMMENT '0 - Standard -1 Not Required -2 Opt Out',
+            `Note` text,
             PRIMARY KEY (`DonorId`)
             )";
           dbDelta( $sql );

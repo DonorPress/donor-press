@@ -48,6 +48,10 @@ function donorpress_upgrade(){
 		donorpress_upgrade_0_1_2();
 	}
 
+	if (version_compare($current_db_version, '0.1.3', '<')){ 
+		donorpress_upgrade_0_1_3();
+	}
+
 	if ($current_db_version){
 		update_option( "donor_press_db_version", $donor_press_db_version );
 	}else{
@@ -132,4 +136,11 @@ function donorpress_upgrade_0_1_2(){
 	$aSQL="ALTER TABLE `".DonationCategory::get_table_name()."`
 	ADD COLUMN `NoReceipt` tinyint(1) NULL DEFAULT NULL AFTER `QBItemId`;";	
 	$wpdb->query( $aSQL );	
+}
+
+function donorpress_upgrade_0_1_3(){
+	$wpdb=Donor::db();
+	$aSQL="ALTER TABLE `".Donor::get_table_name()."`
+	ADD COLUMN `Note` text AFTER `TaxReporting`;";
+	$wpdb->query( $aSQL );		
 }
