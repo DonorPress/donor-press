@@ -780,6 +780,8 @@ class Donation extends ModelLite
         <tr><td align="right">Note</td><td><textarea name="Note"><?php print esc_textarea($this->Note)?></textarea></td></tr>
         <tr><td align="right">Transaction Type</td><td><?php print esc_html($this->select_drop_down('TransactionType'))?><div><em>Set to "Not Tax Deductible" if they have already been giving credit for the donation by donating through a donor advised fund, or if this is a payment for a service.</div></td></tr>
         <tr></tr><tr><td colspan="2"><button type="submit" class="Primary" name="Function" value="Save">Save</button><button type="submit" name="Function" class="Secondary" value="Cancel" formnovalidate>Cancel</button>
+        <input type="hidden" name="QBOInvoiceId" value="<?php print esc_attr($this->QBOInvoiceId)?>"/>
+        <input type="hidden" name="QBOPaymentId" value="<?php print esc_attr($this->QBOPaymentId)?>"/>      
         <?php 
         if ($this->DonationId){
             ?> <button type="submit" name="Function" value="Delete">Delete</button><?php
