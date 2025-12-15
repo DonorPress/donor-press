@@ -6,7 +6,7 @@ use DonorPress\DonationCategory;
 use DonorPress\CustomVariables; 
 use DonorPress\DonationReceipt;
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly   
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 $tabs=['uploads'=>'Recent Uploads/Syncs','year'=>'Year End','trends'=>'Trends','donors'=>'Donors','merge'=>"Merge",'donations'=>'Donations','reg'=>"Regression",'tax'=>"Tax",'sanity'=>"Sanity Check"];
 $active_tab=Donor::show_tabs($tabs);
 ?>
@@ -49,7 +49,8 @@ $active_tab=Donor::show_tabs($tabs);
 			donorpress_donor_regression();
 		break;
 		case "trends":
-			donorpress_report_top();
+			$top=Donor::input('topL','get')?(int)Donor::input('topL','get'):20;
+			donorpress_report_top($top);
 			donorpress_report_current_monthly();
 			donorpress_report_monthly();
 		break;
@@ -574,7 +575,7 @@ function donorpress_report_current_monthly(){
 }
 
 function donorpress_report_top($top=20){
-	global $wpdb,$wp;
+	global $wpdb;
 	$dateFrom=Donor::input('topDf','get');
 	$dateTo=Donor::input('topDt','get');
 
