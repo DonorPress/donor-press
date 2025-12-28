@@ -659,8 +659,16 @@ class Donation extends ModelLite
             if (self::input('Function','post')=="EmailDonationReceipts" && sizeof(self::input('EmailDonationId','post'))>0){               
                 foreach(self::input('EmailDonationId','post') as $donationId){
                     $donation=self::find($donationId);
-                    if ($donation->FromEmailAddress){                        
-                        print $donation->email_receipt($donation->FromEmailAddress);
+                    if ($donation->FromEmailAddress){ 
+                        //check if already sent
+                        $emailSent=DonationReceipt::first(array("DonorId='".$donation->DonorId."'","KeyType='DonationId'","KeyId='".$donation->DonationId."'"));                       
+                        if ($emailSent){
+                            print "Receipt already sent to: ".$donationId." ".$donation->Name."<br>";
+                            continue;
+                        }else{
+                            print $donation->email_receipt($donation->FromEmailAddress);
+                        }                 
+                        
                     }else{
                         print "not sent to: ".$donationId." ".$donation->Name."<br>";
                     }                   
@@ -975,7 +983,7 @@ class Donation extends ModelLite
             return true;
         
         }else{
-            $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            $pdf = new \TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false);
             $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
             $pdf->SetMargins($margin,$margin,$margin);
             $pdf->SetFont('helvetica', '', $this->emailBuilder->fontsize?$this->emailBuilder->fontsize:12);
