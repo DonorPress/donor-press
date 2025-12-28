@@ -84,12 +84,12 @@ class Donation extends ModelLite
             $categoryName=$transaction->transaction_subject;
         }
         if (trim($categoryName)){ //lookup categoryId based on subject
-            $category=DonationCategory::get(array("Category = '".trim(addslashes($categoryName))."'"));
+            $category=DonationCategory::get(array("Category = '".trim(addslashes(substr($categoryName,0,50)))."'"));
             if ($category){
                 $donation->CategoryId=$category[0]->CategoryId;
             }else{ //may want to limit this to $item[0]->item_code entries... not sure if custom text makes it to this field.
                 $donationCategory=new DonationCategory();
-                $donationCategory->Category=$categoryName;
+                $donationCategory->Category=substr($categoryName,0,50);
                 $donationCategory->save();
                 $donation->CategoryId=$donationCategory->CategoryId;
             }
