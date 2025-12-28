@@ -660,14 +660,14 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             $receipts[$r->DonorId][]=new DonationReceipt($r);
         }
         ## Find NOT Tax Deductible entries
-        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType=1 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
+        $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,PostalCode,Country, COUNT(*) as donation_count, SUM(Gross) as Total FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 AND DT.TransactionType BETWEEN 1 AND 89 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City Order BY COUNT(*) DESC, SUM(Gross) DESC";  
         $results = self::db()->get_results($SQL);
         foreach ($results as $r){
             $NotTaxDeductible[$r->DonorId]=$r;
         }
 
         $SQL="Select D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,Address2,City,Region,PostalCode,Country, D.TypeId,COUNT(*) as donation_count, SUM(Gross) as Total FROM ".self::get_table_name()." D INNER JOIN ".Donation::get_table_name()." DT ON D.DonorId=DT.DonorId 
-        WHERE YEAR(Date)='".$year."' AND  Status>=0 AND Type>=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";       
+        WHERE YEAR(Date)='".$year."' AND  Status>=0 AND DT.Type>=0 AND DT.TransactionType=0 Group BY D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City,Region,Country, D.TypeId Order BY COUNT(*) DESC, SUM(Gross) DESC";       
         $results = self::db()->get_results($SQL);
         ?><form method="post"><input type="hidden" name="Year" value="<?php print esc_attr($year);?>"/>
         <table class="dp"><tr><th>Donor</th><th>Name</th><th>Email</th><th>Mailing</th><th>Count</th><th>Amount</th><th>Preview</th><th><input type="checkbox" checked onClick="toggleChecked(this,'emails[]');"/>
@@ -900,7 +900,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
         if (!Donation::pdf_class_check()) return false;        
         $this->year_receipt_email($year);
         ob_clean();
-        $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf = new \TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false);
         $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
         $pdf->SetMargins($margin,$margin,$margin);
         $html="<h2>".$this->emailBuilder->subject."</h2>".$customMessage?$customMessage:$this->emailBuilder->body;
@@ -935,7 +935,7 @@ ADD COLUMN `TypeId` INT NULL DEFAULT NULL AFTER `Country`;
             } 
             $donorList=self::get(array("DonorId IN ('".implode("','",$donorIds)."')"));
             ob_clean();
-            $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);            
+            $pdf = new \TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false);            
             $pdf->setPrintHeader(false);
             $pdf->setPrintFooter(false); 				
             foreach ($donorList as $donor){
