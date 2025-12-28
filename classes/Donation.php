@@ -980,8 +980,6 @@ class Donation extends ModelLite
             $dompdf->render();
             $file=$this->receipt_file_info(); 
             $dompdf->stream($file,array("Attachment" => false));
-            return true;
-        
         }else{
             $pdf = new \TCPDF('P', 'pt', 'LETTER', true, 'UTF-8', false);
             $margin=($this->emailBuilder->margin?$this->emailBuilder->margin:.25)*72;
@@ -992,9 +990,7 @@ class Donation extends ModelLite
                    
             $pdf->AddPage();
             $pdf->writeHTML($customMessage?$customMessage:$this->emailBuilder->body, true, false, true, false, '');  
-            if (!$pdf->Output($file, 'D')){
-                return false; 
-            }
+            $pdf->Output($file, 'D');
         } 
         $dr=new DonationReceipt(array("DonorId"=>$this->DonorId,"KeyType"=>"DonationId","KeyId"=>$this->DonationId,"Type"=>"p","Address"=>$this->Donor->mailing_address(),"DateSent"=>date("Y-m-d H:i:s"),"Subject"=>$this->emailBuilder->subject,"Content"=>$customMessage));
         $dr->save();        
