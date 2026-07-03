@@ -55,7 +55,78 @@ $active_tab=Donor::show_tabs($tabs);
                 <button name="Function" value="LoadTestData">Load Test Records</button>  Records: <input type="number" name="records" value="20"/> - Useful for testing the plugin. This will add new donor and donations records (but not remove existing data).
             </form><?php
             break;
-        case "cv":  
+        case "emailclean":
+            if($_POST['Function']=="CleanEmailList"){
+                $currentList=explode("\n",str_replace("\r","",$_POST['currentList']));
+                $newEmailList=explode("\n",str_replace("\r","",$_POST['newEmailList']));
+                $includeDonor=$_POST['includeDonor'];
+                $currentEmails=[];
+                foreach($currentList as $line){
+                    $parts=explode("\t",$line);
+                    $email=trim($parts[0]);                   
+                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        continue; // Skip invalid email addresses
+                    }
+                    $name=trim(preg_replace('/[^a-zA-Z0-9 ]/', '', $parts[1])); //remove bad characters from name but allow them in email
+                    if (!$name) $name=strtolower($email); //replace any non ascii characters 
+                    if(count($parts)>=1){
+                        $currentEmails[strtolower($email)]=$name;
+                    }
+                }
+
+                $addedEmailList=[];
+                $count['donor_added']=0;
+                $count['list_added']=0;
+                if($includeDonor){
+                    foreach(Donor::get() as $donor){
+                        if(!isset($currentEmails[strtolower($donor->Email)]) && filter_var($donor->Email, FILTER_VALIDATE_EMAIL)){
+                           $addedEmailList[strtolower($donor->Email)]=$donor->Name;
+                           $count['donor_added']++;
+                        }
+                    }
+                }
+
+               
+                foreach($newEmailList as $line){
+                    $parts=explode("\t",$line);
+                    if(count($parts)>1){
+                        $email=trim($parts[0]);
+                        $name=trim(preg_replace('/[^a-zA-Z0-9 ]/', '', $parts[1])); //remove bad characters from name but allow them in email
+                        if (!$name) $name=strtolower($email); //replace any non ascii characters 
+                        if (!isset($currentEmails[strtolower($email)]) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                            $addedEmailList[strtolower($email)]=$name;
+                            $count['list_added']++;
+                        }
+                    }
+                }
+                print "<h2>Cleaned List</h2>";
+                ?><strong>Original List Size:</strong> <?php print count($currentEmails)?> <br>
+                
+                <strong>Added from Donor List:</strong> <?php print $count['donor_added']?> <br>
+                <strong>Added from New List:</strong> <?php print $count['list_added']?> <br>
+                <strong>New List Size:</strong> <?php print count($addedEmailList)?> <br>
+                <?php
+                print "<textarea rows='10' cols='50'>";
+               foreach($addedEmailList as $email=>$name){
+                   print $email."\t".($name!=$email?$name:"")."\n";
+               }
+                print "</textarea>";
+
+            }
+            ?><form method="post">
+                <h2>Clean Email List From External Lists</h2>
+                <div>
+                <strong>Current List</strong>  Email[tab]Name format
+                <textarea name="currentList" rows="10" cols="50" placeholder="Enter one email address per line"><?php print $_POST['currentList'] ?></textarea><br>
+                <strong>New List</strong> Email[tab]Name format
+                <textarea name="newEmailList" rows="10" cols="50" placeholder="Enter one email address per line"><?php print $_POST['newEmailList'] ?></textarea><br>
+                <label><input type="checkbox" name="includeDonor" value="1" <?php if($_POST['includeDonor']=="1") print "checked"; ?>/>Include Donor List</label><br>
+                <button name="Function" value="CleanEmailList">Return New List</button>
+
+                </div>
+            </form><?php
+            break;
+        case "cv":
         default:
             CustomVariables::form(); 
         break;
