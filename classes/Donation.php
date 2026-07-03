@@ -74,11 +74,11 @@ class Donation extends ModelLite
         $donation->Fee=$transaction->fee_amount->value;
         $donation->Net=$donation->Gross+$donation->Fee; 
         $categoryName="";
-        if (isset($item[0]->item_name)){
-            $categoryName=$donation->Subject=$item[0]->item_name;
-        }
         if(!$categoryName && isset($item[0]->item_code)){
             $categoryName=$item[0]->item_code;
+        }
+        if (isset($item[0]->item_name)){
+            $categoryName=$donation->Subject=$item[0]->item_name;
         }
         if(!$categoryName && isset($transaction->transaction_subject)){
             $categoryName=$transaction->transaction_subject;
@@ -461,8 +461,9 @@ class Donation extends ModelLite
                     <button type="submit" name="Function" value="PdfLabelDonationReceipts">Generate Labels</button>
                     Labels Start At: <strong>Column:</strong> (1-3) &#8594; <input name="col" type="number" value="1"  min="1" max="3" /> &#8595; <strong>Row:</strong> (1-10)<input name="row" type="number" value="1" min="1" max="10"   />
 
-                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Note</th><th>Type</th><th>Transaction Type</th><?php if (Quickbooks::is_setup()){ print "<th>Quickbooks Link</th>"; } ?></tr><?php
+                <table class="dp"><tr><th></th><th>Donation</th><th>Date</th><th>DonorId</th><th>Gross</th><th>CategoryId</th><th>Response Template</th><th>Note</th><th>Type</th><th>Transaction Type</th><?php if (Quickbooks::is_setup()){ print "<th>Quickbooks Link</th>"; } ?></tr><?php
                 $category=[];
+                $templateCache=[];
                 foreach($donations as $r){
                     $donation=new self($r);
                     if ($donation->CategoryId && !isset($category[$donation->CategoryId])){
@@ -488,6 +489,38 @@ class Donation extends ModelLite
                         ?></td><td><?php print esc_html($donation->show_field('Gross')." ".$donation->Currency)?></td><td><?php
                         if ($donation->CategoryId && isset( $category[$donation->CategoryId])) print  $category[$donation->CategoryId]->Category;
                         else print $donation->Subject;
+                        ?></td>
+                        <td><?php 
+                        if ($cat=$category[$donation->CategoryId]){
+                            if ($cat->NoReceipt>0){
+                                print "No Receipt";
+                            }elseif($cat->TemplateId&& $cat->TemplateId>0){                                
+                                if (!$templateCache[$cat->TemplateId]) $templateCache[$cat->TemplateId]=DonorTemplate::find($cat->TemplateId);
+                                
+                                if ($templateCache[$cat->TemplateId]){
+                                    print "Template: ".$templateCache[$cat->TemplateId]->post_name;
+                                }                                
+                            }elseif($cat->ParentId && $cat->ParentId>0){
+                                if (!$category[$cat->ParentId]) $category[$cat->ParentId]=DonationCategory::find($cat->ParentId);
+                                $parentCat=$category[$cat->ParentId];
+                                if ($parentCat->NoReceipt>0){
+                                    print "Parent: No Receipt";
+                                }elseif($parentCat->TemplateId>0){
+                                    if (!$templateCache[$parentCat->TemplateId]) $templateCache[$parentCat->TemplateId]=DonorTemplate::find($parentCat->TemplateId);
+                                    if ($templateCache[$parentCat->TemplateId]){
+                                        print "Parent Template: ".$templateCache[$parentCat->TemplateId]->post_name;
+                                    }
+                                }else{
+                                    print "No Parent Template";
+                                }
+                            }else{
+                                print "No Template";
+                            }
+                        }
+                        if ($donation->CategoryId){?>
+                            <a target="edit" href="<?php print esc_url('?page=donorpress-settings&tab=cat&CategoryId='.$donation->CategoryId."&edit=t")?>">Edit</a>
+                        <?php
+                        }
                         ?></td>
                         <td><?php print $donation->show_field("Note")?></td>
                         <td><?php print $donation->show_field("Type")?></td>
