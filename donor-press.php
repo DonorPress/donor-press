@@ -34,9 +34,22 @@ use DonorPress\DonationCategory;
 
 // it inserts the entry in the admin menu
 add_action('admin_menu', 'donorpress_plugin_create_menu_entry');
+add_action('wp_dashboard_setup', 'donorpress_register_dashboard_widget');
 register_activation_hook( __FILE__, 'donorpress_plugin_create_tables' );
 
+function donorpress_user_can_load_plugin() {
+	if ( ! is_admin() ) {
+		return true;
+	}
+
+	return current_user_can( 'edt_other_posts' ) || current_user_can( 'edit_others_posts' );
+}
+
 function donorpress_header_check() {
+	if ( ! donorpress_user_can_load_plugin() ) {
+		return;
+	}
+
 	global $donor_press_db_version;
 	if (!session_id()) session_start();
 	require_once "donorpress-upgrade.php";		
@@ -112,16 +125,20 @@ add_action( 'admin_init', 'donorpress_header_check',1);
 
 // creating the menu entries
 function donorpress_plugin_create_menu_entry() {
+	if ( ! donorpress_user_can_load_plugin() ) {
+		return;
+	}
+
 	// icon image path that will appear in the menu
 	$icon = plugins_url('/images/DonorPressWPIcon2.svg', __FILE__);
 	//add_menu_page( $page_title, $menu_title, $capability, $menu_slug, $function, $icon_url, $position );
 	// adding the main manu entry
-	add_menu_page('Donors', 'Donors', 'edit_posts', 'donorpress-index', 'donorpress_show_index', $icon);
+	add_menu_page('Donors', 'Donors', 'edit_others_posts', 'donorpress-index', 'donorpress_show_index', $icon);
 	// adding the sub menu entry
-	add_submenu_page( 'donorpress-index', 'Reports', 'Reports', 'edit_posts', 'donorpress-reports', 'donorpress_show_reports',2 );	
-	if (Quickbooks::is_setup())	add_submenu_page( 'donorpress-index', 'QuickBooks', 'QuickBooks', 'edit_posts', 'donorpress-quickbooks', 'donorpress_show_quickbooks',4);
-	if (Paypal::is_setup()) add_submenu_page( 'donorpress-index', 'Paypal', 'Paypal', 'edit_posts', 'donorpress-paypal', 'donorpress_show_paypal',4);
-	add_submenu_page( 'donorpress-index', 'Settings', 'Settings', 'edit_posts', 'donorpress-settings', 'donorpress_show_settings',5);
+	add_submenu_page( 'donorpress-index', 'Reports', 'Reports', 'edit_others_posts', 'donorpress-reports', 'donorpress_show_reports',2 );	
+	if (Quickbooks::is_setup())	add_submenu_page( 'donorpress-index', 'QuickBooks', 'QuickBooks', 'edit_others_posts', 'donorpress-quickbooks', 'donorpress_show_quickbooks',4);
+	if (Paypal::is_setup()) add_submenu_page( 'donorpress-index', 'Paypal', 'Paypal', 'edit_others_posts', 'donorpress-paypal', 'donorpress_show_paypal',4);
+	add_submenu_page( 'donorpress-index', 'Settings', 'Settings', 'edit_others_posts', 'donorpress-settings', 'donorpress_show_settings',5);
 }
 
 // function triggered in add_menu_page
@@ -144,6 +161,44 @@ function donorpress_show_paypal() {
 
 function donorpress_show_quickbooks() {
 	include('donorpress-quickbooks.php');
+}
+
+function donorpress_register_dashboard_widget() {
+	if ( ! donorpress_user_can_load_plugin() ) {
+		return;
+	}
+
+	wp_add_dashboard_widget(
+		'donorpress_donor_search_widget',
+		'DonorPress Donor Search',
+		'donorpress_render_dashboard_widget'
+	);
+}
+
+function donorpress_render_dashboard_widget() {
+	$search_value = Donor::input( 'dsearch', 'get' );
+	?>
+	<form method="get" action="<?php print esc_url( admin_url( 'admin.php' ) ); ?>">
+		<input type="hidden" name="page" value="donorpress-index" />
+		<p>
+			<label for="donorpress-dashboard-dsearch"><strong>Find donor by name, email, or phone</strong></label>
+		</p>
+		<p>
+			<input
+				type="text"
+				id="donorpress-dashboard-dsearch"
+				name="dsearch"
+				class="widefat"
+				value="<?php print esc_attr( stripslashes( (string) $search_value ) ); ?>"
+				placeholder="Search donors"
+			/>
+		</p>
+		<p>
+			<button class="button button-primary" type="submit">Search Donors</button>
+			<button class="button" name="f" value="AddDonor" type="submit">Add New Donor</button>
+		</p>
+	</form>
+	<?php
 }
 
 
