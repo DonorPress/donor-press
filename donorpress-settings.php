@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 }
 </style>
 <?php
-$tabs=['cv'=>'Site Variables','email'=>'Email Templates','cat'=>'Donation Categories','type'=>'Donor Types','bak'=>'Backup/Restore'];
+$tabs=['cv'=>'Site Variables','email'=>'Email Templates','cat'=>'Donation Categories','type'=>'Donor Types','bak'=>'Backup/Restore','emailclean'=>'Email Cleaner Tool'];
 $active_tab=Donor::show_tabs($tabs);
 
 ?>
@@ -115,10 +115,11 @@ $active_tab=Donor::show_tabs($tabs);
             }
             ?><form method="post">
                 <h2>Clean Email List From External Lists</h2>
+                <em>This is a simple tool where you can paste in a list of email addresses and names from two sources, and it will return the new entries from the "new list". You can also include the current donor list. This is useful for adding just what is new from an e-mail service.</em>
                 <div>
-                <strong>Current List</strong>  Email[tab]Name format
+                <strong>Current List</strong>  Email[tab]Name format<br>
                 <textarea name="currentList" rows="10" cols="50" placeholder="Enter one email address per line"><?php print $_POST['currentList'] ?></textarea><br>
-                <strong>New List</strong> Email[tab]Name format
+                <strong>New List</strong> Email[tab]Name format<br>
                 <textarea name="newEmailList" rows="10" cols="50" placeholder="Enter one email address per line"><?php print $_POST['newEmailList'] ?></textarea><br>
                 <label><input type="checkbox" name="includeDonor" value="1" <?php if($_POST['includeDonor']=="1") print "checked"; ?>/>Include Donor List</label><br>
                 <button name="Function" value="CleanEmailList">Return New List</button>
