@@ -39,7 +39,7 @@ class QuickBooks extends ModelLite
 
     protected $QBtables=[
         'Customer'=>['DisplayName','PrimaryEmailAddr_Address','Notes'],
-        'Invoice'=>['CustomerRef','Balance','TotalAmt','ShipFromAddr_Line1','ShipFromAddr_Line2'],
+        'Invoice'=>['CustomerRef','Balance','TotalAmt','DocNumber','ShipFromAddr_Line1','ShipFromAddr_Line2'],
         'Vendor'=>'DisplayName',
         'Employee'=>'DisplayName',
         'Item'=>['Name','Description','Active','UnitPrice','Type','IncomeAccountRef','TrackQtyOnHand'],
@@ -178,7 +178,7 @@ class QuickBooks extends ModelLite
                     }else{
                         $table=$this->fieldLinks[$field];
                     }
-                    print '<a target="QBdetail" href="'.url_esc('?page=donorpress-quickbooks&table='.$table.'&Id='.$value).'">'.esc_html($value)."</a> ".self::qbLink($table,$value,'QB');
+                    print '<a target="QBdetail" href="'.esc_url('?page=donorpress-quickbooks&table='.$table.'&Id='.$value).'">'.esc_html($value)."</a> ".self::qbLink($table,$value,'QB');
                 }else print $value;
                 print "</td></tr>"; //rewrite this to use: $this->showQBfield($entity,$field)  -
             }
@@ -763,13 +763,81 @@ class QuickBooks extends ModelLite
     }
 
     public function show(){
+        global $wpdb;
         if ($this->authenticate()){
             self::display_notice("<strong>You are authenticated!</strong><div>Token expires: ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."accessTokenExpiresAt")).". Refresh Expires at ".date("Y-m-d H:i:s",$this->session(self::SESSION_PREFIX."refreshTokenExpiresAt"))." in ".($this->session(self::SESSION_PREFIX."refreshTokenExpiresAt")-time())." seconds. <a href='?page=donorpress-quickbooks&Function=QuickbookSessionKill'>Logout/Kill Session</a></div>");            
             if (self::input('debug','get')){
                 $this->debug();
                 return;
             }
-            if (self::input('syncDonorsToQB','get')){         
+
+            if(self::input('fixQBLinks','get')){
+                $donations=[
+                    'd'=>[], //full details                    
+                    'i'=>[], //invoices
+                    'p'=>[], //payments 
+                    'ni'=>[], //no invoice
+                    'np'=>[], //no payment
+                    'mi'=>[], //matched invoice
+                    'mp'=>[], //matched payment                   
+                ];
+                $result = Donation::get();
+                $result = $wpdb->get_results("SELECT `DonorId`,`DonationId`,`QBOInvoiceId`,`QBOPaymentId` FROM ".Donation::get_table_name()." WHERE QBOInvoiceId IS NULL OR QBOInvoiceId = 0 OR QBOPaymentId IS NULL OR QBOPaymentId = 0");//DESC LIMIT ".$top                
+                foreach($result as $r){
+                    $key=$r->DonorId."|".$r->DonationId;
+                    $donations['d'][$key]=$r;                    
+                    if (!$r->QBOInvoiceId){
+                        $donations['ni'][$key]=$r->DonationId;
+                    }
+                    if (!$r->QBOPaymentId){
+                        $donations['np'][$key]=$r->DonationId;
+                    }                    
+                }
+                unset($result);
+                //future optimization if to many QB records to do this. Find the top Invoice or Payment ID, and then return 1000 lower than that, and allow a range to be set.
+                $invoices=self::get_all_entity('Invoice');
+                foreach($invoices as $i){
+                    $donations['i'][$i->Id]=$i->DocNumber??'NONE';
+                    if ($i->DocNumber&&$donations['ni'][$i->DocNumber]){
+                        $donations['mi'][$i->DocNumber]=$i;
+                    }
+                }                
+                $payments=self::get_all_entity('Payment');
+                foreach($payments as $p){
+                    $linkedTxnId = $p->Line->LinkedTxn->TxnId;
+                    //self::dd('linkedTxnId',$linkedTxnId,$p);
+                    if ($linkedTxnId && isset($donations['i'][$linkedTxnId])){
+                        $key = $donations['i'][$linkedTxnId];
+                        if (isset($donations['np'][$key])){
+                            $donations['mp'][$key]=$p;
+                        }
+                    }                           
+                }
+                foreach($donations['mi'] as $key=>$i){
+                    list($donorId, $donationId) = explode('|', $key);
+                    if ($donorId &&  $donationId){
+                        $uSQL="UPDATE `".Donation::get_table_name()."` SET QBOInvoiceId='".$i->Id."' WHERE DonorId=".$donorId." AND DonationId=".$donationId;
+                        print $uSQL."<br>";
+                        $wpdb->query( $uSQL );
+                    }
+                }
+                foreach($donations['mp'] as $key=>$p){
+                    list($donorId, $donationId) = explode('|', $key);
+                    if ($donorId &&  $donationId){
+                        $uSQL="UPDATE `".Donation::get_table_name()."` SET QBOPaymentId='".$p->Id."' WHERE DonorId=".$donorId." AND DonationId=".$donationId;
+	                    print $uSQL."<br>";
+                        $wpdb->query( $uSQL );
+                    }
+                }
+                if (count($donations['mi']))                
+                    print self::display_notice("<div>".count($donations['mi'])." Invoices matched.</div>");
+                if (count($donations['mp']))                
+                    print self::display_notice("<div>".count($donations['mp'])." Payments matched.</div>"); 
+                if (!count($donations['mi']) && !count($donations['mp'])){
+                    print self::display_notice ('No Quicbook Invoices or Payments found to match.');
+                    //self::dump($donations);
+                }
+            }elseif (self::input('syncDonorsToQB','get')){         
                 if (self::input('Function','post')=="LinkMatchQBtoDonorId"){
                     $this->process_customer_match(self::input('match','post'),self::input('rmatch','post'));                    
                 }
@@ -975,7 +1043,8 @@ class QuickBooks extends ModelLite
                         <div><a href="<?php print esc_url('?page=donorpress-reports&limit=200&df='.$dateLastSync.'&dateField=CreatedAt&ActionView=t');?>">Sync Transactions since last sync date: <?php print $dateLastSync;?></a></div>
                         <?php }?>                       
                         <div><a href="<?php print esc_url('?page='.self::input('page','get').'&debug=t')?>">Debug Mode</a></div> 
-                        <div><a href="<?php print esc_url('?page='.self::input('page','get').'&syncDonorsToQB=t')?>">Sync Donors to QuickBooks</a></div>           
+                        <div><a href="<?php print esc_url('?page='.self::input('page','get').'&syncDonorsToQB=t')?>">Sync Donors to QuickBooks</a></div> 
+                        <div><a href="<?php print esc_url('?page='.self::input('page','get').'&fixQBLinks=t')?>">Fix Quickbook Sync</a></div>          
                         <h3>View</h3>
                         <?php 
                         foreach ($this->QBtables as $tbl=>$key){ ?>
@@ -1259,17 +1328,19 @@ class QuickBooks extends ModelLite
     }
 
     public function reportUnMatchedPayments(){
+        //I'm not sure how useful this is, other than a quick way to show potential problem in Quickbooks where payment not linked to an invoice.
         $unmatched=[];
         $payments=self::get_all_entity('Payment');
         foreach($payments as $p){
-            if (!$p->LinkedTxn){
+            if (!$p->Line->LinkedTxn){
                 $unmatched[$p->Id]=$p;
             }            
         }
 
         if (sizeof($unmatched)>0){
             $list=Donation::get(['QBOPaymentId IN ('.implode(",",array_keys($unmatched)).')'],'DateDeposited');
-            print "<h2>UnMatched Payments</h2>".Donation::show_results($list);
+            print "<h2>UnMatched Payments</h2>
+            <div><a href='?page=donorpress-quickbooks&fixQBLinks=t'>Fix missing connections</a></div>".Donation::show_results($list);
         }else{
             print "None Found";
         }
