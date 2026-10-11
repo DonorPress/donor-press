@@ -156,7 +156,13 @@ class CustomVariables extends ModelLite
         if (CustomVariables::get_option('QuickbooksClientId',true) && QuickBooks::qb_api_installed()){
             self::display_notice("Allow Redirect access in the <a target='quickbooks' href='https://developer.intuit.com/app/developer/dashboard'>QuickBook API</a> for: ".QuickBooks::redirect_url());
         }
-        print "<div><strong>Plugin base dir:</strong> ".donorpress_plugin_base_dir()."</div>";       
+        print "<div><strong>Plugin base dir:</strong> ".donorpress_plugin_base_dir()."</div>";
+        print "<div><strong>Server TimeZone:</strong> ".date_default_timezone_get()." UTC Offset ".((int)date("Z")/3600)." hours</div>";
+        print "<div><strong>WordPress Timezone:</strong> ".wp_timezone_string()."</div>";
+        print "<div><strong>WordPress Version:</strong> ".get_bloginfo('version')."</div>";
+        print "<div><strong>PHP Version:</strong> ".phpversion()."</div>";
+        print "<div><strong>MySQL Version:</strong> ".mysqli_get_client_version()."</div>";
+
         
     }
     
