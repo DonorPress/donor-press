@@ -141,10 +141,10 @@ function donorpress_report_donors(){
 	<?php
 	$where=[];$having=[];
 	if (Donor::input('df','get')){
-		$where[]="`$dateField`>='".Donor::input('df','get').($dateField=="Date"?"":" 00:00:00")."'";
+		$where[]="`$dateField`>='".Donor::input('df','get').($dateField=="Date" || strlen(Donor::input('df','get'))>10?"":" 00:00:00")."'";
 	}
 	if (Donor::input('dt','get')){
-		$where[]="`$dateField`<='".Donor::input('dt','get').($dateField=="Date"?"":" 23:59:59")."'";
+		$where[]="`$dateField`<='".Donor::input('dt','get').($dateField=="Date" || strlen(Donor::input('dt','get'))>10?"":" 23:59:59")."'";
 	}
 	if (Donor::input('name','get')){
 		$where[]="(UPPER(D.Name) LIKE '%".addslashes(Donor::input('name','get'))."%' OR UPPER(D.Name2) LIKE '%".addslashes(Donor::input('name','get'))."%')";

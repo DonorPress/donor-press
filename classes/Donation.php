@@ -1271,7 +1271,7 @@ class Donation extends ModelLite
         //     $where[]=$whereTxt;
         // }
 
-		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType
+		$SQL="Select DT.DonationId,D.DonorId, D.Name, D.Name2,`Email`,EmailStatus,Address1,City, DT.`Date`,DT.DateDeposited,DT.Gross,DT.TransactionID,DT.Subject,DT.Note,DT.PaymentSource,DT.Type ,DT.Source,DT.CategoryId,DT.TransactionType,DT.CreatedAt,DT.UpdatedAt
         FROM ".Donor::get_table_name()." D INNER JOIN ".self::get_table_name()." DT ON D.DonorId=DT.DonorId 
         WHERE ".implode(" AND ",$where)." Order BY ".$dateField.",DT.Date,DonationId ".($top?" LIMIT ".$top:""); 
 		//print "<pre>".$SQL."</pre>";     
